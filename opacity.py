@@ -11,9 +11,11 @@ def opacity_change(image1, image2, opacity):
 
     blend = np.empty(image1.shape)
 
-    for i in range(image1.shape[0]):
-        for j in range(image1.shape[1]):
-            blend[i, j] = (1 - opacity) * image1[i, j] + opacity * image2[i, j]
+    # for i in range(image1.shape[0]):
+    #     for j in range(image1.shape[1]):
+    #         blend[i, j] = (1 - opacity) * image1[i, j] + opacity * image2[i, j]
+
+    blend = (1 - opacity) * image1 + opacity * image2
 
     return blend
 
