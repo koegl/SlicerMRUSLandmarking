@@ -22,7 +22,7 @@ def opacity_change2(image1, image2, opacity):
 
 
 # function to change opacity between three images
-def opacity_change3(image1, image2, image3, opacity2, opacity3, threshold=0):
+def opacity_change3(image1, image2, image3, opacity2, opacity3, threshold=0.4):
     """
     Function to blend two images into one
     :param image1: Bottom image
@@ -40,8 +40,8 @@ def opacity_change3(image1, image2, image3, opacity2, opacity3, threshold=0):
     assert 0.0 <= opacity3 <= 1.0, "Opacity3 (of top image) out of range"
 
     # adjust for 0 pixels
-    image2_threshold = np.where(image2 != threshold)
-    image3_threshold = np.where(image3 != threshold)
+    image2_threshold = np.where(image2 > threshold)
+    image3_threshold = np.where(image3 > threshold)
 
     blend_12 = np.copy(image1)
 
