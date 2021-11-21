@@ -5,12 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 import numpy as np
 
-
-# function to change opacity between two images
-def opacity_change(image1, image2, opacity):
-    blend = (1 - opacity) * image1 + opacity * image2
-
-    return blend
+import utils
 
 
 # TODO change the code so that it can work on a concatenated image (where two images are concatenated)
@@ -30,37 +25,56 @@ def main(args):
     # get opacity
     opacity = args.op
 
-    # load images
+    # load images and convert to grayscale
     image_one = Image.open(path_one).convert('L')
     image_one = np.asarray(image_one)
 
     image_two = Image.open(path_two).convert('L')
     image_two = np.asarray(image_two)
 
+    # create three images and opacitites
+    image_one = image_one / 255
+    image_two = np.rot90(np.copy(image_one))
+    image_three = np.rot90(np.copy(image_two)) * 2
+    image_one = image_one / 2
+    opacity2 = 0.5
+    opacity3 = 0.0
+
     # blend images
     # interactive display
     # create plot
     fig, ax = plt.subplots()
-    img = plt.imshow(opacity_change(image_one, image_two, opacity), cmap='gray')
-    plt.subplots_adjust(left=0.25)
+    plt.imshow(utils.opacity_change3(image_one, image_two, image_three, opacity2, opacity3), cmap='gray', vmin=0.0, vmax=1.0)
+    plt.subplots_adjust(left=0.35)
 
-    # create slider
-    axop = plt.axes([0.1, 0.25, 0.0225, 0.63])
-    opacity_slider = Slider(
-        ax=axop,
-        label="Opacity",
+    # create sliders
+    ax_opacity2 = plt.axes([0.1, 0.25, 0.0225, 0.63])
+    opacity2_slider = Slider(
+        ax=ax_opacity2,
+        label="Opacity2",
         valmin=0.0,
         valmax=1.0,
-        valinit=opacity,
+        valinit=opacity2,
+        orientation="vertical"
+    )
+
+    ax_opacity3 = plt.axes([0.2, 0.25, 0.0225, 0.63])
+    opacity3_slider = Slider(
+        ax=ax_opacity3,
+        label="Opacity3",
+        valmin=0.0,
+        valmax=1.0,
+        valinit=opacity3,
         orientation="vertical"
     )
 
     # The function to be called anytime a slider's value changes
     def slider_update(val):
-        ax.imshow(opacity_change(image_one, image_two, opacity_slider.val), cmap='gray')
+        ax.imshow(utils.opacity_change3(image_one, image_two, image_three, opacity2_slider.val, opacity3_slider.val), cmap='gray', vmin=0.0, vmax=1.0)
         fig.canvas.draw_idle()
 
-    opacity_slider.on_changed(slider_update)
+    opacity2_slider.on_changed(slider_update)
+    opacity3_slider.on_changed(slider_update)
 
     plt.show()
 
