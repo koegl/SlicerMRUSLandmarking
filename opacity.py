@@ -13,32 +13,32 @@ import utils
 def main(args):
     # get paths to the two images
     if args.one is None:
-        path_one = os.path.join(os.getcwd(), "images", "black_square.png")
+        path_one = os.path.join(os.getcwd(), "images", "cat_normal.png")
     else:
         path_one = args.one
 
     if args.two is None:
-        path_two = os.path.join(os.getcwd(), "images", "white_ellipse.png")
+        path_two = os.path.join(os.getcwd(), "images", "cat_white.png")
     else:
         path_two = args.two
 
-    # get opacity
-    opacity = args.op
+    if args.three is None:
+        path_three = os.path.join(os.getcwd(), "images", "cat_black.png")
+    else:
+        path_three = args.three
 
     # load images and convert to grayscale
     image_one = Image.open(path_one).convert('L')
-    image_one = np.asarray(image_one)
+    image_one = np.asarray(image_one) / 255
 
     image_two = Image.open(path_two).convert('L')
-    image_two = np.asarray(image_two)
+    image_two = np.asarray(image_two) / 255
 
-    # create three images and opacitites
-    image_one = image_one / 255
-    image_two = np.rot90(np.copy(image_one))
-    image_three = np.rot90(np.copy(image_two)) * 2
-    image_one = image_one / 2
+    image_three = Image.open(path_three).convert('L')
+    image_three = np.asarray(image_three) / 255
+
     opacity2 = 0.5
-    opacity3 = 0.0
+    opacity3 = 0.5
 
     # blend images
     # interactive display
@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     parser.add_argument("-one", type=str, default=None, help="Path to the first image.")
     parser.add_argument("-two", type=str, default=None, help="Path to the second image.")
-    parser.add_argument("-op", type=float, default=1.0, help="Opacity, range: [0,1]")
+    parser.add_argument("-three", type=str, default=None, help="Path to the third image.")
 
     params = parser.parse_args()
 
