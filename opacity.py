@@ -4,6 +4,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider, Button
 import numpy as np
+import nibabel as nib
 
 import utils
 
@@ -28,23 +29,37 @@ def main(args):
         path_three = args.three
 
     # load images and convert to grayscale
-    image_one = Image.open(path_one).convert('L')
-    image_one = np.asarray(image_one) / 255
+    if path_one.endswith("png") and path_two.endswith("png") and path_three.endswith("png"):
+        image_one = Image.open(path_one).convert('L')
+        image_one = np.asarray(image_one) / 255
 
-    image_two = Image.open(path_two).convert('L')
-    image_two = np.asarray(image_two) / 255
+        image_two = Image.open(path_two).convert('L')
+        image_two = np.asarray(image_two) / 255
 
-    image_three = Image.open(path_three).convert('L')
-    image_three = np.asarray(image_three) / 255
+        image_three = Image.open(path_three).convert('L')
+        image_three = np.asarray(image_three) / 255
+
+    if path_one.endswith("nii") and path_two.endswith("nii") and path_three.endswith("nii"):
+        image_one = nib.load(path_one)
+        image_one = np.asarray(image_one.get_fdata()) / 255#[:, :, 90]
+
+        image_two = nib.load(path_two)
+        image_two = np.asarray(image_two.get_fdata()) / 255#[:, :, 90]
+
+        image_three = nib.load(path_three)
+        image_three = np.asarray(image_three.get_fdata()) / 255#[:, :, 90]
 
     opacity2 = 0.5
     opacity3 = 0.5
+
+    index = 90
 
     # blend images
     # interactive display
     # create plot
     fig, ax = plt.subplots()
-    plt.imshow(utils.opacity_change3(image_one, image_two, image_three, opacity2, opacity3), cmap='gray', vmin=0.0, vmax=1.0)
+    plt.imshow(utils.opacity_change3(image_one[:, :, index], image_two[:, :, index], image_three[:, :, index], opacity2, opacity3),
+               cmap='gray', vmin=0.0, vmax=1.0)
     plt.subplots_adjust(left=0.35)
 
     # create sliders
@@ -70,22 +85,14 @@ def main(args):
 
     # The function to be called anytime a slider's value changes
     def slider_update(val):
-        ax.imshow(utils.opacity_change3(image_one, image_two, image_three, opacity2_slider.val, opacity3_slider.val), cmap='gray', vmin=0.0, vmax=1.0)
+        ax.imshow(utils.opacity_change3(image_one[:, :, index], image_two[:, :, index], image_three[:, :, index], opacity2_slider.val, opacity3_slider.val),
+                  cmap='gray', vmin=0.0, vmax=1.0)
         fig.canvas.draw_idle()
 
     opacity2_slider.on_changed(slider_update)
     opacity3_slider.on_changed(slider_update)
 
     plt.show()
-
-    # plt.imshow(image_one, cmap='gray')
-    # plt.show()
-    # plt.imshow(image_two, cmap='gray')
-    # plt.show()
-    # plt.imshow(image_blended, cmap='gray')
-    # plt.show()
-
-    print(5)
 
 
 if __name__ == "__main__":
