@@ -6,20 +6,15 @@ from matplotlib.widgets import Slider, Button
 import numpy as np
 
 
-# interactive function to change opacity
+# function to change opacity between two images
 def opacity_change(image1, image2, opacity):
-
-    blend = np.empty(image1.shape)
-
-    # for i in range(image1.shape[0]):
-    #     for j in range(image1.shape[1]):
-    #         blend[i, j] = (1 - opacity) * image1[i, j] + opacity * image2[i, j]
-
     blend = (1 - opacity) * image1 + opacity * image2
 
     return blend
 
 
+# TODO change the code so that it can work on a concatenated image (where two images are concatenated)
+# TODO after the above todo, extend the code so that it can work for 3 and more images
 def main(args):
     # get paths to the two images
     if args.one is None:
@@ -53,7 +48,7 @@ def main(args):
     axop = plt.axes([0.1, 0.25, 0.0225, 0.63])
     opacity_slider = Slider(
         ax=axop,
-        label="Amplitude",
+        label="Opacity",
         valmin=0.0,
         valmax=1.0,
         valinit=opacity,
