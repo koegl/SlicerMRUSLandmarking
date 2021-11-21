@@ -1,8 +1,19 @@
 import argparse
+import os
 
 
 def main(args):
-  pass
+
+  # get paths to the two images
+  if args.one is None:
+    path_one = os.path.join(os.getcwd(), "images", "black_square.png")
+  else:
+    path_one = args.one
+
+  if args.two is None:
+    path_two = os.path.join(os.getcwd(), "images", "white_ellipse.png")
+  else:
+    path_two = args.two
 
 
 if __name__ == "__main__":
