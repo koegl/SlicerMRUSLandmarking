@@ -11,8 +11,9 @@ def main():
 
     # dialog_app()
 
-    table_widget()
+    # table_widget()
 
+    tree_widget()
 
 if __name__ == "__main__":
     main()
