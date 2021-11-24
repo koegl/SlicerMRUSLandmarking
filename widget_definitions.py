@@ -1,6 +1,6 @@
 import sys
 from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QDialog, QLineEdit, QVBoxLayout, QTableWidget,\
-    QTableWidgetItem
+    QTableWidgetItem, QTreeWidget, QTreeWidgetItem
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QColor
 # For a widget application using PySide6, you must always start by importing the appropriate class from the
@@ -140,5 +140,37 @@ def table_widget():
         table.setItem(i, 2, item_color)
 
     table.show()
+
+    sys.exit(app.exec())
+
+
+def tree_widget():
+    """
+    Display data using a tree widget from https://doc.qt.io/qtforpython/tutorials/basictutorial/treewidget.html
+    """
+    data = {"Project A": ["file_a.py", "file_a.txt", "something.xls"],
+            "Project B": ["file_b.csv", "photo.jpg"],
+            "Project C": []}
+
+    app = QApplication()
+
+    # Configure the QTreeWidget to have two columns
+    tree = QTreeWidget()
+    tree.setColumnCount(2)
+    tree.setHeaderLabels(["Name", "Type"])
+
+    # Iterate the data structure, create the QTreeWidgetItem elements, and add the corresponding children to each parent
+    items = []
+    for key, values in data.items():
+        item = QTreeWidgetItem([key])
+        for value in values:
+            ext = value.split(".")[-1].upper()
+            child = QTreeWidgetItem([value, ext])
+            item.addChild(child)
+        items.append(item)
+
+    tree.insertTopLevelItems(0, items)
+
+    tree.show()
 
     sys.exit(app.exec())
