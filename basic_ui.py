@@ -1,5 +1,6 @@
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QDialog, QLineEdit, QVBoxLayout
+from PySide6.QtWidgets import QApplication, QMainWindow, QDialog, QLineEdit, QVBoxLayout, QLabel, QWidget
+from PySide6.QtGui import QIcon, QPixmap
 from ui_mainwindow import Ui_MainWindow
 
 
@@ -18,8 +19,12 @@ class MainWindow(QMainWindow):
         self.ui.buttonBox.accepted.connect(self.ok)
         self.ui.buttonBox.rejected.connect(self.rej)
 
+        self.label = QLabel(self)
+        self.pixmap = QPixmap("f3.jpeg")
+        self.label.setPixmap(self.pixmap)
+
     def hello(self):
-        print("Hello")
+        print(self.ui.lineEdit.text())
 
     def ok(self):
         print("ok")
