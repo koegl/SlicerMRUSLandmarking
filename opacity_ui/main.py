@@ -1,6 +1,11 @@
 import sys
+import os
+from PIL import Image
+import cv2
+#from PIL.ImageQt import ImageQt
 import numpy as np
-from PySide6.QtWidgets import QApplication, QMainWindow, QSlider
+from PySide6.QtWidgets import QApplication, QMainWindow, QSlider, QLabel
+from PySide6.QtGui import QPixmap, QImage
 from opacity_ui import Ui_MainWindow
 
 
@@ -19,10 +24,35 @@ class OpacityWindow(QMainWindow):
         # whenever the slider changes, execute the opacity change
         self.ui.verticalSlider.valueChanged.connect(self.opacity_change)
 
+        # load image
+        self.image_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'images'))
+
+        # convert image to numpy array
+        self.image_array = Image.open(os.path.join(self.image_folder, "black_square.png")).convert('L')
+        # self.image_array = np.uint8(np.asarray(self.image_array))
+        self.image_array = np.asarray(self.image_array)
+
+        pixmap = self.convert_np_to_pixmap(self.image_array)
+
+        self.ui.label.setPixmap(pixmap)
+
+    def convert_np_to_pixmap(self, numpy_array):
+        # convert to cv2
+        frame = cv2.cvtColor(numpy_array, cv2.COLOR_GRAY2RGB)
+
+        # convert to qimage
+        h, w = numpy_array.shape[:2]
+        bytes_per_line = 3 * w
+        qimage = QImage(frame.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+
+        # convert to pixmap
+        pixmap = QPixmap.fromImage(qimage)
+
+        return pixmap
+
     def opacity_change(self):
         x = self.ui.verticalSlider.value()
         print("{}^2 = {}".format(x, x**2))
-        x = 0
 
 
 if __name__ == "__main__":
