@@ -1,6 +1,8 @@
 import sys
-from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QDialog, QLineEdit, QVBoxLayout
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QDialog, QLineEdit, QVBoxLayout, QTableWidget,\
+    QTableWidgetItem
 from PySide6.QtCore import Slot
+from PySide6.QtGui import QColor
 # For a widget application using PySide6, you must always start by importing the appropriate class from the
 # PySide6.QtWidgets module
 
@@ -96,3 +98,47 @@ def dialog_app():
     form.show()
 
     app.exec()
+
+
+def table_widget():
+    """
+    Simple table widget from https://doc.qt.io/qtforpython/tutorials/basictutorial/tablewidget.html
+    """
+    colors = [("Red", "#FF0000"),
+              ("Green", "#00FF00"),
+              ("Blue", "#0000FF"),
+              ("Black", "#000000"),
+              ("White", "#FFFFFF"),
+              ("Electric Green", "#41CD52"),
+              ("Dark Blue", "#222840"),
+              ("Yellow", "#F9E56d")]
+
+    # translate hex into rgb
+    def get_rgb_from_hex(code_replace):
+        code_hex = code_replace.replace("#", "")
+        rgb = tuple(int(code_hex[i:i + 2], 16) for i in (0, 2, 4))
+        return QColor.fromRgb(rgb[0], rgb[1], rgb[2])
+
+    app = QApplication()
+
+    table = QTableWidget()
+    table.setRowCount(len(colors))
+    table.setColumnCount(len(colors[0]) + 1)  # '+1' to display a column with the color
+    table.setHorizontalHeaderLabels(["Name", "Hex Code", "Color"])
+
+    # Iterate the data structure, create the QTableWidgetItems instances,
+    # and add them into the table using a x, y coordinate
+
+    for i, (name, code) in enumerate(colors):
+        item_name = QTableWidgetItem(name)
+        item_code = QTableWidgetItem(code)
+        item_color = QTableWidgetItem()
+        item_color.setBackground(get_rgb_from_hex(code))
+
+        table.setItem(i, 0, item_name)
+        table.setItem(i, 1, item_code)
+        table.setItem(i, 2, item_color)
+
+    table.show()
+
+    sys.exit(app.exec())
