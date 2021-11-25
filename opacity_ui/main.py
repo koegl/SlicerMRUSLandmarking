@@ -2,6 +2,7 @@ import sys
 import os
 from PIL import Image
 import cv2
+import nibabel as nib
 #from PIL.ImageQt import ImageQt
 import numpy as np
 from PySide6.QtWidgets import QApplication, QMainWindow, QSlider, QLabel
@@ -32,22 +33,50 @@ class OpacityWindow(QMainWindow):
         # whenever the sliders change, execute the opacity change
         self.ui.verticalSlider.valueChanged.connect(self.opacity_change)
         self.ui.verticalSlider_2.valueChanged.connect(self.opacity_change)
+        self.ui.horizontalSlider.valueChanged.connect(self.opacity_change)
 
         # load image
         self.image_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'images'))
 
-        self.image_1 = Image.open(os.path.join(self.image_folder, "black_square.png")).convert('L')
-        self.image_1 = np.asarray(self.image_1)
-        self.image_2 = np.rot90(self.image_1)
-        self.image_3 = np.rot90(self.image_2)
+        self.image_1 = None
+        self.image_2 = None
+        self.image_3 = None
 
-        self.pixmap = self.convert_np_to_pixmap(self.image_1)
+        self.load_images()
+
+        # slider 3
+        shape = self.image_1.shape
+        self.ui.horizontalSlider.setMinimum(0)
+        self.ui.horizontalSlider.setMaximum(shape[2])
+        self.ui.horizontalSlider.setTickInterval(int(shape[2]/10))
+        self.ui.horizontalSlider.setTickPosition(QSlider.TicksBelow)
+
+        # self.image_1 = Image.open(os.path.join(self.image_folder, "black_square.png")).convert('L')
+        # self.image_1 = np.asarray(self.image_1)
+        # self.image_2 = np.rot90(self.image_1)
+        # self.image_3 = np.rot90(self.image_2)
+
+        self.pixmap = self.convert_np_to_pixmap(self.image_1[:, :, 0])
 
         self.ui.label.setPixmap(self.pixmap)
 
+    def load_images(self):
+        path_one = "C:\\Users\\fryde\\Documents\\university\\master\\thesis\\datasets\\resect\\NIFTI\\Case2\\MRI\\Case2-T1.nii"
+        path_two = "C:\\Users\\fryde\\Documents\\university\\master\\thesis\\datasets\\resect\\NIFTI\\Case2\\US\\Case2-US-before.nii"
+        path_three = "C:\\Users\\fryde\\Documents\\university\\master\\thesis\\datasets\\resect\\NIFTI\\Case2\\US\\Case2-US-after.nii"
+
+        self.image_1 = nib.load(path_one)
+        self.image_1 = np.asarray(self.image_1.get_fdata())
+
+        self.image_2 = nib.load(path_one)
+        self.image_2 = np.sqrt(np.asarray(self.image_2.get_fdata()))
+
+        self.image_3 = nib.load(path_one)
+        self.image_3 = np.rot90(np.rot90(np.asarray(self.image_3.get_fdata())))
+
     def convert_np_to_pixmap(self, numpy_array):
         # convert to cv2
-        frame = cv2.cvtColor(numpy_array, cv2.COLOR_GRAY2RGB)
+        frame = cv2.cvtColor(np.uint8(numpy_array), cv2.COLOR_GRAY2RGB)
 
         # convert to qimage
         h, w = numpy_array.shape[:2]
@@ -62,10 +91,10 @@ class OpacityWindow(QMainWindow):
     def opacity_change(self):
         op1 = self.ui.verticalSlider.value() / 1000  # maximum value of slider
         op2 = self.ui.verticalSlider_2.value() / 1000
-        blended = opacity_change3(self.image_1, self.image_2, self.image_3, op1, op2)
+        idx = self.ui.horizontalSlider.value()
+        blended = opacity_change3(self.image_1[:, :, idx], self.image_2[:, :, idx], self.image_3[:, :, idx], op1, op2)
         self.pixmap = self.convert_np_to_pixmap(blended)
         self.ui.label.setPixmap(self.pixmap)
-
 
 
 if __name__ == "__main__":
