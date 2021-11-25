@@ -1,23 +1,22 @@
-import sys
 import os
-from PIL import Image
 import cv2
 import nibabel as nib
 from scipy.ndimage import rotate
-#from PIL.ImageQt import ImageQt
 import numpy as np
 from PySide6.QtWidgets import QApplication, QMainWindow, QSlider, QLabel
 from PySide6.QtGui import QPixmap, QImage
-from opacity_ui import Ui_MainWindow
+from opacity_ui.opacity_ui import Ui_MainWindow
 from utils import opacity_change3
 # pyside6-uic mainwindow.ui > ui_mainwindow.py
 
 
 class OpacityWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, args):
         super(OpacityWindow, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+        self.args = args
 
         # load image
         self.image_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'images'))
@@ -38,19 +37,15 @@ class OpacityWindow(QMainWindow):
         self.ui.pushButton_2.clicked.connect(self.sagittal)
         self.ui.pushButton_3.clicked.connect(self.coronal)
 
-        # self.image_1 = Image.open(os.path.join(self.image_folder, "black_square.png")).convert('L')
-        # self.image_1 = np.asarray(self.image_1)
-        # self.image_2 = np.rot90(self.image_1)
-        # self.image_3 = np.rot90(self.image_2)
-
+        # create intial pixmap
         self.pixmap = self.convert_np_to_pixmap(self.image_1[:, :, 0])
 
         self.ui.label.setPixmap(self.pixmap)
 
     def load_images(self):
-        path_one = "C:\\Users\\fryde\\Documents\\university\\master\\thesis\\datasets\\resect\\NIFTI\\Case5\\MRI\\Case5-T1.nii"
-        path_two = "C:\\Users\\fryde\\Documents\\university\\master\\thesis\\datasets\\resect\\NIFTI\\Case3\\MRI\\Case3-T1.nii"
-        path_three = "C:\\Users\\fryde\\Documents\\university\\master\\thesis\\datasets\\resect\\NIFTI\\Case6\\MRI\\Case6-T1.nii"
+        path_one = self.args.p1
+        path_two = self.args.p2
+        path_three = self.args.p3
 
         self.image_1 = nib.load(path_one)
         self.image_1 = self.image_1.get_fdata()
@@ -86,6 +81,7 @@ class OpacityWindow(QMainWindow):
         self.ui.horizontalSlider.setMaximum(shape[2])
         self.ui.horizontalSlider.setTickInterval(int(self.shape_original[2]/10))
         self.ui.horizontalSlider.setTickPosition(QSlider.TicksBelow)
+        self.ui.horizontalSlider.setSliderPosition(int(shape[2]/2))
 
         # slider 4 - threshold
         self.ui.horizontalSlider_2.setMaximum(0)
@@ -152,17 +148,7 @@ class OpacityWindow(QMainWindow):
         op2 = self.ui.verticalSlider_2.value() / 1000
         idx = self.ui.horizontalSlider.value()  # slice index
         threshold = self.ui.horizontalSlider_2.value()
-        print(threshold)
 
         blended = opacity_change3(self.image_1[:, :, idx], self.image_2[:, :, idx], self.image_3[:, :, idx], op1, op2, threshold)
         self.pixmap = self.convert_np_to_pixmap(blended)
         self.ui.label.setPixmap(self.pixmap)
-
-
-if __name__ == "__main__":
-    app = QApplication([])
-
-    window = OpacityWindow()
-    window.show()
-
-    sys.exit(app.exec())
