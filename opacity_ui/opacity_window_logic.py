@@ -3,10 +3,10 @@ import cv2
 import nibabel as nib
 from scipy.ndimage import rotate
 import numpy as np
-from PySide6.QtWidgets import QApplication, QMainWindow, QSlider, QLabel
+from PySide6.QtWidgets import QMainWindow, QSlider
 from PySide6.QtGui import QPixmap, QImage
 from opacity_ui.opacity_ui import Ui_MainWindow
-from utils import opacity_change3
+from opacity_ui.utils import opacity_change3
 # pyside6-uic mainwindow.ui > ui_mainwindow.py
 
 
