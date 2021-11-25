@@ -16,7 +16,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QLabel, QMainWindow, QMenuBar,
-    QSizePolicy, QSlider, QStatusBar, QWidget)
+    QPushButton, QSizePolicy, QSlider, QStatusBar,
+    QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -27,11 +28,32 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.verticalSlider = QSlider(self.centralwidget)
         self.verticalSlider.setObjectName(u"verticalSlider")
-        self.verticalSlider.setGeometry(QRect(50, 150, 20, 271))
+        self.verticalSlider.setGeometry(QRect(30, 160, 20, 271))
         self.verticalSlider.setOrientation(Qt.Vertical)
         self.label = QLabel(self.centralwidget)
         self.label.setObjectName(u"label")
-        self.label.setGeometry(QRect(130, 30, 631, 501))
+        self.label.setGeometry(QRect(130, 70, 631, 461))
+        self.verticalSlider_2 = QSlider(self.centralwidget)
+        self.verticalSlider_2.setObjectName(u"verticalSlider_2")
+        self.verticalSlider_2.setGeometry(QRect(70, 160, 20, 271))
+        self.verticalSlider_2.setOrientation(Qt.Vertical)
+        self.horizontalSlider = QSlider(self.centralwidget)
+        self.horizontalSlider.setObjectName(u"horizontalSlider")
+        self.horizontalSlider.setGeometry(QRect(290, 20, 311, 20))
+        self.horizontalSlider.setOrientation(Qt.Horizontal)
+        self.horizontalSlider_2 = QSlider(self.centralwidget)
+        self.horizontalSlider_2.setObjectName(u"horizontalSlider_2")
+        self.horizontalSlider_2.setGeometry(QRect(340, 540, 160, 16))
+        self.horizontalSlider_2.setOrientation(Qt.Horizontal)
+        self.pushButton = QPushButton(self.centralwidget)
+        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setGeometry(QRect(690, 160, 56, 17))
+        self.pushButton_2 = QPushButton(self.centralwidget)
+        self.pushButton_2.setObjectName(u"pushButton_2")
+        self.pushButton_2.setGeometry(QRect(690, 190, 56, 17))
+        self.pushButton_3 = QPushButton(self.centralwidget)
+        self.pushButton_3.setObjectName(u"pushButton_3")
+        self.pushButton_3.setGeometry(QRect(690, 220, 56, 17))
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -49,5 +71,8 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.label.setText(QCoreApplication.translate("MainWindow", u"TextLabel", None))
+        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"axial", None))
+        self.pushButton_2.setText(QCoreApplication.translate("MainWindow", u"sagittal", None))
+        self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"coronal", None))
     # retranslateUi
 
