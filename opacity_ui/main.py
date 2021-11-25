@@ -7,6 +7,7 @@ import numpy as np
 from PySide6.QtWidgets import QApplication, QMainWindow, QSlider, QLabel
 from PySide6.QtGui import QPixmap, QImage
 from opacity_ui import Ui_MainWindow
+from utils import opacity_change3
 
 
 class OpacityWindow(QMainWindow):
@@ -27,14 +28,14 @@ class OpacityWindow(QMainWindow):
         # load image
         self.image_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'images'))
 
-        # convert image to numpy array
-        self.image_array = Image.open(os.path.join(self.image_folder, "black_square.png")).convert('L')
-        # self.image_array = np.uint8(np.asarray(self.image_array))
-        self.image_array = np.asarray(self.image_array)
+        self.image_1 = Image.open(os.path.join(self.image_folder, "black_square.png")).convert('L')
+        self.image_1 = np.asarray(self.image_1)
+        self.image_2 = np.rot90(self.image_1)
+        self.image_3 = np.rot90(self.image_2)
 
-        pixmap = self.convert_np_to_pixmap(self.image_array)
+        self.pixmap = self.convert_np_to_pixmap(self.image_1)
 
-        self.ui.label.setPixmap(pixmap)
+        self.ui.label.setPixmap(self.pixmap)
 
     def convert_np_to_pixmap(self, numpy_array):
         # convert to cv2
@@ -51,8 +52,10 @@ class OpacityWindow(QMainWindow):
         return pixmap
 
     def opacity_change(self):
-        x = self.ui.verticalSlider.value()
-        print("{}^2 = {}".format(x, x**2))
+        x = self.ui.verticalSlider.value() / 1000  # maximum value of slider
+        blended = opacity_change3(self.image_1, self.image_2, self.image_3, 0.5, x)
+        self.pixmap = self.convert_np_to_pixmap(blended)
+        self.ui.label.setPixmap(self.pixmap)
 
 
 if __name__ == "__main__":
