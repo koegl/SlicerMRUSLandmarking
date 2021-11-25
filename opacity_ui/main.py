@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication, QMainWindow, QSlider, QLabel
 from PySide6.QtGui import QPixmap, QImage
 from opacity_ui import Ui_MainWindow
 from utils import opacity_change3
+# pyside6-uic mainwindow.ui > ui_mainwindow.py
 
 
 class OpacityWindow(QMainWindow):
@@ -16,14 +17,21 @@ class OpacityWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        # slider
+        # slider 1
         self.ui.verticalSlider.setMinimum(0)
         self.ui.verticalSlider.setMaximum(1000)
         self.ui.verticalSlider.setTickInterval(100)
         self.ui.verticalSlider.setTickPosition(QSlider.TicksLeft)
 
-        # whenever the slider changes, execute the opacity change
+        # slider 2
+        self.ui.verticalSlider_2.setMinimum(0)
+        self.ui.verticalSlider_2.setMaximum(1000)
+        self.ui.verticalSlider_2.setTickInterval(100)
+        self.ui.verticalSlider_2.setTickPosition(QSlider.TicksLeft)
+
+        # whenever the sliders change, execute the opacity change
         self.ui.verticalSlider.valueChanged.connect(self.opacity_change)
+        self.ui.verticalSlider_2.valueChanged.connect(self.opacity_change)
 
         # load image
         self.image_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'images'))
@@ -52,10 +60,12 @@ class OpacityWindow(QMainWindow):
         return pixmap
 
     def opacity_change(self):
-        x = self.ui.verticalSlider.value() / 1000  # maximum value of slider
-        blended = opacity_change3(self.image_1, self.image_2, self.image_3, 0.5, x)
+        op1 = self.ui.verticalSlider.value() / 1000  # maximum value of slider
+        op2 = self.ui.verticalSlider_2.value() / 1000
+        blended = opacity_change3(self.image_1, self.image_2, self.image_3, op1, op2)
         self.pixmap = self.convert_np_to_pixmap(blended)
         self.ui.label.setPixmap(self.pixmap)
+
 
 
 if __name__ == "__main__":
