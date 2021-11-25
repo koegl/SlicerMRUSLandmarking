@@ -17,7 +17,17 @@ def read_data(file_path):
     else:
         data = pd.read_csv(file_path)
 
-    return data
+    # remove wrong magnitudes
+    data = data.drop(data[data.mag < 0].index)
+    magnitudes = data["mag"]
+
+    # local timezone
+    timezone = QTimeZone(b"Europe/Berlin")
+
+    # get timestamp transformed to our timezone
+    times = data["time"].apply(lambda x: transform_date(x, timezone))
+
+    return times, magnitudes
 
 
 def transform_date(utc, timezone=None):
