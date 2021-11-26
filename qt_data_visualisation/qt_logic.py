@@ -1,8 +1,7 @@
 from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QHeaderView, QSizePolicy, QTableView, QWidget
-from PySide6.QtGui import QAction, QKeySequence, QColor
+from PySide6.QtGui import QAction, QKeySequence, QColor, QPainter
 from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
-
-from utils import read_data
+from PySide6.QtCharts import QChart, QChartView, QLineSeries, QDateTimeAxis, QValueAxis
 
 
 class DataWindow(QMainWindow):
@@ -96,6 +95,14 @@ class Widget(QWidget):
 
         self.horizontal_header.setStretchLastSection(True)
 
+        # creating a QChart
+        self.chart = QChart()
+        self.chart.setAnimationOptions(QChart.AllAnimations)
+
+        # creating QChartView
+        self.chart_view = QChartView(self.chart)
+        self.chart_view.setRenderHint(QPainter.Antialiasing)
+
         # QWidget layout
         self.main_layout = QHBoxLayout()
         size = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -104,6 +111,11 @@ class Widget(QWidget):
         size.setHorizontalStretch(1)
         self.table_view.setSizePolicy(size)
         self.main_layout.addWidget(self.table_view)
+
+        # right layout
+        size.setVerticalStretch(4)
+        self.chart_view.setSizePolicy(size)
+        self.main_layout.addWidget(self.chart_view)
 
         # set the layout to the QWidget
         self.setLayout(self.main_layout)
