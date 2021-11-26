@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QMainWindow, QHBoxLayout, QHeaderView, QSizePolicy, QTableView, QWidget
 from PySide6.QtGui import QAction, QKeySequence, QColor, QPainter
-from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex
+from PySide6.QtCore import Qt, QAbstractTableModel, QModelIndex, QDateTime
 from PySide6.QtCharts import QChart, QChartView, QLineSeries, QDateTimeAxis, QValueAxis
 
 
@@ -86,7 +86,7 @@ class Widget(QWidget):
         self.table_view = QTableView()
         self.table_view.setModel(self.model)
 
-        # QTableView heaers
+        # QTableView headers
         self.horizontal_header = self.table_view.horizontalHeader()
         self.vertical_header = self.table_view.verticalHeader()
 
@@ -98,6 +98,7 @@ class Widget(QWidget):
         # creating a QChart
         self.chart = QChart()
         self.chart.setAnimationOptions(QChart.AllAnimations)
+        self.add_series("Magnitude (Column 1)", [0, 1])
 
         # creating QChartView
         self.chart_view = QChartView(self.chart)
@@ -119,4 +120,44 @@ class Widget(QWidget):
 
         # set the layout to the QWidget
         self.setLayout(self.main_layout)
+
+    def add_series(self, name, columns):
+        # create QLineSeries
+        self.series = QLineSeries()
+        self.series.setName(name)
+
+        # filling QLineSeries
+        for i in range(self.model.rowCount()):
+            # getting the data
+            t = self.model.index(i, 0).data()
+            date_fmt = "yyyy-MM-dd HH:mm:ss.zzz"
+
+            x = QDateTime().fromString(t, date_fmt).toSecsSinceEpoch()
+            y = float(self.model.index(i, 1).data())
+
+            if x > 0 and y > 0:
+                self.series.append(x, y)
+
+        self.chart.addSeries(self.series)
+
+        # Setting X-axis
+        self.axis_x = QDateTimeAxis()
+        self.axis_x.setTickCount(10)
+        self.axis_x.setFormat("dd.MM (h:mm)")
+        self.axis_x.setTitleText("Date")
+        self.chart.addAxis(self.axis_x, Qt.AlignBottom)
+        self.series.attachAxis(self.axis_x)
+
+        # Setting Y-axis
+        self.axis_y = QValueAxis()
+        self.axis_y.setTickCount(10)
+        self.axis_y.setLabelFormat("%.2f")
+        self.axis_y.setTitleText("Magnitude")
+        self.chart.addAxis(self.axis_y, Qt.AlignLeft)
+        self.series.attachAxis(self.axis_y)
+
+        # Getting the color from the QChart to use it on the QTableView
+        color_name = self.series.pen().color().name()
+        self.model.color = f"{color_name}"
+
 
