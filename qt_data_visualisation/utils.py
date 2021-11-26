@@ -5,7 +5,7 @@ import os
 from PySide6.QtCore import QDateTime, QTimeZone
 
 
-def read_data(file_path):
+def read_data(file_path=None):
     """
     Read data from a csv file
     :param file_path: The path tot he file
