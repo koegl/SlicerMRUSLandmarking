@@ -1,10 +1,24 @@
 import argparse
 import utils
+import sys
+
+from PySide6.QtWidgets import QApplication
+
+from qt_logic import DataWindow, Widget
+from utils import read_data
 
 
 def main(args):
 
-    print(utils.read_data(args.file_path))
+    data = read_data()
+
+    app = QApplication([])
+
+    widget = Widget(data)
+    data_window = DataWindow(widget)
+    data_window.show()
+
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
