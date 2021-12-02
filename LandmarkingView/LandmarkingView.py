@@ -4,6 +4,7 @@ import logging
 import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
+import SegmentEditorEffects
 
 #
 # LandmarkingView
@@ -243,7 +244,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.applyButton.enabled = True
     else:
       self.ui.applyButton.toolTip = "Select input and output volume nodes"
-      self.ui.applyButton.enabled = False
+      self.ui.applyButton.enabled = True
 
     # All the GUI updates are done
     self._updatingGUIFromParameterNode = False
