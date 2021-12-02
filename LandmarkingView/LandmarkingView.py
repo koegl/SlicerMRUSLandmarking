@@ -379,6 +379,14 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
       if "intersection" not in id:
         segmentationNode.RemoveSegment(id)
 
+    # display only outline
+    # https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html#modify-segmentation-display-options
+    # http://apidocs.slicer.org/master/classvtkMRMLSegmentationDisplayNode.html#afeca62a2a79513ab275db3840136709c
+    segmentation = slicer.mrmlScene.GetFirstNodeByName('us_outlines')
+    displayNode = segmentation.GetDisplayNode()
+    displayNode.SetSegmentOpacity2DFill(intersection_segment_id, 0.0)  # Set fill opacity of a single segment
+    displayNode.SetSegmentOpacity2DOutline(intersection_segment_id, 1.0)  # Set outline opacity of a single segment
+
     stopTime = time.time()
     logging.info('Processing completed in {0:.2f} seconds'.format(stopTime-startTime))
 
