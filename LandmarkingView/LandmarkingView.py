@@ -277,7 +277,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     try:
 
       # Compute output
-      self.logic.process(self.ui.inputSelector.currentNode())
+      self.logic.process(self.ui.inputSelector1.currentNode(),
+                         self.ui.inputSelector2.currentNode(),
+                         self.ui.inputSelector3.currentNode())
 
       # # Compute inverted output (if needed)
       # if self.ui.invertedOutputSelector.currentNode():
@@ -347,40 +349,33 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     return segmentEditorWidget, segmentEditorNode, segmentationNode
 
-  def process(self, volume1):
+  def process(self, volume1, volume2, volume3):
     """
     Creates the intersectin of the first three volumes and siplays it as an outline
     """
-
-    print(volume1)
 
     import time
     startTime = time.time()
     logging.info('Processing started')
 
-    usVolumes = slicer.util.getNodesByClass("vtkMRMLScalarVolumeNode")
-
-    full_us_segments = [
-      ["us1", 1, 255],
-      ["us2", 1, 255],
-      ["us3", 1, 255]]
+    # usVolumes = slicer.util.getNodesByClass("vtkMRMLScalarVolumeNode")
+    usVolumes = (volume1, volume2, volume3)
 
     # initialise segment editor
     segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor("us_outlines")
 
-    for us_segments, us_volume in zip(full_us_segments, usVolumes):
-      segmentName, thresholdMin, thresholdMax = us_segments
-      segmentEditorWidget.setMasterVolumeNode(us_volume)
+    for volume in usVolumes:
+      segmentEditorWidget.setMasterVolumeNode(volume)
 
       # Create segment
-      addedSegmentID = segmentationNode.GetSegmentation().AddEmptySegment(segmentName)
+      addedSegmentID = segmentationNode.GetSegmentation().AddEmptySegment(volume.GetName())
       segmentEditorNode.SetSelectedSegmentID(addedSegmentID)
 
       # Fill by thresholding
       segmentEditorWidget.setActiveEffectByName("Threshold")
       effect = segmentEditorWidget.activeEffect()
-      effect.setParameter("MinimumThreshold", str(thresholdMin))
-      effect.setParameter("MaximumThreshold", str(thresholdMax))
+      effect.setParameter("MinimumThreshold", "1")
+      effect.setParameter("MaximumThreshold", "255")
       effect.self().onApply()
 
     # https://slicer.readthedocs.io/en/latest/developer_guide/modules/segmenteditor.html#effect-parameters
@@ -393,25 +388,25 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     # add all segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_UNION)
 
-    effect.setParameter("ModifierSegmentID", "us1")
+    effect.setParameter("ModifierSegmentID", volume1.GetName())
     effect.self().onApply()
 
-    effect.setParameter("ModifierSegmentID", "us2")
+    effect.setParameter("ModifierSegmentID", volume2.GetName())
     effect.self().onApply()
 
-    effect.setParameter("ModifierSegmentID", "us3")
+    effect.setParameter("ModifierSegmentID", volume3.GetName())
     effect.self().onApply()
 
     # intersect all segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_INTERSECT)
 
-    effect.setParameter("ModifierSegmentID", "us1")
+    effect.setParameter("ModifierSegmentID", volume1.GetName())
     effect.self().onApply()
 
-    effect.setParameter("ModifierSegmentID", "us2")
+    effect.setParameter("ModifierSegmentID", volume2.GetName())
     effect.self().onApply()
 
-    effect.setParameter("ModifierSegmentID", "us3")
+    effect.setParameter("ModifierSegmentID", volume3.GetName())
     effect.self().onApply()
 
     # TODO slicer.mrmlScene.RemoveNode(segmentEditorNode)
