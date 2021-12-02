@@ -329,6 +329,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     addedSegmentID = []
 
+    # for each volume create a threshold segmentation
     for idx, volume in enumerate(usVolumes):
       segmentEditorWidget.setMasterVolumeNode(volume)
 
