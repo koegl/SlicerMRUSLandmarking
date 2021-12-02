@@ -4,7 +4,7 @@ Repository to create a module for slicer which improves visualisation of data fo
 THE MODULE CAN CURRENTLY CREATE AN INTERSECTION OF THREE US VOLUMES
 
 ### Instructions for installing the module
-1. Press the green button **'Code'** and choose **'Donwload ZIP'** from the dropdown menu
+1. On this webpage press the green button **'Code'** and choose **'Donwload ZIP'** from the dropdown menu
 2. After the .zip file is downloaded unpack it somewhere (just remember the location)
 3. Open Slicer3D and open the **'Extension Wizard'** module
 4. From **'Extension Tools'** choose **'Select Extension'**
