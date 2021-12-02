@@ -270,14 +270,12 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     try:
 
       # Compute output
-      self.logic.process(self.ui.inputSelector.currentNode(), self.ui.outputSelector.currentNode(),
-        self.ui.imageThresholdSliderWidget.value, self.ui.invertOutputCheckBox.checked)
+      self.logic.process(self.ui.inputSelector.currentNode())
 
       # Compute inverted output (if needed)
       if self.ui.invertedOutputSelector.currentNode():
         # If additional output volume is selected then result with inverted threshold is written there
-        self.logic.process(self.ui.inputSelector.currentNode(), self.ui.invertedOutputSelector.currentNode(),
-          self.ui.imageThresholdSliderWidget.value, not self.ui.invertOutputCheckBox.checked, showResult=False)
+        self.logic.process(self.ui.inputSelector.currentNode())
 
     except Exception as e:
       slicer.util.errorDisplay("Failed to compute results: "+str(e))
@@ -314,38 +312,105 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     if not parameterNode.GetParameter("Invert"):
       parameterNode.SetParameter("Invert", "false")
 
-  def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
+  @staticmethod
+  def setup_segment_editor(segment_name, segmentationNode=None, volumeNode=None):
     """
-    Run the processing algorithm.
-    Can be used without GUI widget.
-    :param inputVolume: volume to be thresholded
-    :param outputVolume: thresholding result
-    :param imageThreshold: values above/below this threshold will be set to 0
-    :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
-    :param showResult: show output volume in slice viewers
+    Runs standard setup of segment editor widget and segment editor node
+    :param segmentationNode a seg node you can also pass
+    :param volumeNode a volume node you can pass
     """
 
-    if not inputVolume or not outputVolume:
-      raise ValueError("Input or output volume is invalid")
+    if segmentationNode is None:
+      # Create segmentation node
+      segmentationNode = slicer.vtkMRMLSegmentationNode()
+      slicer.mrmlScene.AddNode(segmentationNode)
+      segmentationNode.CreateDefaultDisplayNodes()
+      segmentationNode.SetName(segment_name)
+
+    segmentEditorWidget = slicer.qMRMLSegmentEditorWidget()
+    segmentEditorNode = slicer.vtkMRMLSegmentEditorNode()
+    segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteNone)
+    slicer.mrmlScene.AddNode(segmentEditorNode)
+    segmentEditorWidget.setMRMLSegmentEditorNode(segmentEditorNode)
+    segmentEditorWidget.setSegmentationNode(segmentationNode)
+    segmentEditorWidget.setMRMLScene(slicer.mrmlScene)
+
+    if volumeNode:
+      segmentEditorWidget.setMasterVolumeNode(volumeNode)
+
+    return segmentEditorWidget, segmentEditorNode, segmentationNode
+
+  def process(self, volume1):
+    """
+    Creates the intersectin of the first three volumes and siplays it as an outline
+    """
+
+    print(volume1)
 
     import time
     startTime = time.time()
     logging.info('Processing started')
 
-    # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
-    cliParams = {
-      'InputVolume': inputVolume.GetID(),
-      'OutputVolume': outputVolume.GetID(),
-      'ThresholdValue' : imageThreshold,
-      'ThresholdType' : 'Above' if invert else 'Below'
-      }
-    cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
-    # We don't need the CLI module node anymore, remove it to not clutter the scene with it
-    slicer.mrmlScene.RemoveNode(cliNode)
+    usVolumes = slicer.util.getNodesByClass("vtkMRMLScalarVolumeNode")
+
+    full_us_segments = [
+      ["us1", 1, 255],
+      ["us2", 1, 255],
+      ["us3", 1, 255]]
+
+    # initialise segment editor
+    segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor("us_outlines")
+
+    for us_segments, us_volume in zip(full_us_segments, usVolumes):
+      segmentName, thresholdMin, thresholdMax = us_segments
+      segmentEditorWidget.setMasterVolumeNode(us_volume)
+
+      # Create segment
+      addedSegmentID = segmentationNode.GetSegmentation().AddEmptySegment(segmentName)
+      segmentEditorNode.SetSelectedSegmentID(addedSegmentID)
+
+      # Fill by thresholding
+      segmentEditorWidget.setActiveEffectByName("Threshold")
+      effect = segmentEditorWidget.activeEffect()
+      effect.setParameter("MinimumThreshold", str(thresholdMin))
+      effect.setParameter("MaximumThreshold", str(thresholdMax))
+      effect.self().onApply()
+
+    # https://slicer.readthedocs.io/en/latest/developer_guide/modules/segmenteditor.html#effect-parameters
+    # https://discourse.slicer.org/t/how-to-programmatically-use-logical-operator-add-function-from-segment-editor/16581/2
+    intersection_segment_id = segmentationNode.GetSegmentation().AddEmptySegment("intersection")
+    segmentEditorNode.SetSelectedSegmentID(intersection_segment_id)
+    segmentEditorWidget.setActiveEffectByName("Logical operators")
+    effect = segmentEditorWidget.activeEffect()
+
+    # add all segmentations
+    effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_UNION)
+
+    effect.setParameter("ModifierSegmentID", "us1")
+    effect.self().onApply()
+
+    effect.setParameter("ModifierSegmentID", "us2")
+    effect.self().onApply()
+
+    effect.setParameter("ModifierSegmentID", "us3")
+    effect.self().onApply()
+
+    # intersect all segmentations
+    effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_INTERSECT)
+
+    effect.setParameter("ModifierSegmentID", "us1")
+    effect.self().onApply()
+
+    effect.setParameter("ModifierSegmentID", "us2")
+    effect.self().onApply()
+
+    effect.setParameter("ModifierSegmentID", "us3")
+    effect.self().onApply()
+
+    # TODO slicer.mrmlScene.RemoveNode(segmentEditorNode)
 
     stopTime = time.time()
     logging.info('Processing completed in {0:.2f} seconds'.format(stopTime-startTime))
-
 #
 # LandmarkingViewTest
 #
