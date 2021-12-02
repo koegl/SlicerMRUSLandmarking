@@ -86,13 +86,10 @@
    <item>
     <widget class="QPushButton" name="applyButton">
      <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="toolTip">
-      <string>Run the algorithm.</string>
+      <bool>true</bool>
      </property>
      <property name="text">
-      <string>Apply</string>
+      <string>Create intersection</string>
      </property>
     </widget>
    </item>
