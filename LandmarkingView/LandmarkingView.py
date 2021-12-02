@@ -350,23 +350,14 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     segmentEditorWidget.setActiveEffectByName("Logical operators")
     effect = segmentEditorWidget.activeEffect()
 
-    # add all segmentations
+    # add first segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_UNION)
 
     effect.setParameter("ModifierSegmentID", volume1.GetName()[0:3] + "_bb")
     effect.self().onApply()
 
-    effect.setParameter("ModifierSegmentID", volume2.GetName()[0:3] + "_bb")
-    effect.self().onApply()
-
-    effect.setParameter("ModifierSegmentID", volume3.GetName()[0:3] + "_bb")
-    effect.self().onApply()
-
-    # intersect all segmentations
+    # intersect with the next two segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_INTERSECT)
-
-    effect.setParameter("ModifierSegmentID", volume1.GetName()[0:3] + "_bb")
-    effect.self().onApply()
 
     effect.setParameter("ModifierSegmentID", volume2.GetName()[0:3] + "_bb")
     effect.self().onApply()
