@@ -21,4 +21,4 @@ THE MODULE CAN CURRENTLY CREATE AN INTERSECTION OF THREE US VOLUMES
    1. either the button marked in red in the screenshot below
    ![Outline/fill button in views](misc/outline_button.png)
    2. or in the Segmentations module with the buttons marked in red in the screenshot below
-   3. ![Outline/fill button in the Segmentation module](misc/outline_button_insegs.png)
+   ![Outline/fill button in the Segmentation module](misc/outline_button_insegs.png)
