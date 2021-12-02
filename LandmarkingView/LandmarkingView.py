@@ -135,10 +135,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.inputSelector1.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-    # self.ui.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-    # self.ui.imageThresholdSliderWidget.connect("valueChanged(double)", self.updateParameterNodeFromGUI)
-    # self.ui.invertOutputCheckBox.connect("toggled(bool)", self.updateParameterNodeFromGUI)
-    # self.ui.invertedOutputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
     # Buttons
     self.ui.applyButton.connect('clicked(bool)', self.onApplyButton)
@@ -201,10 +197,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Set and observe parameter node.
     Observation is needed because when the parameter node is changed then the GUI must be updated immediately.
     """
-
-    if inputParameterNode:
-      self.logic.setDefaultParameters(inputParameterNode)
-
+    
     # Unobserve previously selected parameter node and add an observer to the newly selected.
     # Changes of parameter node are observed so that whenever parameters are changed by a script or any other module
     # those are reflected immediately in the GUI.
@@ -233,18 +226,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.inputSelector1.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume1"))
     self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
     self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
-    # self.ui.outputSelector.setCurrentNode(self._parameterNode.GetNodeReference("OutputVolume"))
-    # self.ui.invertedOutputSelector.setCurrentNode(self._parameterNode.GetNodeReference("OutputVolumeInverse"))
-    # self.ui.imageThresholdSliderWidget.value = float(self._parameterNode.GetParameter("Threshold"))
-    # self.ui.invertOutputCheckBox.checked = (self._parameterNode.GetParameter("Invert") == "true")
-
-    # Update buttons states and tooltips
-    # if self._parameterNode.GetNodeReference("InputVolume") and self._parameterNode.GetNodeReference("OutputVolume"):
-    #   self.ui.applyButton.toolTip = "Compute output volume"
-    #   self.ui.applyButton.enabled = True
-    # else:
-    #   self.ui.applyButton.toolTip = "Select input and output volume nodes"
-    #   self.ui.applyButton.enabled = True
 
     # All the GUI updates are done
     self._updatingGUIFromParameterNode = False
@@ -264,11 +245,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode.SetNodeReferenceID("InputVolume2", self.ui.inputSelector2.currentNodeID)
     self._parameterNode.SetNodeReferenceID("InputVolume3", self.ui.inputSelector3.currentNodeID)
 
-    # self._parameterNode.SetNodeReferenceID("OutputVolume", self.ui.outputSelector.currentNodeID)
-    # self._parameterNode.SetParameter("Threshold", str(self.ui.imageThresholdSliderWidget.value))
-    # self._parameterNode.SetParameter("Invert", "true" if self.ui.invertOutputCheckBox.checked else "false")
-    # TODO self._parameterNode.SetNodeReferenceID("OutputVolumeInverse", self.ui.invertedOutputSelector.currentNodeID)
-
     self._parameterNode.EndModify(wasModified)
 
   def onApplyButton(self):
@@ -281,11 +257,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.logic.process(self.ui.inputSelector1.currentNode(),
                          self.ui.inputSelector2.currentNode(),
                          self.ui.inputSelector3.currentNode())
-
-      # # Compute inverted output (if needed)
-      # if self.ui.invertedOutputSelector.currentNode():
-      #   # If additional output volume is selected then result with inverted threshold is written there
-      #   self.logic.process(self.ui.inputSelector.currentNode())
 
     except Exception as e:
       slicer.util.errorDisplay("Failed to compute results: "+str(e))
@@ -312,15 +283,6 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     Called when the logic class is instantiated. Can be used for initializing member variables.
     """
     ScriptedLoadableModuleLogic.__init__(self)
-
-  def setDefaultParameters(self, parameterNode):
-    """
-    Initialize parameter node with default settings.
-    """
-    if not parameterNode.GetParameter("Threshold"):
-      parameterNode.SetParameter("Threshold", "100.0")
-    if not parameterNode.GetParameter("Invert"):
-      parameterNode.SetParameter("Invert", "false")
 
   @staticmethod
   def setup_segment_editor(segment_name, segmentationNode=None, volumeNode=None):
@@ -349,15 +311,6 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
       segmentEditorWidget.setMasterVolumeNode(volumeNode)
 
     return segmentEditorWidget, segmentEditorNode, segmentationNode
-
-  # @staticmethod
-  # def remove_leftover_segments(segmentationNode):
-  #   num_segments = segmentationNode.GetSegmentation().GetNumberOfSegments()
-  #
-  #   for i in range(num_segments - 1):
-  #     segment = segmentationNode.GetSegmentation().GetNthSegment(i)
-  #     slicer.mrmlScene.RemoveNode(segment)
-
 
   def process(self, volume1, volume2, volume3):
     """
