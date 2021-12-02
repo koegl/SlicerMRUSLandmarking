@@ -7,3 +7,4 @@
 # Editor-based HTTP Client requests
 /httpRequests/
 LandmarkingView/__pycache__/
+/__pycache__
