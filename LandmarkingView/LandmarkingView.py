@@ -239,12 +239,12 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # self.ui.invertOutputCheckBox.checked = (self._parameterNode.GetParameter("Invert") == "true")
 
     # Update buttons states and tooltips
-    if self._parameterNode.GetNodeReference("InputVolume") and self._parameterNode.GetNodeReference("OutputVolume"):
-      self.ui.applyButton.toolTip = "Compute output volume"
-      self.ui.applyButton.enabled = True
-    else:
-      self.ui.applyButton.toolTip = "Select input and output volume nodes"
-      self.ui.applyButton.enabled = True
+    # if self._parameterNode.GetNodeReference("InputVolume") and self._parameterNode.GetNodeReference("OutputVolume"):
+    #   self.ui.applyButton.toolTip = "Compute output volume"
+    #   self.ui.applyButton.enabled = True
+    # else:
+    #   self.ui.applyButton.toolTip = "Select input and output volume nodes"
+    #   self.ui.applyButton.enabled = True
 
     # All the GUI updates are done
     self._updatingGUIFromParameterNode = False
@@ -350,6 +350,15 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     return segmentEditorWidget, segmentEditorNode, segmentationNode
 
+  # @staticmethod
+  # def remove_leftover_segments(segmentationNode):
+  #   num_segments = segmentationNode.GetSegmentation().GetNumberOfSegments()
+  #
+  #   for i in range(num_segments - 1):
+  #     segment = segmentationNode.GetSegmentation().GetNthSegment(i)
+  #     slicer.mrmlScene.RemoveNode(segment)
+
+
   def process(self, volume1, volume2, volume3):
     """
     Creates the intersectin of the first three volumes and siplays it as an outline
@@ -365,12 +374,14 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     # initialise segment editor
     segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor("us_outlines")
 
-    for volume in usVolumes:
+    addedSegmentID = []
+
+    for idx, volume in enumerate(usVolumes):
       segmentEditorWidget.setMasterVolumeNode(volume)
 
       # Create segment
-      addedSegmentID = segmentationNode.GetSegmentation().AddEmptySegment(volume.GetName())
-      segmentEditorNode.SetSelectedSegmentID(addedSegmentID)
+      addedSegmentID.append(segmentationNode.GetSegmentation().AddEmptySegment(volume.GetName()[0:3] + "_bb"))
+      segmentEditorNode.SetSelectedSegmentID(addedSegmentID[idx])
 
       # Fill by thresholding
       segmentEditorWidget.setActiveEffectByName("Threshold")
@@ -389,31 +400,35 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     # add all segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_UNION)
 
-    effect.setParameter("ModifierSegmentID", volume1.GetName())
+    effect.setParameter("ModifierSegmentID", volume1.GetName()[0:3] + "_bb")
     effect.self().onApply()
 
-    effect.setParameter("ModifierSegmentID", volume2.GetName())
+    effect.setParameter("ModifierSegmentID", volume2.GetName()[0:3] + "_bb")
     effect.self().onApply()
 
-    effect.setParameter("ModifierSegmentID", volume3.GetName())
+    effect.setParameter("ModifierSegmentID", volume3.GetName()[0:3] + "_bb")
     effect.self().onApply()
 
     # intersect all segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_INTERSECT)
 
-    effect.setParameter("ModifierSegmentID", volume1.GetName())
+    effect.setParameter("ModifierSegmentID", volume1.GetName()[0:3] + "_bb")
     effect.self().onApply()
 
-    effect.setParameter("ModifierSegmentID", volume2.GetName())
+    effect.setParameter("ModifierSegmentID", volume2.GetName()[0:3] + "_bb")
     effect.self().onApply()
 
-    effect.setParameter("ModifierSegmentID", volume3.GetName())
+    effect.setParameter("ModifierSegmentID", volume3.GetName()[0:3] + "_bb")
     effect.self().onApply()
 
-    # TODO slicer.mrmlScene.RemoveNode(segmentEditorNode)
+    # remove segments
+    for id in addedSegmentID:
+      if "intersection" not in id:
+        segmentationNode.RemoveSegment(id)
 
     stopTime = time.time()
     logging.info('Processing completed in {0:.2f} seconds'.format(stopTime-startTime))
+
 #
 # LandmarkingViewTest
 #
