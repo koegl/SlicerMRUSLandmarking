@@ -346,6 +346,8 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     # https://slicer.readthedocs.io/en/latest/developer_guide/modules/segmenteditor.html#effect-parameters
     # https://discourse.slicer.org/t/how-to-programmatically-use-logical-operator-add-function-from-segment-editor/16581/2
+    # https://discourse.slicer.org/t/how-to-change-the-slice-fill-in-segmentations-in-a-python-script/20871/2
+    # Display settings are stored in the display node
     intersection_segment_id = segmentationNode.GetSegmentation().AddEmptySegment("intersection")
     segmentEditorNode.SetSelectedSegmentID(intersection_segment_id)
     segmentEditorWidget.setActiveEffectByName("Logical operators")
