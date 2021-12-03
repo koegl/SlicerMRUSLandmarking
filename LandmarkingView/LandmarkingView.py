@@ -322,7 +322,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     names = ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
     # TODO adapt the code so it does not only work for the hard-coded three names
-    if volume1 not in names or volume2 not in names or volume3 not in names:
+    if volume1.GetName() not in names or volume2.GetName() not in names or volume3.GetName() not in names:
       raise Exception("Wrong volumes selected. The only allowed volumes at the moment are:\n\"US1 Pre-dura\", "
                       "\"US2 Post-dura\" and \"US3 Resection Control\"")
 
