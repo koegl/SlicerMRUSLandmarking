@@ -320,6 +320,12 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     if volume1 is None or volume2 is None or volume3 is None:
       raise Exception("Select all three volumes")
 
+    names = ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
+    # TODO adapt the code so it does not only work for the hard-coded three names
+    if volume1 not in names or volume2 not in names or volume3 not in names:
+      raise Exception("Wrong volumes selected. The only allowed volumes at the moment are:\n\"US1 Pre-dura\", "
+                      "\"US2 Post-dura\" and \"US3 Resection Control\"")
+
     import time
     startTime = time.time()
     logging.info('Processing started')
