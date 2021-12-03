@@ -142,7 +142,7 @@ def change_view(direction='forward'):
         print("No volumes to set for foreground and background")
 
 
-def change_foreground_opacity(new_opacity=0.5):
+def change_foreground_opacity_discrete(new_opacity=0.5):
     layoutManager = slicer.app.layoutManager()
 
     # iterate through all views and set opacity to
@@ -154,14 +154,29 @@ def change_foreground_opacity(new_opacity=0.5):
         compositeNode.SetForegroundOpacity(new_opacity)
 
 
+def change_foreground_opacity_continuous(opacity_change=0.01):
+
+    layoutManager = slicer.app.layoutManager()
+
+    # iterate through all views and set opacity to
+    for sliceViewName in layoutManager.sliceViewNames():
+        view = layoutManager.sliceWidget(sliceViewName).sliceView()
+        sliceNode = view.mrmlSliceNode()
+        sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+        compositeNode = sliceLogic.GetSliceCompositeNode()
+        compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
+
+
 interactionNode = slicer.app.applicationLogic().GetInteractionNode()
 
 shortcuts = [('d', lambda: interactionNode.SetCurrentInteractionMode(interactionNode.Place)),  # fiducial placement
              ('a', functools.partial(change_view, "backward")),  # volume switching dir1
              ('s', functools.partial(change_view, "forward")),  # volume switching dir2
-             ('1', functools.partial(change_foreground_opacity, 0.0)),  # change opacity to 0.5
-             ('2', functools.partial(change_foreground_opacity, 0.5)),  # change opacity to 0.5
-             ('3', functools.partial(change_foreground_opacity, 1.0))]  # change opacity to 1.0
+             ('1', functools.partial(change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.5
+             ('2', functools.partial(change_foreground_opacity_discrete, 0.5)),  # change opacity to 0.5
+             ('3', functools.partial(change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
+             ('q', functools.partial(change_foreground_opacity_continuous, 0.01)),  # increase opacity by 0.01
+             ('w', functools.partial(change_foreground_opacity_continuous,  -0.01))]  # decrease opacity by 0.01
 
 for (shortcutKey, callback) in shortcuts:
     shortcut = qt.QShortcut(slicer.util.mainWindow())
