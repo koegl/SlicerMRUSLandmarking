@@ -317,6 +317,9 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     Creates the intersectin of the first three volumes and siplays it as an outline
     """
 
+    if volume1 is None or volume2 is None or volume3 is None:
+      raise Exception("Select all three volumes")
+
     import time
     startTime = time.time()
     logging.info('Processing started')
