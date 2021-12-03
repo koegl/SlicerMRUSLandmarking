@@ -14,6 +14,7 @@
 # Switching to markups control point placement mode
 # switching between us volumes (the us-volumes are hardcoded now) # TODO un-hardcode the volumes - somehow get them from
 # my extension
+import functools
 
 
 def initialise_views(volumes=None):
@@ -72,7 +73,7 @@ def initialise_views(volumes=None):
     return compositeNode
 
 
-def change_view_forward():
+def change_view(direction='forward'):
 
     volumes = ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
     volume_background = None
@@ -90,85 +91,62 @@ def change_view_forward():
     current_background_name = current_background_volume.GetName()
 
     # switch backgrounds
-    if current_background_name == volumes[2] and current_foreground_name == volumes[1]:
-        volume_background = current_foreground_volume
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
-    elif current_background_name == volumes[1] and current_foreground_name == volumes[0]:
-        volume_background = current_foreground_volume
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
-    elif current_background_name == volumes[0] and current_foreground_name == volumes[2]:
-        volume_background = current_foreground_volume
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+    if direction == 'forward':
+        if current_background_name == volumes[2] and current_foreground_name == volumes[1]:
+            volume_background = current_foreground_volume
+            volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
+        elif current_background_name == volumes[1] and current_foreground_name == volumes[0]:
+            volume_background = current_foreground_volume
+            volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+        elif current_background_name == volumes[0] and current_foreground_name == volumes[2]:
+            volume_background = current_foreground_volume
+            volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
 
-    elif current_background_name == volumes[2] and current_foreground_name == volumes[0]:
-        volume_foreground = current_background_volume
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
-    elif current_background_name == volumes[0] and current_foreground_name == volumes[1]:
-        volume_foreground = current_background_volume
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
-    elif current_background_name == volumes[1] and current_foreground_name == volumes[2]:
-        volume_foreground = current_background_volume
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
+        elif current_background_name == volumes[2] and current_foreground_name == volumes[0]:
+            volume_foreground = current_background_volume
+            volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+        elif current_background_name == volumes[0] and current_foreground_name == volumes[1]:
+            volume_foreground = current_background_volume
+            volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+        elif current_background_name == volumes[1] and current_foreground_name == volumes[2]:
+            volume_foreground = current_background_volume
+            volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
+    elif direction == 'backward':
+        if current_background_name == volumes[2] and current_foreground_name == volumes[1]:
+            volume_foreground = current_background_volume
+            volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
+        elif current_background_name == volumes[1] and current_foreground_name == volumes[0]:
+            volume_foreground = current_background_volume
+            volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+        elif current_background_name == volumes[0] and current_foreground_name == volumes[2]:
+            volume_foreground = current_background_volume
+            volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
 
-    # update volumes (if they both exist)
-    if volume_foreground and volume_background:
-        slicer.util.setSliceViewerLayers(background=volume_background, foreground=volume_foreground)
-    else:
-        print("No volumes to set for foreground and background")
-
-
-def change_view_backward():
-
-    volumes = ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
-    volume_background = None
-    volume_foreground = None
-
-    # initialise views and get the composite node
-    compositeNode = initialise_views()
-
-    # TODO link all views (red, green and yellow)
-    # set variables for current foreground and background
-    current_background_id = compositeNode.GetBackgroundVolumeID()
-    current_foreground_id = compositeNode.GetForegroundVolumeID()
-    current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
-    current_background_volume = slicer.mrmlScene.GetNodeByID(current_background_id)
-    current_foreground_name = current_foreground_volume.GetName()
-    current_background_name = current_background_volume.GetName()
-
-    # switch backgrounds
-    if current_background_name == volumes[2] and current_foreground_name == volumes[1]:
-        volume_foreground = current_background_volume
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
-    elif current_background_name == volumes[1] and current_foreground_name == volumes[0]:
-        volume_foreground = current_background_volume
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
-    elif current_background_name == volumes[0] and current_foreground_name == volumes[2]:
-        volume_foreground = current_background_volume
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
-
-    elif current_background_name == volumes[2] and current_foreground_name == volumes[0]:
-        volume_background = current_foreground_volume
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
-    elif current_background_name == volumes[0] and current_foreground_name == volumes[1]:
-        volume_background = current_foreground_volume
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
-    elif current_background_name == volumes[1] and current_foreground_name == volumes[2]:
-        volume_background = current_foreground_volume
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
+        elif current_background_name == volumes[2] and current_foreground_name == volumes[0]:
+            volume_background = current_foreground_volume
+            volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+        elif current_background_name == volumes[0] and current_foreground_name == volumes[1]:
+            volume_background = current_foreground_volume
+            volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+        elif current_background_name == volumes[1] and current_foreground_name == volumes[2]:
+            volume_background = current_foreground_volume
+            volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
 
     # update volumes (if they both exist)
     if volume_foreground and volume_background:
-        slicer.util.setSliceViewerLayers(background=volume_background, foreground=volume_foreground)
+        if direction == 'backward' or direction == 'forward':
+            slicer.util.setSliceViewerLayers(background=volume_background, foreground=volume_foreground)
+        else:
+            print("wrong direction")
     else:
         print("No volumes to set for foreground and background")
 
 
 interactionNode = slicer.app.applicationLogic().GetInteractionNode()
 
-
 shortcuts = [('d', lambda: interactionNode.SetCurrentInteractionMode(interactionNode.Place)),
-             ('a', change_view_forward),
-             ('s', change_view_backward)]
+             ('a', functools.partial(change_view, "backward")),
+             ('s', functools.partial(change_view, "forward"))]
 
 for (shortcutKey, callback) in shortcuts:
     shortcut = qt.QShortcut(slicer.util.mainWindow())
