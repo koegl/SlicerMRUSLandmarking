@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>267</width>
+    <width>496</width>
     <height>405</height>
    </rect>
   </property>
@@ -17,27 +17,6 @@
       <string>Inputs</string>
      </property>
      <layout class="QFormLayout" name="formLayout_2">
-      <item row="0" column="1">
-       <widget class="qMRMLNodeComboBox" name="inputSelector1">
-        <property name="toolTip">
-         <string/>
-        </property>
-        <property name="nodeTypes">
-         <stringlist>
-          <string>vtkMRMLScalarVolumeNode</string>
-         </stringlist>
-        </property>
-        <property name="showChildNodeTypes">
-         <bool>false</bool>
-        </property>
-        <property name="addEnabled">
-         <bool>false</bool>
-        </property>
-        <property name="removeEnabled">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label1">
         <property name="text">
@@ -45,8 +24,11 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="qMRMLNodeComboBox" name="inputSelector2">
+      <item row="0" column="1">
+       <widget class="qMRMLNodeComboBox" name="inputSelector1">
+        <property name="toolTip">
+         <string/>
+        </property>
         <property name="nodeTypes">
          <stringlist>
           <string>vtkMRMLScalarVolumeNode</string>
@@ -70,8 +52,23 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="qMRMLNodeComboBox" name="inputSelector3"/>
+      <item row="1" column="1">
+       <widget class="qMRMLNodeComboBox" name="inputSelector2">
+        <property name="nodeTypes">
+         <stringlist>
+          <string>vtkMRMLScalarVolumeNode</string>
+         </stringlist>
+        </property>
+        <property name="showChildNodeTypes">
+         <bool>false</bool>
+        </property>
+        <property name="addEnabled">
+         <bool>false</bool>
+        </property>
+        <property name="removeEnabled">
+         <bool>false</bool>
+        </property>
+       </widget>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label3">
@@ -79,6 +76,9 @@
          <string>Input US3</string>
         </property>
        </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="qMRMLNodeComboBox" name="inputSelector3"/>
       </item>
      </layout>
     </widget>
@@ -94,6 +94,65 @@
     </widget>
    </item>
    <item>
+    <widget class="ctkCollapsibleButton" name="inputsCollapsibleButton2">
+     <property name="text">
+      <string>Keyboard shortcuts</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_2">
+      <item row="0" column="1">
+       <widget class="QListWidget" name="listWidget1">
+        <property name="font">
+         <font>
+          <family>Courier New</family>
+          <pointsize>8</pointsize>
+         </font>
+        </property>
+        <item>
+         <property name="text">
+          <string>d: set new fiducial</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>a: move forward through US volumes</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>s: move forward through US volumes</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>1: foreground opacity to 0.0</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>2: foreground opacity to 0.5</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>3: foreground opacity to 1.0</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>q: increase foreground opacity</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>w: decrease foreground opacity</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -105,71 +164,6 @@
       </size>
      </property>
     </spacer>
-   </item>
-   <item alignment="Qt::AlignHCenter">
-    <widget class="QLabel" name="label">
-     <property name="font">
-      <font>
-       <pointsize>10</pointsize>
-       <weight>75</weight>
-       <bold>true</bold>
-       <underline>true</underline>
-      </font>
-     </property>
-     <property name="text">
-      <string>Shortcuts</string>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QListWidget" name="listWidget">
-     <property name="font">
-      <font>
-       <family>Courier New</family>
-       <pointsize>8</pointsize>
-      </font>
-     </property>
-     <item>
-      <property name="text">
-       <string>d: set new fiducial</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>a: move forward through US volumes</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>s: move forward through US volumes</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>1: foreground opacity to 0.0</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>2: foreground opacity to 0.5</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>3: foreground opacity to 1.0</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>q: increase foreground opacity</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>w: decrease foreground opacity</string>
-      </property>
-     </item>
-    </widget>
    </item>
   </layout>
  </widget>
