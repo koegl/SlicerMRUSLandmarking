@@ -4,6 +4,7 @@ import logging
 import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
+import SegmentEditorEffects
 
 #
 # LandmarkingView
@@ -131,11 +132,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
     # (in the selected parameter node).
-    self.ui.inputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-    self.ui.outputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-    self.ui.imageThresholdSliderWidget.connect("valueChanged(double)", self.updateParameterNodeFromGUI)
-    self.ui.invertOutputCheckBox.connect("toggled(bool)", self.updateParameterNodeFromGUI)
-    self.ui.invertedOutputSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+    self.ui.inputSelector1.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+    self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+    self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
     # Buttons
     self.ui.applyButton.connect('clicked(bool)', self.onApplyButton)
@@ -198,10 +197,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Set and observe parameter node.
     Observation is needed because when the parameter node is changed then the GUI must be updated immediately.
     """
-
-    if inputParameterNode:
-      self.logic.setDefaultParameters(inputParameterNode)
-
+    
     # Unobserve previously selected parameter node and add an observer to the newly selected.
     # Changes of parameter node are observed so that whenever parameters are changed by a script or any other module
     # those are reflected immediately in the GUI.
@@ -227,19 +223,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._updatingGUIFromParameterNode = True
 
     # Update node selectors and sliders
-    self.ui.inputSelector.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume"))
-    self.ui.outputSelector.setCurrentNode(self._parameterNode.GetNodeReference("OutputVolume"))
-    self.ui.invertedOutputSelector.setCurrentNode(self._parameterNode.GetNodeReference("OutputVolumeInverse"))
-    self.ui.imageThresholdSliderWidget.value = float(self._parameterNode.GetParameter("Threshold"))
-    self.ui.invertOutputCheckBox.checked = (self._parameterNode.GetParameter("Invert") == "true")
-
-    # Update buttons states and tooltips
-    if self._parameterNode.GetNodeReference("InputVolume") and self._parameterNode.GetNodeReference("OutputVolume"):
-      self.ui.applyButton.toolTip = "Compute output volume"
-      self.ui.applyButton.enabled = True
-    else:
-      self.ui.applyButton.toolTip = "Select input and output volume nodes"
-      self.ui.applyButton.enabled = False
+    self.ui.inputSelector1.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume1"))
+    self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
+    self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
 
     # All the GUI updates are done
     self._updatingGUIFromParameterNode = False
@@ -255,11 +241,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     wasModified = self._parameterNode.StartModify()  # Modify all properties in a single batch
 
-    self._parameterNode.SetNodeReferenceID("InputVolume", self.ui.inputSelector.currentNodeID)
-    self._parameterNode.SetNodeReferenceID("OutputVolume", self.ui.outputSelector.currentNodeID)
-    self._parameterNode.SetParameter("Threshold", str(self.ui.imageThresholdSliderWidget.value))
-    self._parameterNode.SetParameter("Invert", "true" if self.ui.invertOutputCheckBox.checked else "false")
-    self._parameterNode.SetNodeReferenceID("OutputVolumeInverse", self.ui.invertedOutputSelector.currentNodeID)
+    self._parameterNode.SetNodeReferenceID("InputVolume1", self.ui.inputSelector1.currentNodeID)
+    self._parameterNode.SetNodeReferenceID("InputVolume2", self.ui.inputSelector2.currentNodeID)
+    self._parameterNode.SetNodeReferenceID("InputVolume3", self.ui.inputSelector3.currentNodeID)
 
     self._parameterNode.EndModify(wasModified)
 
@@ -270,14 +254,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     try:
 
       # Compute output
-      self.logic.process(self.ui.inputSelector.currentNode(), self.ui.outputSelector.currentNode(),
-        self.ui.imageThresholdSliderWidget.value, self.ui.invertOutputCheckBox.checked)
-
-      # Compute inverted output (if needed)
-      if self.ui.invertedOutputSelector.currentNode():
-        # If additional output volume is selected then result with inverted threshold is written there
-        self.logic.process(self.ui.inputSelector.currentNode(), self.ui.invertedOutputSelector.currentNode(),
-          self.ui.imageThresholdSliderWidget.value, not self.ui.invertOutputCheckBox.checked, showResult=False)
+      self.logic.process(self.ui.inputSelector1.currentNode(),
+                         self.ui.inputSelector2.currentNode(),
+                         self.ui.inputSelector3.currentNode())
 
     except Exception as e:
       slicer.util.errorDisplay("Failed to compute results: "+str(e))
@@ -305,43 +284,102 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     """
     ScriptedLoadableModuleLogic.__init__(self)
 
-  def setDefaultParameters(self, parameterNode):
+  @staticmethod
+  def setup_segment_editor(segment_name, segmentationNode=None, volumeNode=None):
     """
-    Initialize parameter node with default settings.
-    """
-    if not parameterNode.GetParameter("Threshold"):
-      parameterNode.SetParameter("Threshold", "100.0")
-    if not parameterNode.GetParameter("Invert"):
-      parameterNode.SetParameter("Invert", "false")
-
-  def process(self, inputVolume, outputVolume, imageThreshold, invert=False, showResult=True):
-    """
-    Run the processing algorithm.
-    Can be used without GUI widget.
-    :param inputVolume: volume to be thresholded
-    :param outputVolume: thresholding result
-    :param imageThreshold: values above/below this threshold will be set to 0
-    :param invert: if True then values above the threshold will be set to 0, otherwise values below are set to 0
-    :param showResult: show output volume in slice viewers
+    Runs standard setup of segment editor widget and segment editor node
+    :param segmentationNode a seg node you can also pass
+    :param volumeNode a volume node you can pass
     """
 
-    if not inputVolume or not outputVolume:
-      raise ValueError("Input or output volume is invalid")
+    if segmentationNode is None:
+      # Create segmentation node
+      segmentationNode = slicer.vtkMRMLSegmentationNode()
+      slicer.mrmlScene.AddNode(segmentationNode)
+      segmentationNode.CreateDefaultDisplayNodes()
+      segmentationNode.SetName(segment_name)
+
+    segmentEditorWidget = slicer.qMRMLSegmentEditorWidget()
+    segmentEditorNode = slicer.vtkMRMLSegmentEditorNode()
+    segmentEditorNode.SetOverwriteMode(slicer.vtkMRMLSegmentEditorNode.OverwriteNone)
+    slicer.mrmlScene.AddNode(segmentEditorNode)
+    segmentEditorWidget.setMRMLSegmentEditorNode(segmentEditorNode)
+    segmentEditorWidget.setSegmentationNode(segmentationNode)
+    segmentEditorWidget.setMRMLScene(slicer.mrmlScene)
+
+    if volumeNode:
+      segmentEditorWidget.setMasterVolumeNode(volumeNode)
+
+    return segmentEditorWidget, segmentEditorNode, segmentationNode
+
+  def process(self, volume1, volume2, volume3):
+    """
+    Creates the intersectin of the first three volumes and siplays it as an outline
+    """
 
     import time
     startTime = time.time()
     logging.info('Processing started')
 
-    # Compute the thresholded output volume using the "Threshold Scalar Volume" CLI module
-    cliParams = {
-      'InputVolume': inputVolume.GetID(),
-      'OutputVolume': outputVolume.GetID(),
-      'ThresholdValue' : imageThreshold,
-      'ThresholdType' : 'Above' if invert else 'Below'
-      }
-    cliNode = slicer.cli.run(slicer.modules.thresholdscalarvolume, None, cliParams, wait_for_completion=True, update_display=showResult)
-    # We don't need the CLI module node anymore, remove it to not clutter the scene with it
-    slicer.mrmlScene.RemoveNode(cliNode)
+    # usVolumes = slicer.util.getNodesByClass("vtkMRMLScalarVolumeNode")
+    usVolumes = (volume1, volume2, volume3)
+
+    # initialise segment editor
+    segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor("us_outlines")
+
+    addedSegmentID = []
+
+    # for each volume create a threshold segmentation
+    for idx, volume in enumerate(usVolumes):
+      segmentEditorWidget.setMasterVolumeNode(volume)
+
+      # Create segment
+      addedSegmentID.append(segmentationNode.GetSegmentation().AddEmptySegment(volume.GetName()[0:3] + "_bb"))
+      segmentEditorNode.SetSelectedSegmentID(addedSegmentID[idx])
+
+      # Fill by thresholding
+      segmentEditorWidget.setActiveEffectByName("Threshold")
+      effect = segmentEditorWidget.activeEffect()
+      effect.setParameter("MinimumThreshold", "1")
+      effect.setParameter("MaximumThreshold", "255")
+      effect.self().onApply()
+
+    # https://slicer.readthedocs.io/en/latest/developer_guide/modules/segmenteditor.html#effect-parameters
+    # https://discourse.slicer.org/t/how-to-programmatically-use-logical-operator-add-function-from-segment-editor/16581/2
+    # https://discourse.slicer.org/t/how-to-change-the-slice-fill-in-segmentations-in-a-python-script/20871/2
+    # Display settings are stored in the display node
+    intersection_segment_id = segmentationNode.GetSegmentation().AddEmptySegment("intersection")
+    segmentEditorNode.SetSelectedSegmentID(intersection_segment_id)
+    segmentEditorWidget.setActiveEffectByName("Logical operators")
+    effect = segmentEditorWidget.activeEffect()
+
+    # add first segmentations
+    effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_UNION)
+
+    effect.setParameter("ModifierSegmentID", volume1.GetName()[0:3] + "_bb")
+    effect.self().onApply()
+
+    # intersect with the next two segmentations
+    effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_INTERSECT)
+
+    effect.setParameter("ModifierSegmentID", volume2.GetName()[0:3] + "_bb")
+    effect.self().onApply()
+
+    effect.setParameter("ModifierSegmentID", volume3.GetName()[0:3] + "_bb")
+    effect.self().onApply()
+
+    # remove segments
+    for id in addedSegmentID:
+      if "intersection" not in id:
+        segmentationNode.RemoveSegment(id)
+
+    # display only outline
+    # https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html#modify-segmentation-display-options
+    # http://apidocs.slicer.org/master/classvtkMRMLSegmentationDisplayNode.html#afeca62a2a79513ab275db3840136709c
+    segmentation = slicer.mrmlScene.GetFirstNodeByName('us_outlines')
+    displayNode = segmentation.GetDisplayNode()
+    displayNode.SetSegmentOpacity2DFill(intersection_segment_id, 0.0)  # Set fill opacity of a single segment
+    displayNode.SetSegmentOpacity2DOutline(intersection_segment_id, 1.0)  # Set outline opacity of a single segment
 
     stopTime = time.time()
     logging.info('Processing completed in {0:.2f} seconds'.format(stopTime-startTime))
