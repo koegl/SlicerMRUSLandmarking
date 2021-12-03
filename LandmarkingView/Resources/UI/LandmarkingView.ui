@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>279</width>
-    <height>292</height>
+    <width>267</width>
+    <height>405</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -105,6 +105,71 @@
       </size>
      </property>
     </spacer>
+   </item>
+   <item alignment="Qt::AlignHCenter">
+    <widget class="QLabel" name="label">
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+       <underline>true</underline>
+      </font>
+     </property>
+     <property name="text">
+      <string>Shortcuts</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QListWidget" name="listWidget">
+     <property name="font">
+      <font>
+       <family>Courier New</family>
+       <pointsize>8</pointsize>
+      </font>
+     </property>
+     <item>
+      <property name="text">
+       <string>d: set new fiducial</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>a: move forward through US volumes</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>s: move forward through US volumes</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>1: foreground opacity to 0.0</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>2: foreground opacity to 0.5</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>3: foreground opacity to 1.0</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>q: increase foreground opacity</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>w: decrease foreground opacity</string>
+      </property>
+     </item>
+    </widget>
    </item>
   </layout>
  </widget>
