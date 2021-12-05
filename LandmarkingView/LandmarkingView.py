@@ -245,6 +245,7 @@ class ExtensionEnvironment():
 
   def __change_foreground_opacity_discrete(self, new_opacity=0.5):
     layoutManager = slicer.app.layoutManager()
+    print(layoutManager)
 
     # iterate through all views and set opacity to
     for sliceViewName in layoutManager.sliceViewNames():
@@ -265,6 +266,26 @@ class ExtensionEnvironment():
       sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
       compositeNode = sliceLogic.GetSliceCompositeNode()
       compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
+
+  def __set_foreground_threshold(self):
+    """
+    Set foreground threshold to 1, so that the surrounding black pixels disappear
+    """
+    # get current foreground
+    layoutManager = slicer.app.layoutManager()
+    view = layoutManager.sliceWidget('Red').sliceView()
+    sliceNode = view.mrmlSliceNode()
+    sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+    compositeNode = sliceLogic.GetSliceCompositeNode()
+
+    current_foreground_id = compositeNode.GetForegroundVolumeID()
+    print(current_foreground_id)
+    current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
+    current_foreground_name = current_foreground_volume.GetName()
+
+    volNode = slicer.util.getNode(current_foreground_name)
+    dispNode = volNode.GetDisplayNode()
+    dispNode.SetLowerThreshold(1)  # 1 because we want to surrounding black pixels to disappear
 
   def linkViews(self):
     """
@@ -292,7 +313,8 @@ class ExtensionEnvironment():
                       ('2', functools.partial(self.__change_foreground_opacity_discrete, 0.5)),  # change opacity to 0.5
                       ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
                       ('q', functools.partial(self.__change_foreground_opacity_continuous, 0.02)),  # incr. op. by .01
-                      ('w', functools.partial(self.__change_foreground_opacity_continuous, -0.02))]  # decr. op. by .01
+                      ('w', functools.partial(self.__change_foreground_opacity_continuous, -0.02)),  # decr. op. by .01
+                      ('l', self.__set_foreground_threshold)]  # set foreground threshold to 1
 
   def initialiseShortcuts(self):
     for (shortcutKey, callback) in self.shortcuts:
