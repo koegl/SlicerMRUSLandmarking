@@ -39,11 +39,12 @@ and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR0132
     extension_enironment = ExtensionEnvironment()
 
     slicer.app.connect("startupCompleted()", extension_enironment.initialiseShortcuts)
-    slicer.app.connect("startupCompleted()", linkViews)
+    slicer.app.connect("startupCompleted()", extension_enironment.linkViews)
 
 #
 # Register sample data sets in Sample Data module
 #
+
 
 def registerSampleData():
   """
@@ -265,6 +266,24 @@ class ExtensionEnvironment():
       compositeNode = sliceLogic.GetSliceCompositeNode()
       compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
 
+  def linkViews(self):
+    """
+    # link views
+    # Set linked slice views  in all existing slice composite nodes and in the default node
+    """
+    sliceCompositeNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
+    defaultSliceCompositeNode = slicer.mrmlScene.GetDefaultNodeByClass("vtkMRMLSliceCompositeNode")
+    if not defaultSliceCompositeNode:
+      defaultSliceCompositeNode = slicer.mrmlScene.CreateNodeByClass("vtkMRMLSliceCompositeNode")
+      defaultSliceCompositeNode.UnRegister(
+        None)  # CreateNodeByClass is factory method, need to unregister the result to prevent memory leaks
+      slicer.mrmlScene.AddDefaultNode(defaultSliceCompositeNode)
+    sliceCompositeNodes.append(defaultSliceCompositeNode)
+    for sliceCompositeNode in sliceCompositeNodes:
+      sliceCompositeNode.SetLinkedControl(True)
+
+    print("\n\nLinking Views\n\n")
+
   def __createShortcuts(self):
     self.shortcuts = [('d', lambda: self.interactionNode.SetCurrentInteractionMode(self.interactionNode.Place)),  # fiducial placement
                       ('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
@@ -281,21 +300,6 @@ class ExtensionEnvironment():
         shortcut.setKey(qt.QKeySequence(shortcutKey))
         shortcut.connect('activated()', callback)
 
-def linkViews():
-  """
-  # automatically link views
-  # Set linked slice views  in all existing slice composite nodes and in the default node
-  """
-  sliceCompositeNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
-  defaultSliceCompositeNode = slicer.mrmlScene.GetDefaultNodeByClass("vtkMRMLSliceCompositeNode")
-  if not defaultSliceCompositeNode:
-    defaultSliceCompositeNode = slicer.mrmlScene.CreateNodeByClass("vtkMRMLSliceCompositeNode")
-    defaultSliceCompositeNode.UnRegister(
-      None)  # CreateNodeByClass is factory method, need to unregister the result to prevent memory leaks
-    slicer.mrmlScene.AddDefaultNode(defaultSliceCompositeNode)
-  sliceCompositeNodes.append(defaultSliceCompositeNode)
-  for sliceCompositeNode in sliceCompositeNodes:
-    sliceCompositeNode.SetLinkedControl(True)
 
 #
 # LandmarkingViewWidget
