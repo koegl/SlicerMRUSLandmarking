@@ -489,6 +489,7 @@ class ExtensionEnvironment:
 
     volNode = slicer.util.getNode(current_foreground_name)
     dispNode = volNode.GetDisplayNode()
+    dispNode.ApplyThresholdOn()
     dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
     #current_foreground_volume.AddObserver(slicer.vtkMRMLScalarVolumeDisplayNode.PointModifiedEvent, dispNode.SetLowerThreshold)
 
