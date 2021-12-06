@@ -36,9 +36,11 @@ class LandmarkingView(ScriptedLoadableModule):
     # Additional initialization step after application startup is complete
     slicer.app.connect("startupCompleted()", registerSampleData)
 
+    # create environment for the extension (link views and shortcuts)
     extension_environment = ExtensionEnvironment()
 
-    extension_environment.linkViews()
+    slicer.app.connect("startupCompleted()", extension_environment.initialiseShortcuts)  # shortcuts that don't depend on the chosen volumes
+    extension_environment.linkViews()  # link the red, green and yellow slices
 
 #
 # Register sample data sets in Sample Data module
@@ -113,8 +115,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.compositeNode = None
     self.volumes_names = None
 
-    extension_environment = ExtensionEnvironment()
-    extension_environment.initialiseShortcuts()  # shortcuts that don't depend on the chosen volumes
+    # extension_environment = ExtensionEnvironment()
+    # extension_environment.initialiseShortcuts()  # shortcuts that don't depend on the chosen volumes
 
     self.initialiseShortcuts()  # shortcuts for switching views that depend on the chosen volumes
 
@@ -267,7 +269,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Initialise views with the US volumes
     :return the composite node that can be used by the change view function
     """
-
+    # TODO make the exception pop, not just in the console
     if self.ui.inputSelector1.currentNode() is None or\
        self.ui.inputSelector2.currentNode() is None or\
        self.ui.inputSelector3.currentNode() is None:
@@ -333,7 +335,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :param direction:
     :return:
     """
-
+    # TODO try to simplify code, seems very complex
     self.__initialise_views()
 
     volume_background = None
@@ -461,7 +463,7 @@ class ExtensionEnvironment:
       compositeNode.SetForegroundOpacity(new_opacity)
 
   def __change_foreground_opacity_continuous(self, opacity_change=0.01):
-
+    # TODO threshold change needs to be initialized once with setting it to 0.5 with discrete, otherwise it's stuck
     layoutManager = slicer.app.layoutManager()
 
     # iterate through all views and set opacity to
