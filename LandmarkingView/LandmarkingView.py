@@ -40,6 +40,8 @@ class LandmarkingView(ScriptedLoadableModule):
     extension_environment = ExtensionEnvironment()
 
     slicer.app.connect("startupCompleted()", extension_environment.initialiseShortcuts)  # shortcuts that don't depend on the chosen volumes
+
+    # TODO this somehow doesn't work
     extension_environment.linkViews()  # link the red, green and yellow slices
 
 #
