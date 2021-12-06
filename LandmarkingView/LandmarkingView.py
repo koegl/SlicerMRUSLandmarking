@@ -41,8 +41,6 @@ class LandmarkingView(ScriptedLoadableModule):
 
     slicer.app.connect("startupCompleted()", extension_environment.initialiseShortcuts)  # shortcuts that don't depend on the chosen volumes
 
-    # TODO this somehow doesn't work
-    extension_environment.linkViews()  # link the red, green and yellow slices
 
 #
 # Register sample data sets in Sample Data module
@@ -117,10 +115,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.compositeNode = None
     self.volumes_names = None
 
-    # extension_environment = ExtensionEnvironment()
-    # extension_environment.initialiseShortcuts()  # shortcuts that don't depend on the chosen volumes
-
     self.initialiseShortcuts()  # shortcuts for switching views that depend on the chosen volumes
+
+    extension_environment = ExtensionEnvironment()
+    extension_environment.linkViews()
 
   def setup(self):
     """
