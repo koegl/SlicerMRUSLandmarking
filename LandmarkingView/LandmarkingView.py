@@ -466,8 +466,8 @@ class ExtensionEnvironment():
 
     volNode = slicer.util.getNode(current_foreground_name)
     dispNode = volNode.GetDisplayNode()
-    dispNode.SetLowerThreshold(2)  # 1 because we want to surrounding black pixels to disappear
-    dispNode.SetLowerThreshold(1)
+    dispNode.ApplyThresholdOn()
+    dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
     #current_foreground_volume.AddObserver(slicer.vtkMRMLScalarVolumeDisplayNode.PointModifiedEvent, dispNode.SetLowerThreshold)
 
   def linkViews(self):
