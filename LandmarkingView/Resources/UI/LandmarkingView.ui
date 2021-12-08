@@ -150,6 +150,9 @@
         <property name="text">
          <string>Link top and bottom row</string>
         </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
        </widget>
       </item>
      </layout>
