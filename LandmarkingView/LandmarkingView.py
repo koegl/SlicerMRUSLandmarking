@@ -102,6 +102,14 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.intersectionButton.connect('clicked(bool)', self.onIntersectionButton)
     # set foreground threshold to 1 for all chosen volumes
     self.ui.thresholdButton.connect('clicked(bool)', self.onThresholdButton)
+    # change to standard view
+    self.ui.viewStandardButton.connect('clicked(bool)', self.onViewStandardButton)
+    # change to 3 over 3 view view
+    self.ui.view3o3Button.connect('clicked(bool)', self.onView3o3Button)
+
+    # Check boxes
+    # link top and bottom view
+    self.ui.linkCheckBox.connect('clicked(bool)', self.onLinkCheckBox)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -419,9 +427,47 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
 
     except Exception as e:
-      slicer.util.errorDisplay("Failed to change lower thresholds: " + str(e))
+      slicer.util.errorDisplay("Failed to change lower thresholds. " + str(e))
 
+  def onViewStandardButton(self):
+    try:
+      slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutFourUpView)
 
+      self.ui.linkCheckBox.toolTip = "Switch to 3-over-3 view to enable linking of top and bottom row"
+      self.ui.linkCheckBox.enabled = False
+
+    except Exception as e:
+      slicer.util.errorDisplay("Failed to change to standard view. " + str(e))
+
+  def onView3o3Button(self):
+    try:
+      slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutThreeOverThreeView)
+
+      self.ui.linkCheckBox.toolTip = "Enable linking of top and bottom row"
+      self.ui.linkCheckBox.enabled = True
+    
+    except Exception as e:
+      slicer.util.errorDisplay("Failed to change to 3 over 3 view. " + str(e))
+
+  def onLinkCheckBox(self, link=True):
+
+    try:
+
+      views_normal = ["Red", "Green", "Yellow"]
+      views_plus = ["Red+", "Green+", "Yellow+"]
+
+      if link:
+        group_normal = group_plus = 0
+      else:
+        group_normal = 0
+        group_plus = 1
+
+      for i in range(3):
+        slicer.app.layoutManager().sliceWidget(views_normal[i]).mrmlSliceNode().SetViewGroup(group_normal)
+        slicer.app.layoutManager().sliceWidget(views_plus[i]).mrmlSliceNode().SetViewGroup(group_plus)
+
+    except Exception as e:
+      slicer.util.errorDisplay("Failed link (or unlink) views. " + str(e))
 #
 # Initialise Extension evnironment with linking views and shortcuts
 #
@@ -491,6 +537,7 @@ class ExtensionEnvironment:
     # link views
     # Set linked slice views  in all existing slice composite nodes and in the default node
     """
+
     sliceCompositeNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
     defaultSliceCompositeNode = slicer.mrmlScene.GetDefaultNodeByClass("vtkMRMLSliceCompositeNode")
     if not defaultSliceCompositeNode:
