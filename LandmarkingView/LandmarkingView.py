@@ -111,8 +111,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode = None
     self._updatingGUIFromParameterNode = False
 
-    extension_environment = ExtensionEnvironment()
-    extension_environment.linkViews()
+    ExtensionEnvironment.linkViews()
 
   def setup(self):
     """
@@ -508,7 +507,8 @@ class ExtensionEnvironment:
     dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
     #current_foreground_volume.AddObserver(slicer.vtkMRMLScalarVolumeDisplayNode.PointModifiedEvent, dispNode.SetLowerThreshold)
 
-  def linkViews(self):
+  @staticmethod
+  def linkViews():
     """
     # link views
     # Set linked slice views  in all existing slice composite nodes and in the default node
