@@ -140,7 +140,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
     self.addObserver(slicer.mrmlScene, slicer.mrmlScene.EndCloseEvent, self.onSceneEndClose)
 
-    # TODO add default us volems like in original extenision
+    # TODO add default us volumes like in original extenision
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
     # (in the selected parameter node).
     self.ui.inputSelector1.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
@@ -298,17 +298,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                      self.ui.inputSelector2.currentNode(),
                      self.ui.inputSelector3.currentNode()]:
 
-        # # get current foreground
-        # layoutManager = slicer.app.layoutManager()
-        # view = layoutManager.sliceWidget('Red').sliceView()
-        # sliceNode = view.mrmlSliceNode()
-        # sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
-        # compositeNode = sliceLogic.GetSliceCompositeNode()
-        #
-        # current_foreground_id = compositeNode.GetForegroundVolumeID()
-        # current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
-        # current_foreground_name = current_foreground_volume.GetName()
-
         current_name = volume.GetName()
         print("in threshold button")
 
@@ -319,8 +308,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     except Exception as e:
       slicer.util.errorDisplay("Failed to change lower thresholds: " + str(e))
-      import traceback
-      traceback.print_exc()
 
 #
 # Initialise Extension evnironment with linking views and shortcuts
