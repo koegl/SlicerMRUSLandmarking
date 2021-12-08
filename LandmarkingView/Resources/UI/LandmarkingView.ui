@@ -95,6 +95,9 @@
    </item>
    <item>
     <widget class="QPushButton" name="thresholdButton">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="text">
       <string>Set lower thresholds to 1 (to make black pixels transparent)</string>
      </property>
