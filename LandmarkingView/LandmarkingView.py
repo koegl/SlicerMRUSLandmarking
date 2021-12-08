@@ -147,6 +147,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
     self.addObserver(slicer.mrmlScene, slicer.mrmlScene.EndCloseEvent, self.onSceneEndClose)
 
+    # TODO add default us volems like in original extenision
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
     # (in the selected parameter node).
     self.ui.inputSelector1.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
@@ -154,7 +155,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
     # Buttons
-    self.ui.applyButton.connect('clicked(bool)', self.onApplyButton)
+    # create intersection outline
+    self.ui.intersectionButton.connect('clicked(bool)', self.onIntersectionButton)
+    # set foreground threshold to 1 for all chosen volumes
+    self.ui.thresholdButton.connect('clicked(bool)', self.onThresholdButton)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -269,12 +273,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Initialise views with the US volumes
     :return the composite node that can be used by the change view function
     """
-    # TODO make the exception pop, not just in the console
-    if self.ui.inputSelector1.currentNode() is None or\
-       self.ui.inputSelector2.currentNode() is None or\
-       self.ui.inputSelector3.currentNode() is None:
-      raise Exception("Not enough volumes given")
-
+    # todo shortcuts don't work after creating the intersection (not always)
     self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
                           self.ui.inputSelector2.currentNode().GetName(),
                           self.ui.inputSelector3.currentNode().GetName()]
@@ -336,6 +335,15 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :return:
     """
     # TODO try to simplify code, seems very complex
+    print("\n\nchanging view\n\n")
+
+    if self.ui.inputSelector1.currentNode() is None or\
+       self.ui.inputSelector2.currentNode() is None or\
+       self.ui.inputSelector3.currentNode() is None:
+      slicer.util.errorDisplay("Not enough volumes given for the volume switching shortcut (choose all in the 'Common "
+                               "field of view'")
+      return
+
     self.__initialise_views()
 
     volume_background = None
@@ -413,12 +421,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       shortcut.setKey(qt.QKeySequence(shortcutKey))
       shortcut.connect('activated()', callback)
 
-  def onApplyButton(self):
+  def onIntersectionButton(self):
     """
-    Run processing when user clicks "Apply" button.
+    Run processing when user clicks "Create intersection" button.
     """
     try:
-
       # Compute output
       self.logic.process(self.ui.inputSelector1.currentNode(),
                          self.ui.inputSelector2.currentNode(),
@@ -426,11 +433,41 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.__initialise_views()
 
+    except:
+      pass
+
+  def onThresholdButton(self):
+    try:
+      threshold=1
+      print("in threshold button before loop")
+      # loop through all selected volumes
+      for volume in [self.ui.inputSelector1.currentNode(),
+                     self.ui.inputSelector2.currentNode(),
+                     self.ui.inputSelector3.currentNode()]:
+
+        # # get current foreground
+        # layoutManager = slicer.app.layoutManager()
+        # view = layoutManager.sliceWidget('Red').sliceView()
+        # sliceNode = view.mrmlSliceNode()
+        # sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+        # compositeNode = sliceLogic.GetSliceCompositeNode()
+        #
+        # current_foreground_id = compositeNode.GetForegroundVolumeID()
+        # current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
+        # current_foreground_name = current_foreground_volume.GetName()
+
+        current_name = volume.GetName()
+        print("in threshold button")
+
+        volNode = slicer.util.getNode(current_name)
+        dispNode = volNode.GetDisplayNode()
+        dispNode.ApplyThresholdOn()
+        dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
+
     except Exception as e:
-      slicer.util.errorDisplay("Failed to compute results: "+str(e))
+      slicer.util.errorDisplay("Failed to change lower thresholds: " + str(e))
       import traceback
       traceback.print_exc()
-
 
 #
 # Initialise Extension evnironment with linking views and shortcuts
@@ -449,7 +486,7 @@ class ExtensionEnvironment:
     """
     Switch to the fiducial placer tool
     """
-    self. interactionNode = slicer.app.applicationLogic().GetInteractionNode()
+    self.interactionNode = slicer.app.applicationLogic().GetInteractionNode()
 
   def __change_foreground_opacity_discrete(self, new_opacity=0.5):
     layoutManager = slicer.app.layoutManager()
@@ -581,7 +618,8 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     """
 
     if volume1 is None or volume2 is None or volume3 is None:
-      raise Exception("Select all three volumes")
+      slicer.util.errorDisplay( "Select all three volumes")
+      return
 
     import time
     startTime = time.time()

@@ -14,7 +14,7 @@
    <item>
     <widget class="ctkCollapsibleButton" name="inputsCollapsibleButton">
      <property name="text">
-      <string>Inputs</string>
+      <string>Common field of view</string>
      </property>
      <layout class="QFormLayout" name="formLayout_2">
       <item row="0" column="0">
@@ -80,16 +80,26 @@
       <item row="2" column="1">
        <widget class="qMRMLNodeComboBox" name="inputSelector3"/>
       </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QPushButton" name="intersectionButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Create intersection</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="applyButton">
+    <widget class="QPushButton" name="thresholdButton">
      <property name="enabled">
       <bool>true</bool>
      </property>
      <property name="text">
-      <string>Create intersection</string>
+      <string>Set lower thresholds to 1 (to make black pixels transparent)</string>
      </property>
     </widget>
    </item>
@@ -145,6 +155,11 @@
         <item>
          <property name="text">
           <string>w: decrease foreground opacity</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>l: lower foreground threshold to 1</string>
          </property>
         </item>
        </widget>
