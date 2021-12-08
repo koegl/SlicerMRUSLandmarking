@@ -273,11 +273,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Initialise views with the US volumes
     :return the composite node that can be used by the change view function
     """
-    # TODO make the exception pop, not just in the console - maybe like this slicer.util.errorDisplay("Failed to compute intersection results: "+str(e))
-    if self.ui.inputSelector1.currentNode() is None or\
-       self.ui.inputSelector2.currentNode() is None or\
-       self.ui.inputSelector3.currentNode() is None:
-      raise Exception("Not enough volumes given")
     # todo shortcuts don't work after creating the intersection (not always)
     self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
                           self.ui.inputSelector2.currentNode().GetName(),
@@ -340,6 +335,15 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :return:
     """
     # TODO try to simplify code, seems very complex
+    print("\n\nchanging view\n\n")
+
+    if self.ui.inputSelector1.currentNode() is None or\
+       self.ui.inputSelector2.currentNode() is None or\
+       self.ui.inputSelector3.currentNode() is None:
+      slicer.util.errorDisplay("Not enough volumes given for the volume switching shortcut (choose all in the 'Common "
+                               "field of view'")
+      return
+
     self.__initialise_views()
 
     volume_background = None
@@ -429,10 +433,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.__initialise_views()
 
-    except Exception as e:
-      slicer.util.errorDisplay("Failed to compute intersection results: "+str(e))
-      import traceback
-      traceback.print_exc()
+    except:
+      pass
 
   def onThresholdButton(self):
     try:
@@ -616,7 +618,8 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     """
 
     if volume1 is None or volume2 is None or volume3 is None:
-      raise Exception("Select all three volumes")
+      slicer.util.errorDisplay( "Select all three volumes")
+      return
 
     import time
     startTime = time.time()
