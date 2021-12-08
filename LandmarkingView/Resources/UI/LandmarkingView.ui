@@ -138,6 +138,9 @@
       </item>
       <item row="3" column="0">
        <widget class="QCheckBox" name="linkCheckBox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="text">
          <string>Link top and bottom row</string>
         </property>
