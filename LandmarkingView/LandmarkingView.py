@@ -433,6 +433,12 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     try:
       slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutFourUpView)
 
+      # set slice orientation
+      sliceNodes = slicer.util.getNodesByClass("vtkMRMLSliceNode")
+      sliceNodes[0].SetOrientationToAxial()
+      sliceNodes[1].SetOrientationToCoronal()
+      sliceNodes[2].SetOrientationToSagittal()
+
       self.ui.linkCheckBox.toolTip = "Switch to 3-over-3 view to enable linking of top and bottom row"
       self.ui.linkCheckBox.enabled = False
 
@@ -443,9 +449,20 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     try:
       slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutThreeOverThreeView)
 
+      # set slice orientation
+      sliceNodes = slicer.util.getNodesByClass("vtkMRMLSliceNode")
+      sliceNodes[0].SetOrientationToAxial()
+      sliceNodes[1].SetOrientationToCoronal()
+      sliceNodes[2].SetOrientationToSagittal()
+      sliceNodes[3].SetOrientationToAxial()
+      sliceNodes[4].SetOrientationToCoronal()
+      sliceNodes[5].SetOrientationToSagittal()
+
+      self.__initialise_views()
+
       self.ui.linkCheckBox.toolTip = "Enable linking of top and bottom row"
       self.ui.linkCheckBox.enabled = True
-    
+
     except Exception as e:
       slicer.util.errorDisplay("Failed to change to 3 over 3 view. " + str(e))
 
@@ -462,6 +479,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         group_normal = 0
         group_plus = 1
 
+      # set groups
       for i in range(3):
         slicer.app.layoutManager().sliceWidget(views_normal[i]).mrmlSliceNode().SetViewGroup(group_normal)
         slicer.app.layoutManager().sliceWidget(views_plus[i]).mrmlSliceNode().SetViewGroup(group_plus)
