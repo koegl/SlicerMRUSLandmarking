@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>496</width>
+    <width>633</width>
     <height>405</height>
    </rect>
   </property>
@@ -114,12 +114,12 @@
         </item>
         <item>
          <property name="text">
-          <string>a: move forward through US volumes</string>
+          <string>a: move forward through US volumes (choose volumes first)</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>s: move forward through US volumes</string>
+          <string>s: move forward through US volumes (choose volumes first)</string>
          </property>
         </item>
         <item>
