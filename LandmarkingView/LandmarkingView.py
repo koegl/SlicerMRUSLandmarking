@@ -261,19 +261,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
-  def __create_shortcuts(self):
-    self.shortcuts = [('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
-                      ('s', functools.partial(self.__change_view, "forward"))]  # volume switching dir2]
-
-  def initialiseShortcuts(self):
-
-    self.__create_shortcuts()
-
-    for (shortcutKey, callback) in self.shortcuts:
-      shortcut = qt.QShortcut(slicer.util.mainWindow())
-      shortcut.setKey(qt.QKeySequence(shortcutKey))
-      shortcut.connect('activated()', callback)
-
   def onIntersectionButton(self):
     """
     Run processing when user clicks "Create intersection" button.
@@ -292,14 +279,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def onThresholdButton(self):
     try:
       threshold=1
-      print("in threshold button before loop")
+
       # loop through all selected volumes
       for volume in [self.ui.inputSelector1.currentNode(),
                      self.ui.inputSelector2.currentNode(),
                      self.ui.inputSelector3.currentNode()]:
 
         current_name = volume.GetName()
-        print("in threshold button")
 
         volNode = slicer.util.getNode(current_name)
         dispNode = volNode.GetDisplayNode()
@@ -334,6 +320,7 @@ class ExtensionEnvironment:
     :param volumes: a list of volume names
     :return the composite node that can be used by the change view function
     """
+    # todo move view changing to widget (or even all the shortcuts)
     if volumes is None:
       volumes = ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
 
