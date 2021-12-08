@@ -252,7 +252,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Initialise views with the US volumes
     :return the composite node that can be used by the change view function
     """
-    # todo shortcuts don't work after creating the intersection (not always)
+
     self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
                           self.ui.inputSelector2.currentNode().GetName(),
                           self.ui.inputSelector3.currentNode().GetName()]
@@ -517,7 +517,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.util.errorDisplay("Failed link (or unlink) views. " + str(e))
 #
 # Initialise Extension evnironment with linking views and shortcuts
-#
+# todo move all shortcuts to the class above so they can act according to the check box
 class ExtensionEnvironment:
   def __init__(self):
     # create variables
