@@ -241,6 +241,22 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
     self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
 
+    # update button states and tooltips - only if volumes are chosen, enable buttons
+    if self._parameterNode.GetNodeReference("InputVolume1") and \
+       self._parameterNode.GetNodeReference("InputVolume2") and \
+       self._parameterNode.GetNodeReference("InputVolume3"):
+      self.ui.intersectionButton.toolTip = "Compute intersection"
+      self.ui.intersectionButton.enabled = True
+
+      self.ui.thresholdButton.toolTip = "Set lower thresholds of chosen volumes to 1"
+      self.ui.thresholdButton.enabled = True
+    else:
+      self.ui.intersectionButton.toolTip = "Select all input volumes first"
+      self.ui.intersectionButton.enabled = False
+
+      self.ui.thresholdButton.toolTip = "Select all input volumes first"
+      self.ui.thresholdButton.enabled = False
+
     # All the GUI updates are done
     self._updatingGUIFromParameterNode = False
 
