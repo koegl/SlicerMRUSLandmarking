@@ -154,6 +154,11 @@
           <string>w: decrease foreground opacity</string>
          </property>
         </item>
+        <item>
+         <property name="text">
+          <string>l: lower foreground threshold to 1</string>
+         </property>
+        </item>
        </widget>
       </item>
      </layout>
