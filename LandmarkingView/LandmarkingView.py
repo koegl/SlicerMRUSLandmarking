@@ -5,6 +5,7 @@ import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import SegmentEditorEffects
+import functools
 
 #
 # LandmarkingView
@@ -23,21 +24,28 @@ class LandmarkingView(ScriptedLoadableModule):
     self.parent.contributors = ["John Doe (AnyWare Corp.)"]  # TODO: replace with "Firstname Lastname (Organization)"
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
-This is an example of scripted loadable module bundled in an extension.
-See more information in <a href="https://github.com/organization/projectname#LandmarkingView">module documentation</a>.
-"""
+    This is an example of scripted loadable module bundled in an extension.
+    See more information in <a href="https://github.com/organization/projectname#LandmarkingView">module documentation</a>.
+    """
     # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
-This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc., Andras Lasso, PerkLab,
-and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
-"""
+    This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc., Andras Lasso, PerkLab,
+    and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
+    """
 
     # Additional initialization step after application startup is complete
     slicer.app.connect("startupCompleted()", registerSampleData)
 
+    # create environment for the extension (link views and shortcuts)
+    extension_environment = ExtensionEnvironment()
+
+    slicer.app.connect("startupCompleted()", extension_environment.initialiseShortcuts)  # shortcuts that don't depend on the chosen volumes
+
+
 #
 # Register sample data sets in Sample Data module
 #
+
 
 def registerSampleData():
   """
@@ -103,6 +111,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode = None
     self._updatingGUIFromParameterNode = False
 
+    ExtensionEnvironment.linkViews()
+
   def setup(self):
     """
     Called when the user opens the module the first time and the widget is initialized.
@@ -130,6 +140,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.addObserver(slicer.mrmlScene, slicer.mrmlScene.StartCloseEvent, self.onSceneStartClose)
     self.addObserver(slicer.mrmlScene, slicer.mrmlScene.EndCloseEvent, self.onSceneEndClose)
 
+    # TODO add default us volumes like in original extenision
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
     # (in the selected parameter node).
     self.ui.inputSelector1.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
@@ -137,7 +148,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
     # Buttons
-    self.ui.applyButton.connect('clicked(bool)', self.onApplyButton)
+    # create intersection outline
+    self.ui.intersectionButton.connect('clicked(bool)', self.onIntersectionButton)
+    # set foreground threshold to 1 for all chosen volumes
+    self.ui.thresholdButton.connect('clicked(bool)', self.onThresholdButton)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -187,17 +201,19 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.setParameterNode(self.logic.getParameterNode())
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
-    if not self._parameterNode.GetNodeReference("InputVolume"):
-      firstVolumeNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLScalarVolumeNode")
-      if firstVolumeNode:
-        self._parameterNode.SetNodeReferenceID("InputVolume", firstVolumeNode.GetID())
+    for input_volume, volume_name in zip(["InputVolume1", "InputVolume2", "InputVolume3"],
+                                         ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]):
+      if not self._parameterNode.GetNodeReference(input_volume):
+        volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
+        if volumeNode:
+          self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
   def setParameterNode(self, inputParameterNode):
     """
     Set and observe parameter node.
     Observation is needed because when the parameter node is changed then the GUI must be updated immediately.
     """
-    
+
     # Unobserve previously selected parameter node and add an observer to the newly selected.
     # Changes of parameter node are observed so that whenever parameters are changed by a script or any other module
     # those are reflected immediately in the GUI.
@@ -227,6 +243,22 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
     self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
 
+    # update button states and tooltips - only if volumes are chosen, enable buttons
+    if self._parameterNode.GetNodeReference("InputVolume1") and \
+       self._parameterNode.GetNodeReference("InputVolume2") and \
+       self._parameterNode.GetNodeReference("InputVolume3"):
+      self.ui.intersectionButton.toolTip = "Compute intersection"
+      self.ui.intersectionButton.enabled = True
+
+      self.ui.thresholdButton.toolTip = "Set lower thresholds of chosen volumes to 1"
+      self.ui.thresholdButton.enabled = True
+    else:
+      self.ui.intersectionButton.toolTip = "Select all input volumes first"
+      self.ui.intersectionButton.enabled = False
+
+      self.ui.thresholdButton.toolTip = "Select all input volumes first"
+      self.ui.thresholdButton.enabled = False
+
     # All the GUI updates are done
     self._updatingGUIFromParameterNode = False
 
@@ -247,21 +279,259 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
-  def onApplyButton(self):
+  def onIntersectionButton(self):
     """
-    Run processing when user clicks "Apply" button.
+    Run processing when user clicks "Create intersection" button.
     """
     try:
-
       # Compute output
       self.logic.process(self.ui.inputSelector1.currentNode(),
                          self.ui.inputSelector2.currentNode(),
                          self.ui.inputSelector3.currentNode())
 
+      self.__initialise_views()
+
+    except:
+      pass
+
+  def onThresholdButton(self):
+    try:
+      threshold=1
+
+      # loop through all selected volumes
+      for volume in [self.ui.inputSelector1.currentNode(),
+                     self.ui.inputSelector2.currentNode(),
+                     self.ui.inputSelector3.currentNode()]:
+
+        current_name = volume.GetName()
+
+        volNode = slicer.util.getNode(current_name)
+        dispNode = volNode.GetDisplayNode()
+        dispNode.ApplyThresholdOn()
+        dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
+
     except Exception as e:
-      slicer.util.errorDisplay("Failed to compute results: "+str(e))
-      import traceback
-      traceback.print_exc()
+      slicer.util.errorDisplay("Failed to change lower thresholds: " + str(e))
+
+#
+# Initialise Extension evnironment with linking views and shortcuts
+#
+class ExtensionEnvironment:
+  def __init__(self):
+    # create variables
+    self.fiducialtool = None
+    self.shortcuts = None
+
+    # run processing
+    self.__initialiseFiducialPlacer()
+    self.__createShortcuts()
+
+  def __initialiseFiducialPlacer(self):
+    """
+    Switch to the fiducial placer tool
+    """
+    self.interactionNode = slicer.app.applicationLogic().GetInteractionNode()
+
+  def __initialise_views(self, volumes=None):
+    """
+    Initialise views with the US volumes
+    :param volumes: a list of volume names
+    :return the composite node that can be used by the change view function
+    """
+    # todo move view changing to widget (or even all the shortcuts)
+    if volumes is None:
+      volumes = ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
+
+    # get current foreground and background volumes
+    layoutManager = slicer.app.layoutManager()
+    view = layoutManager.sliceWidget('Red').sliceView()
+    sliceNode = view.mrmlSliceNode()
+    sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+    compositeNode = sliceLogic.GetSliceCompositeNode()
+    current_background_id = compositeNode.GetBackgroundVolumeID()
+    current_foreground_id = compositeNode.GetForegroundVolumeID()
+
+    # check if there is a background
+    if current_background_id is not None:
+      current_background_volume = slicer.mrmlScene.GetNodeByID(current_background_id)
+      current_background_name = current_background_volume.GetName()
+      # if it's not the correct volume, set the background and foreground
+      if current_background_name not in volumes:
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+        # update volumes
+        slicer.util.setSliceViewerLayers(background=volume_background, foreground=volume_foreground)
+    else:  # there is no background
+      volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+      volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+      # update volumes
+      slicer.util.setSliceViewerLayers(background=volume_background, foreground=volume_foreground)
+    # check if there is a foreground
+    if current_foreground_id is not None:
+      current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_background_id)
+      current_foreground_name = current_foreground_volume.GetName()
+      # if it's not the correct volume, set the background and foreground
+      if current_foreground_name not in volumes:
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+        # update volumes
+        slicer.util.setSliceViewerLayers(background=volume_background, foreground=volume_foreground)
+    else:  # there is no foreground
+      volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+      volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+      # update volumes
+      slicer.util.setSliceViewerLayers(background=volume_background, foreground=volume_foreground)
+
+    return compositeNode
+
+  def __change_view(self, direction='forward'):
+    """
+    Change the view forward or backward (take the list three possible volumes and for the two displayed volumes increase
+    their index by one)
+    :param direction:
+    :return:
+    """
+    volumes = ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
+    volume_background = None
+    volume_foreground = None
+
+    # initialise views and get the composite node
+    compositeNode = self.__initialise_views()
+
+    # get current foreground and background volumes
+    current_foreground_id = compositeNode.GetForegroundVolumeID()
+    current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
+    current_foreground_name = current_foreground_volume.GetName()
+    current_background_id = compositeNode.GetBackgroundVolumeID()
+    current_background_volume = slicer.mrmlScene.GetNodeByID(current_background_id)
+    current_background_name = current_background_volume.GetName()
+
+    # switch backgrounds
+    if direction == 'forward':
+      if current_background_name == volumes[2] and current_foreground_name == volumes[1]:
+        volume_background = current_foreground_volume
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
+      elif current_background_name == volumes[1] and current_foreground_name == volumes[0]:
+        volume_background = current_foreground_volume
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+      elif current_background_name == volumes[0] and current_foreground_name == volumes[2]:
+        volume_background = current_foreground_volume
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+      elif current_background_name == volumes[2] and current_foreground_name == volumes[0]:
+        volume_foreground = current_background_volume
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+      elif current_background_name == volumes[0] and current_foreground_name == volumes[1]:
+        volume_foreground = current_background_volume
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+      elif current_background_name == volumes[1] and current_foreground_name == volumes[2]:
+        volume_foreground = current_background_volume
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
+    elif direction == 'backward':
+      if current_background_name == volumes[2] and current_foreground_name == volumes[1]:
+        volume_foreground = current_background_volume
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
+      elif current_background_name == volumes[1] and current_foreground_name == volumes[0]:
+        volume_foreground = current_background_volume
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+      elif current_background_name == volumes[0] and current_foreground_name == volumes[2]:
+        volume_foreground = current_background_volume
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+      elif current_background_name == volumes[2] and current_foreground_name == volumes[0]:
+        volume_background = current_foreground_volume
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[1])
+      elif current_background_name == volumes[0] and current_foreground_name == volumes[1]:
+        volume_background = current_foreground_volume
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[2])
+      elif current_background_name == volumes[1] and current_foreground_name == volumes[2]:
+        volume_background = current_foreground_volume
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(volumes[0])
+
+    # update volumes (if they both exist)
+    if volume_foreground and volume_background:
+      if direction == 'backward' or direction == 'forward':
+        slicer.util.setSliceViewerLayers(background=volume_background, foreground=volume_foreground)
+      else:
+        print("wrong direction")
+    else:
+      print("No volumes to set for foreground and background")
+
+  def __change_foreground_opacity_discrete(self, new_opacity=0.5):
+    layoutManager = slicer.app.layoutManager()
+
+    # iterate through all views and set opacity to
+    for sliceViewName in layoutManager.sliceViewNames():
+      view = layoutManager.sliceWidget(sliceViewName).sliceView()
+      sliceNode = view.mrmlSliceNode()
+      sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+      compositeNode = sliceLogic.GetSliceCompositeNode()
+      compositeNode.SetForegroundOpacity(new_opacity)
+
+  def __change_foreground_opacity_continuous(self, opacity_change=0.01):
+    # TODO threshold change needs to be initialized once with setting it to 0.5 with discrete, otherwise it's stuck
+    layoutManager = slicer.app.layoutManager()
+
+    # iterate through all views and set opacity to
+    for sliceViewName in layoutManager.sliceViewNames():
+      view = layoutManager.sliceWidget(sliceViewName).sliceView()
+      sliceNode = view.mrmlSliceNode()
+      sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+      compositeNode = sliceLogic.GetSliceCompositeNode()
+      compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
+
+  def __set_foreground_threshold(self, threshold):
+    """
+    Set foreground threshold to 1, so that the surrounding black pixels disappear
+    """
+    # get current foreground
+    layoutManager = slicer.app.layoutManager()
+    view = layoutManager.sliceWidget('Red').sliceView()
+    sliceNode = view.mrmlSliceNode()
+    sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+    compositeNode = sliceLogic.GetSliceCompositeNode()
+
+    current_foreground_id = compositeNode.GetForegroundVolumeID()
+    current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
+    current_foreground_name = current_foreground_volume.GetName()
+
+    volNode = slicer.util.getNode(current_foreground_name)
+    dispNode = volNode.GetDisplayNode()
+    dispNode.ApplyThresholdOn()
+    dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
+    #current_foreground_volume.AddObserver(slicer.vtkMRMLScalarVolumeDisplayNode.PointModifiedEvent, dispNode.SetLowerThreshold)
+
+  @staticmethod
+  def linkViews():
+    """
+    # link views
+    # Set linked slice views  in all existing slice composite nodes and in the default node
+    """
+    sliceCompositeNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
+    defaultSliceCompositeNode = slicer.mrmlScene.GetDefaultNodeByClass("vtkMRMLSliceCompositeNode")
+    if not defaultSliceCompositeNode:
+      defaultSliceCompositeNode = slicer.mrmlScene.CreateNodeByClass("vtkMRMLSliceCompositeNode")
+      defaultSliceCompositeNode.UnRegister(
+        None)  # CreateNodeByClass is factory method, need to unregister the result to prevent memory leaks
+      slicer.mrmlScene.AddDefaultNode(defaultSliceCompositeNode)
+    sliceCompositeNodes.append(defaultSliceCompositeNode)
+    for sliceCompositeNode in sliceCompositeNodes:
+      sliceCompositeNode.SetLinkedControl(True)
+
+  def __createShortcuts(self):
+    self.shortcuts = [('d', lambda: self.interactionNode.SetCurrentInteractionMode(self.interactionNode.Place)),  # fiducial placement
+                      ('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
+                      ('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
+                      ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.5
+                      ('2', functools.partial(self.__change_foreground_opacity_discrete, 0.5)),  # change opacity to 0.5
+                      ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
+                      ('q', functools.partial(self.__change_foreground_opacity_continuous, 0.02)),  # incr. op. by .01
+                      ('w', functools.partial(self.__change_foreground_opacity_continuous, -0.02)),  # decr. op. by .01
+                      ('l', functools.partial(self.__set_foreground_threshold, 1))]  # set foreground threshold to 1
+
+  def initialiseShortcuts(self):
+    for (shortcutKey, callback) in self.shortcuts:
+        shortcut = qt.QShortcut(slicer.util.mainWindow())
+        shortcut.setKey(qt.QKeySequence(shortcutKey))
+        shortcut.connect('activated()', callback)
 
 
 #
@@ -316,6 +586,10 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     """
     Creates the intersectin of the first three volumes and siplays it as an outline
     """
+
+    if volume1 is None or volume2 is None or volume3 is None:
+      slicer.util.errorDisplay( "Select all three volumes")
+      return
 
     import time
     startTime = time.time()

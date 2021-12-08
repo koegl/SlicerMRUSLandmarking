@@ -6,38 +6,17 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>279</width>
-    <height>292</height>
+    <width>633</width>
+    <height>405</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="ctkCollapsibleButton" name="inputsCollapsibleButton">
      <property name="text">
-      <string>Inputs</string>
+      <string>Common field of view</string>
      </property>
      <layout class="QFormLayout" name="formLayout_2">
-      <item row="0" column="1">
-       <widget class="qMRMLNodeComboBox" name="inputSelector1">
-        <property name="toolTip">
-         <string/>
-        </property>
-        <property name="nodeTypes">
-         <stringlist>
-          <string>vtkMRMLScalarVolumeNode</string>
-         </stringlist>
-        </property>
-        <property name="showChildNodeTypes">
-         <bool>false</bool>
-        </property>
-        <property name="addEnabled">
-         <bool>false</bool>
-        </property>
-        <property name="removeEnabled">
-         <bool>false</bool>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label1">
         <property name="text">
@@ -45,8 +24,11 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="qMRMLNodeComboBox" name="inputSelector2">
+      <item row="0" column="1">
+       <widget class="qMRMLNodeComboBox" name="inputSelector1">
+        <property name="toolTip">
+         <string/>
+        </property>
         <property name="nodeTypes">
          <stringlist>
           <string>vtkMRMLScalarVolumeNode</string>
@@ -70,8 +52,23 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
-       <widget class="qMRMLNodeComboBox" name="inputSelector3"/>
+      <item row="1" column="1">
+       <widget class="qMRMLNodeComboBox" name="inputSelector2">
+        <property name="nodeTypes">
+         <stringlist>
+          <string>vtkMRMLScalarVolumeNode</string>
+         </stringlist>
+        </property>
+        <property name="showChildNodeTypes">
+         <bool>false</bool>
+        </property>
+        <property name="addEnabled">
+         <bool>false</bool>
+        </property>
+        <property name="removeEnabled">
+         <bool>false</bool>
+        </property>
+       </widget>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="label3">
@@ -80,17 +77,94 @@
         </property>
        </widget>
       </item>
+      <item row="2" column="1">
+       <widget class="qMRMLNodeComboBox" name="inputSelector3"/>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QPushButton" name="intersectionButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Create intersection</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="applyButton">
+    <widget class="QPushButton" name="thresholdButton">
      <property name="enabled">
       <bool>true</bool>
      </property>
      <property name="text">
-      <string>Create intersection</string>
+      <string>Set lower thresholds to 1 (to make black pixels transparent)</string>
      </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="inputsCollapsibleButton2">
+     <property name="text">
+      <string>Keyboard shortcuts</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_2">
+      <item row="0" column="1">
+       <widget class="QListWidget" name="listWidget1">
+        <property name="font">
+         <font>
+          <family>Courier New</family>
+          <pointsize>8</pointsize>
+         </font>
+        </property>
+        <item>
+         <property name="text">
+          <string>d: set new fiducial</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>a: move forward through US volumes (choose volumes first)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>s: move forward through US volumes (choose volumes first)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>1: foreground opacity to 0.0</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>2: foreground opacity to 0.5</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>3: foreground opacity to 1.0</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>q: increase foreground opacity</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>w: decrease foreground opacity</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>l: lower foreground threshold to 1</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
    <item>

@@ -25,3 +25,21 @@ THE MODULE CAN CURRENTLY CREATE AN INTERSECTION OF THREE US VOLUMES
    ![Outline/fill button in views](misc/outline_button.png)
    2. or in the Segmentations module with the buttons marked in red in the screenshot below
    ![Outline/fill button in the Segmentation module](misc/outline_button_insegs.png)
+
+
+### Startup file
+A file containing code that can be executed at each startup is included in
+[/misc/startup_file.py](./misc/startup_file.py). To use it, paste the code into .slicerrc.py (replace the entire content
+of .slicerrc.py with the content of [/misc/startup_file.py](./misc/startup_file.py). You can find .slicerrc.py by going
+to Edit->Settings in Slicer3D. Then, the path to .slicerrc.py can be seen marked with red in the screenshot below (by
+pressing on the button marked in blue the file will open automatically)
+
+![How to open .slicerrc.py](misc/Inkedslicerrc_file.jpg)
+
+####Current startup functionality:
+1. Link all views together
+2. Shortcuts:
+   1. **'d'** - change to the tool for placing markups (fiducials)
+   2. **'s'** - switch between three us volumes forward (their names are hard-coded at the moment and need to be
+   "US1 Pre-dura", "US2 Post-dura" and "US3 Resection Control")
+   3. **'a'** - same functionality as 's,' only the switching occurs in the opposite direction
