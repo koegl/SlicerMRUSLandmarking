@@ -90,17 +90,60 @@
         </property>
        </widget>
       </item>
+      <item row="4" column="0" colspan="2">
+       <widget class="QPushButton" name="thresholdButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Set lower thresholds to 1 (to make black pixels transparent)</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
    <item>
-    <widget class="QPushButton" name="thresholdButton">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton">
      <property name="text">
-      <string>Set lower thresholds to 1 (to make black pixels transparent)</string>
+      <string>View controls</string>
      </property>
+     <layout class="QFormLayout" name="formLayout_3">
+      <item row="2" column="0">
+       <widget class="QPushButton" name="viewStandardButton">
+        <property name="minimumSize">
+         <size>
+          <width>160</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Standard</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QPushButton" name="view3o3Button">
+        <property name="text">
+         <string>3-over-3</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="chooseLayout">
+        <property name="text">
+         <string>Choose layout:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QCheckBox" name="linkCheckBox">
+        <property name="text">
+         <string>Link top and bottom row</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </widget>
    </item>
    <item>
