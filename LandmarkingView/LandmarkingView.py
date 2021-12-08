@@ -201,10 +201,12 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.setParameterNode(self.logic.getParameterNode())
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
-    if not self._parameterNode.GetNodeReference("InputVolume"):
-      firstVolumeNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLScalarVolumeNode")
-      if firstVolumeNode:
-        self._parameterNode.SetNodeReferenceID("InputVolume", firstVolumeNode.GetID())
+    for input_volume, volume_name in zip(["InputVolume1", "InputVolume2", "InputVolume3"],
+                                         ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]):
+      if not self._parameterNode.GetNodeReference(input_volume):
+        volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
+        if volumeNode:
+          self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
   def setParameterNode(self, inputParameterNode):
     """
