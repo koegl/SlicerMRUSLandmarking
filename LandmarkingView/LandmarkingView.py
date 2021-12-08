@@ -61,8 +61,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.compositeNode = None
     self.volumes_names = None
 
-    # shortcuts
-    # extension_environment.initialiseShortcuts()  # those that do not depend on the volumes
+    # variable saying if views in 3-over-3 are linked or not
+    self.linked = True
 
   def setup(self):
     """
@@ -109,7 +109,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Check boxes
     # link top and bottom view
-    self.ui.linkCheckBox.connect('clicked(bool)', self.onLinkCheckBox)
+    self.ui.linkCheckBox.connect('toggled(bool)', self.onLinkCheckBox)
+    # self.ui.linkCheckBox.connect('not toggled(bool)', self.onLinkCheckBox)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -467,9 +468,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.util.errorDisplay("Failed to change to 3 over 3 view. " + str(e))
 
   def onLinkCheckBox(self, link=True):
-
     try:
 
+      self.linked = link
+
+      slicer.util.errorDisplay("toggling")
       views_normal = ["Red", "Green", "Yellow"]
       views_plus = ["Red+", "Green+", "Yellow+"]
 
@@ -478,7 +481,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
         group_normal = 0
         group_plus = 1
-
+      print(link)
       # set groups
       for i in range(3):
         slicer.app.layoutManager().sliceWidget(views_normal[i]).mrmlSliceNode().SetViewGroup(group_normal)
