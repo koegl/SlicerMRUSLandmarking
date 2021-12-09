@@ -529,10 +529,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         current_name = volume.GetName()
 
-        volNode = slicer.util.getNode(current_name)
-        dispNode = volNode.GetDisplayNode()
-        dispNode.ApplyThresholdOn()
-        dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
+        if "US" in current_name:
+          volNode = slicer.util.getNode(current_name)
+          dispNode = volNode.GetDisplayNode()
+          dispNode.ApplyThresholdOn()
+          dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
 
     except Exception as e:
       slicer.util.errorDisplay("Failed to change lower thresholds. " + str(e))
@@ -647,19 +648,29 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
   def process(self, volume1, volume2, volume3):
     """
-    Creates the intersectin of the first three volumes and siplays it as an outline
+    Creates the intersection of the us volumes and diplays it as an outline
     """
 
     if volume1 is None or volume2 is None or volume3 is None:
-      slicer.util.errorDisplay( "Select all three volumes")
+      slicer.util.errorDisplay("Select all three volumes")
       return
 
     import time
     startTime = time.time()
     logging.info('Processing started')
 
-    # usVolumes = slicer.util.getNodesByClass("vtkMRMLScalarVolumeNode")
-    usVolumes = (volume1, volume2, volume3)
+    # usVolumes_names = [vol.GetName() for vol in usVolumes]
+    usVolumes = []
+    for volume in [volume1, volume2, volume3]:
+      if "US" in volume.GetName():
+        usVolumes.append(volume)
+
+    if len(usVolumes) <= 1:
+      slicer.util.errorDisplay("Select at most two MRIs")
+      return
+
+    for vol in usVolumes:
+      print(vol.GetName())
 
     # initialise segment editor
     segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor("us_outlines")
@@ -693,17 +704,15 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     # add first segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_UNION)
 
-    effect.setParameter("ModifierSegmentID", volume1.GetName()[0:3] + "_bb")
+    effect.setParameter("ModifierSegmentID", usVolumes[0].GetName()[0:3] + "_bb")
     effect.self().onApply()
 
     # intersect with the next two segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_INTERSECT)
 
-    effect.setParameter("ModifierSegmentID", volume2.GetName()[0:3] + "_bb")
-    effect.self().onApply()
-
-    effect.setParameter("ModifierSegmentID", volume3.GetName()[0:3] + "_bb")
-    effect.self().onApply()
+    for volume in usVolumes:
+      effect.setParameter("ModifierSegmentID", volume.GetName()[0:3] + "_bb")
+      effect.self().onApply()
 
     # remove segments
     for id in addedSegmentID:
