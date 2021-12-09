@@ -3,7 +3,7 @@
 
 def generate_forward_combinations(images_list=None):
     if not images_list:
-        return
+        return None
 
     forward_combinations = []
     backward_combinations = []
@@ -24,7 +24,7 @@ def generate_forward_combinations(images_list=None):
 
 
 # e.g. 5 images
-images = [0, 1, 2]  # , 3, 4, 5, 6]
+images = ["one", "two", "three"]  # , 3, 4, 5, 6]
 
 print(generate_forward_combinations(images))
 
