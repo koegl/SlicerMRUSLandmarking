@@ -328,15 +328,12 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.__initialise_views()
 
-    #print(self.linked)
-
     if self.linked and self.view == '3on3':  # if it is linked, we want it to change in all slices
       current_views = self.views_normal + self.views_plus
     else:
       current_views = self.views_normal
 
     for view in current_views:
-
       layoutManager = slicer.app.layoutManager()
       view_logic = layoutManager.sliceWidget(view)
       view_logic = view_logic.sliceLogic()
@@ -414,8 +411,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def __change_foreground_opacity_discrete(self, new_opacity=0.5):
     layoutManager = slicer.app.layoutManager()
 
+    if self.linked and self.view == '3on3':  # if it is linked, we want it to change in all slices
+      current_views = self.views_normal + self.views_plus
+    else:
+      current_views = self.views_normal
+
     # iterate through all views and set opacity to
-    for sliceViewName in layoutManager.sliceViewNames():
+    for sliceViewName in current_views:
       view = layoutManager.sliceWidget(sliceViewName).sliceView()
       sliceNode = view.mrmlSliceNode()
       sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
@@ -426,8 +428,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # TODO threshold change needs to be initialized once with setting it to 0.5 with discrete, otherwise it's stuck
     layoutManager = slicer.app.layoutManager()
 
+    if self.linked and self.view == '3on3':  # if it is linked, we want it to change in all slices
+      current_views = self.views_normal + self.views_plus
+    else:
+      current_views = self.views_normal
+
     # iterate through all views and set opacity to
-    for sliceViewName in layoutManager.sliceViewNames():
+    for sliceViewName in current_views:
       view = layoutManager.sliceWidget(sliceViewName).sliceView()
       sliceNode = view.mrmlSliceNode()
       sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
