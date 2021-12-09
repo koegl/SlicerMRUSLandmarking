@@ -164,8 +164,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.setParameterNode(self.logic.getParameterNode())
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
-    for input_volume, volume_name in zip(["InputVolume1", "InputVolume2", "InputVolume3"],
-                                         ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]):
+    input_volumes = ["InputVolume3", "InputVolume2", "InputVolume1"]
+    us_volumes = ["US3 Resection Control", "US2 Post-dura", "US1 Pre-dura"]
+    for input_volume, volume_name in zip(input_volumes, us_volumes):
       if not self._parameterNode.GetNodeReference(input_volume):
         volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
         if volumeNode:
@@ -248,9 +249,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :return the composite node that can be used by the change view function
     """
 
-    self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
+    self.volumes_names = [self.ui.inputSelector3.currentNode().GetName(),
                           self.ui.inputSelector2.currentNode().GetName(),
-                          self.ui.inputSelector3.currentNode().GetName()]
+                          self.ui.inputSelector1.currentNode().GetName()]
 
     # get current foreground and background volumes
     if self.linked and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
