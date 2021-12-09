@@ -53,10 +53,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode = None
     self._updatingGUIFromParameterNode = False
 
-    ExtensionEnvironment.linkViews()
-    # extension_environment = ExtensionEnvironment([self.ui.inputSelector1.currentNode(),
-    #                                               self.ui.inputSelector2.currentNode(),
-    #                                               self.ui.inputSelector3.currentNode()])
+    self.__linkViews()
 
     self.compositeNode = None
     self.volumes_names = None
@@ -119,10 +116,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.initializeParameterNode()
 
     # shortcuts
-    extension_environment = ExtensionEnvironment()
-    extension_environment.initialiseShortcuts()  # those that do not depend on the volumes
-    self.initialiseDependentShortcuts()  # those that depend on the volumes - they have to be defined in this class,
-      # as they need the updated ui stuff to work
+    self.__initialiseShortcuts()  # those that depend on the volumes - they have to be defined in this class,
+    # as they need the updated ui stuff to work
 
   def cleanup(self):
     """
@@ -410,11 +405,72 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
         print("No volumes to set for foreground and background")
 
-  def __create_shortcuts(self):
-    self.shortcuts = [('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
-                      ('s', functools.partial(self.__change_view, "forward"))]  # volume switching dir2
+  def __createFiducialPlacer(self):
+    """
+    Switch to the fiducial placer tool
+    """
+    self.interactionNode = slicer.app.applicationLogic().GetInteractionNode()
 
-  def initialiseDependentShortcuts(self):
+  def __change_foreground_opacity_discrete(self, new_opacity=0.5):
+    layoutManager = slicer.app.layoutManager()
+
+    # iterate through all views and set opacity to
+    for sliceViewName in layoutManager.sliceViewNames():
+      view = layoutManager.sliceWidget(sliceViewName).sliceView()
+      sliceNode = view.mrmlSliceNode()
+      sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+      compositeNode = sliceLogic.GetSliceCompositeNode()
+      compositeNode.SetForegroundOpacity(new_opacity)
+
+  def __change_foreground_opacity_continuous(self, opacity_change=0.01):
+    # TODO threshold change needs to be initialized once with setting it to 0.5 with discrete, otherwise it's stuck
+    layoutManager = slicer.app.layoutManager()
+
+    # iterate through all views and set opacity to
+    for sliceViewName in layoutManager.sliceViewNames():
+      view = layoutManager.sliceWidget(sliceViewName).sliceView()
+      sliceNode = view.mrmlSliceNode()
+      sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+      compositeNode = sliceLogic.GetSliceCompositeNode()
+      compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
+
+  def __set_foreground_threshold(self, threshold):
+    """
+    Set foreground threshold to 1, so that the surrounding black pixels disappear
+    """
+    # get current foreground
+    layoutManager = slicer.app.layoutManager()
+    view = layoutManager.sliceWidget('Red').sliceView()
+    sliceNode = view.mrmlSliceNode()
+    sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+    compositeNode = sliceLogic.GetSliceCompositeNode()
+
+    current_foreground_id = compositeNode.GetForegroundVolumeID()
+    current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
+    current_foreground_name = current_foreground_volume.GetName()
+
+    volNode = slicer.util.getNode(current_foreground_name)
+    dispNode = volNode.GetDisplayNode()
+    dispNode.ApplyThresholdOn()
+    dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
+    #current_foreground_volume.AddObserver(slicer.vtkMRMLScalarVolumeDisplayNode.PointModifiedEvent, dispNode.SetLowerThreshold)
+
+  def __create_shortcuts(self):
+
+    self.__createFiducialPlacer()
+
+    self.shortcuts = [('d', lambda: self.interactionNode.SetCurrentInteractionMode(self.interactionNode.Place)),
+                      # fiducial placement
+                      ('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
+                      ('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
+                      ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.5
+                      ('2', functools.partial(self.__change_foreground_opacity_discrete, 0.5)),  # change opacity to 0.5
+                      ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
+                      ('q', functools.partial(self.__change_foreground_opacity_continuous, 0.02)),  # incr. op. by .01
+                      ('w', functools.partial(self.__change_foreground_opacity_continuous, -0.02)),  # decr. op. by .01
+                      ('l', functools.partial(self.__set_foreground_threshold, 1))]  # set foreground threshold to 1
+
+  def __initialiseShortcuts(self):
 
     self.__create_shortcuts()
 
@@ -422,6 +478,23 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       shortcut = qt.QShortcut(slicer.util.mainWindow())
       shortcut.setKey(qt.QKeySequence(shortcutKey))
       shortcut.connect('activated()', callback)
+
+  def __linkViews(self):
+    """
+    # link views
+    # Set linked slice views  in all existing slice composite nodes and in the default node
+    """
+
+    sliceCompositeNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
+    defaultSliceCompositeNode = slicer.mrmlScene.GetDefaultNodeByClass("vtkMRMLSliceCompositeNode")
+    if not defaultSliceCompositeNode:
+      defaultSliceCompositeNode = slicer.mrmlScene.CreateNodeByClass("vtkMRMLSliceCompositeNode")
+      defaultSliceCompositeNode.UnRegister(
+        None)  # CreateNodeByClass is factory method, need to unregister the result to prevent memory leaks
+      slicer.mrmlScene.AddDefaultNode(defaultSliceCompositeNode)
+    sliceCompositeNodes.append(defaultSliceCompositeNode)
+    for sliceCompositeNode in sliceCompositeNodes:
+      sliceCompositeNode.SetLinkedControl(True)
 
   def onIntersectionButton(self):
     """
@@ -515,101 +588,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     except Exception as e:
       slicer.util.errorDisplay("Failed link (or unlink) views. " + str(e))
-#
-# Initialise Extension evnironment with linking views and shortcuts
-# todo move all shortcuts to the class above so they can act according to the check box
-class ExtensionEnvironment:
-  def __init__(self):
-    # create variables
-    self.fiducialtool = None
-    self.shortcuts = None
-
-    # run processing
-    self.__initialiseFiducialPlacer()
-    self.__createShortcuts()
-
-  def __initialiseFiducialPlacer(self):
-    """
-    Switch to the fiducial placer tool
-    """
-    self.interactionNode = slicer.app.applicationLogic().GetInteractionNode()
-
-  def __change_foreground_opacity_discrete(self, new_opacity=0.5):
-    layoutManager = slicer.app.layoutManager()
-
-    # iterate through all views and set opacity to
-    for sliceViewName in layoutManager.sliceViewNames():
-      view = layoutManager.sliceWidget(sliceViewName).sliceView()
-      sliceNode = view.mrmlSliceNode()
-      sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
-      compositeNode = sliceLogic.GetSliceCompositeNode()
-      compositeNode.SetForegroundOpacity(new_opacity)
-
-  def __change_foreground_opacity_continuous(self, opacity_change=0.01):
-    # TODO threshold change needs to be initialized once with setting it to 0.5 with discrete, otherwise it's stuck
-    layoutManager = slicer.app.layoutManager()
-
-    # iterate through all views and set opacity to
-    for sliceViewName in layoutManager.sliceViewNames():
-      view = layoutManager.sliceWidget(sliceViewName).sliceView()
-      sliceNode = view.mrmlSliceNode()
-      sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
-      compositeNode = sliceLogic.GetSliceCompositeNode()
-      compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
-
-  def __set_foreground_threshold(self, threshold):
-    """
-    Set foreground threshold to 1, so that the surrounding black pixels disappear
-    """
-    # get current foreground
-    layoutManager = slicer.app.layoutManager()
-    view = layoutManager.sliceWidget('Red').sliceView()
-    sliceNode = view.mrmlSliceNode()
-    sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
-    compositeNode = sliceLogic.GetSliceCompositeNode()
-
-    current_foreground_id = compositeNode.GetForegroundVolumeID()
-    current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
-    current_foreground_name = current_foreground_volume.GetName()
-
-    volNode = slicer.util.getNode(current_foreground_name)
-    dispNode = volNode.GetDisplayNode()
-    dispNode.ApplyThresholdOn()
-    dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
-    #current_foreground_volume.AddObserver(slicer.vtkMRMLScalarVolumeDisplayNode.PointModifiedEvent, dispNode.SetLowerThreshold)
-
-  @staticmethod
-  def linkViews():
-    """
-    # link views
-    # Set linked slice views  in all existing slice composite nodes and in the default node
-    """
-
-    sliceCompositeNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
-    defaultSliceCompositeNode = slicer.mrmlScene.GetDefaultNodeByClass("vtkMRMLSliceCompositeNode")
-    if not defaultSliceCompositeNode:
-      defaultSliceCompositeNode = slicer.mrmlScene.CreateNodeByClass("vtkMRMLSliceCompositeNode")
-      defaultSliceCompositeNode.UnRegister(
-        None)  # CreateNodeByClass is factory method, need to unregister the result to prevent memory leaks
-      slicer.mrmlScene.AddDefaultNode(defaultSliceCompositeNode)
-    sliceCompositeNodes.append(defaultSliceCompositeNode)
-    for sliceCompositeNode in sliceCompositeNodes:
-      sliceCompositeNode.SetLinkedControl(True)
-
-  def __createShortcuts(self):
-    self.shortcuts = [('d', lambda: self.interactionNode.SetCurrentInteractionMode(self.interactionNode.Place)),  # fiducial placement
-                      ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.5
-                      ('2', functools.partial(self.__change_foreground_opacity_discrete, 0.5)),  # change opacity to 0.5
-                      ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
-                      ('q', functools.partial(self.__change_foreground_opacity_continuous, 0.02)),  # incr. op. by .01
-                      ('w', functools.partial(self.__change_foreground_opacity_continuous, -0.02)),  # decr. op. by .01
-                      ('l', functools.partial(self.__set_foreground_threshold, 1))]  # set foreground threshold to 1
-
-  def initialiseShortcuts(self):
-    for (shortcutKey, callback) in self.shortcuts:
-        shortcut = qt.QShortcut(slicer.util.mainWindow())
-        shortcut.setKey(qt.QKeySequence(shortcutKey))
-        shortcut.connect('activated()', callback)
 
 
 #
