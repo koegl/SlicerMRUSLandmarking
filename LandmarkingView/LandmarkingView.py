@@ -242,27 +242,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
-  def generate_switching_volume_combinations(self):
-    if not self.volumes_names:
-      return None
-
-    forward_combinations = []
-    backward_combinations = []
-
-    # create list of possible forward pairs
-    for i in range(len(self.volumes_names)):
-      if i == len(self.volumes_names) - 1:
-        index1 = len(self.volumes_names) - 1
-        index2 = 0
-      else:
-        index1 = i
-        index2 = i + 1
-
-      forward_combinations.append([self.volumes_names[index1], self.volumes_names[index2]])
-      backward_combinations.append([self.volumes_names[index2], self.volumes_names[index1]])
-
-    return forward_combinations, backward_combinations
-
   def __initialise_views(self):
     """
     Initialise views with the US volumes
@@ -354,9 +333,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     else:
       current_views = self.views_normal
 
-    # define forward and backward lists of volumes
-    forward_list, backward_list = self.generate_switching_volume_combinations()
-
     for view in current_views:
       layoutManager = slicer.app.layoutManager()
       view_logic = layoutManager.sliceWidget(view)
@@ -373,9 +349,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       current_background_id = self.compositeNode.GetBackgroundVolumeID()
       current_background_volume = slicer.mrmlScene.GetNodeByID(current_background_id)
       current_background_name = current_background_volume.GetName()
-
-      # check if we are in the forward or backward mode
-      forward_index = [i for i,x in enumerate(forward_list) if x == [current_foreground_name, current_background_name]]
 
       # switch backgrounds
       if direction == 'forward':
