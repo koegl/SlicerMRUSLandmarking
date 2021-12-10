@@ -165,8 +165,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.setParameterNode(self.logic.getParameterNode())
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
-    input_volumes = ["InputVolume3", "InputVolume2", "InputVolume1"]
-    us_volumes = ["US3 Resection Control", "US2 Post-dura", "US1 Pre-dura"]
+    input_volumes = ["InputVolume1", "InputVolume2", "InputVolume3"]
+    us_volumes = ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
     for input_volume, volume_name in zip(input_volumes, us_volumes):
       if not self._parameterNode.GetNodeReference(input_volume):
         volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
@@ -262,10 +262,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         index1 = i
         index2 = i + 1
 
-      forward_combinations.append([self.volumes_names[index2], self.volumes_names[index1]])
-
-    print(self.volumes_names)
-    print(forward_combinations)
+      forward_combinations.append([self.volumes_names[index1], self.volumes_names[index2]])
 
     current_index = forward_combinations.index(current_volumes)
     combinations = forward_combinations
@@ -290,15 +287,17 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :return the composite node that can be used by the change view function
     """
 
-    self.volumes_names = [self.ui.inputSelector3.currentNode().GetName(),
+    self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
                           self.ui.inputSelector2.currentNode().GetName(),
-                          self.ui.inputSelector1.currentNode().GetName()]
+                          self.ui.inputSelector3.currentNode().GetName()]
 
     # decide on slices to be updated depending on the view chosen
     if self.linked and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
       current_views = self.views_normal + self.views_plus
     else:
       current_views = self.views_normal
+
+    update = False
 
     for view in current_views:
 
@@ -320,16 +319,19 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
 
           # update volumes
-          self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
-          self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+          update = True
 
       else:  # there is no background
         volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
         volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
 
         # update volumes
+        update = True
+
+      if update:
         self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
         self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+        update = False
 
       # check if there is a foreground
       if current_foreground_id is not None:
@@ -340,17 +342,21 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if current_foreground_name not in self.volumes_names:
           volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
           volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
+
           # update volumes
-          self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
-          self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+          update = True
 
       else:  # there is no foreground
         volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
         volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
 
         # update volumes
+        update = True
+
+      if update:
         self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
         self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+        update = False
 
   def __change_view(self, direction='forward'):
     """
@@ -396,8 +402,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       elif direction == 'backward':
         next_combination = self.get_next_combination([current_foreground_name, current_background_name], "backward")
 
-      volume_foreground = slicer.mrmlScene.GetFirstNodeByName(next_combination[1])
-      volume_background = slicer.mrmlScene.GetFirstNodeByName(next_combination[0])
+      volume_foreground = slicer.mrmlScene.GetFirstNodeByName(next_combination[0])
+      volume_background = slicer.mrmlScene.GetFirstNodeByName(next_combination[1])
 
       # update volumes (if they both exist)
       if volume_foreground and volume_background:
