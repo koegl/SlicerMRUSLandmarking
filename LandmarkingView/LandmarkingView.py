@@ -64,6 +64,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.views_normal = ["Red", "Green", "Yellow"]
     self.views_plus = ["Red+", "Green+", "Yellow+"]
 
+    self.switch = False
+
   def setup(self):
     """
     Called when the user opens the module the first time and the widget is initialized.
@@ -107,6 +109,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.viewStandardButton.connect('clicked(bool)', self.onViewStandardButton)
     # change to 3 over 3 view view
     self.ui.view3o3Button.connect('clicked(bool)', self.onView3o3Button)
+    # switch order of displaying volumes
+    self.ui.switchOrderButton.connect('clicked(bool)', self.onSwitchOrderButton)
 
     # Check boxes
     # link top and bottom view
@@ -172,6 +176,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
         if volumeNode:
           self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
+
+    # update volumes
+    self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
+                          self.ui.inputSelector2.currentNode().GetName(),
+                          self.ui.inputSelector3.currentNode().GetName()]
 
   def setParameterNode(self, inputParameterNode):
     """
@@ -244,6 +253,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
+    # update volumes
+    self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
+                          self.ui.inputSelector2.currentNode().GetName(),
+                          self.ui.inputSelector3.currentNode().GetName()]
+
   def get_next_combination(self, current_volumes=None, direction="forward"):
     if not self.volumes_names or not current_volumes:
       return None
@@ -267,6 +281,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     current_index = forward_combinations.index(current_volumes)
     combinations = forward_combinations
 
+    if self.switch and direction == "forward":
+      direction = "backward"
+    elif self.switch and direction == "backward":
+      direction = "forward"
+
     if direction == "forward":
       if current_index == len(self.volumes_names) - 1:
         next_index = 0
@@ -286,11 +305,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Initialise views with the US volumes
     :return the composite node that can be used by the change view function
     """
-
-    self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
-                          self.ui.inputSelector2.currentNode().GetName(),
-                          self.ui.inputSelector3.currentNode().GetName()]
-
     # decide on slices to be updated depending on the view chosen
     if self.linked and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
       current_views = self.views_normal + self.views_plus
@@ -483,7 +497,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.shortcuts = [('d', lambda: self.interactionNode.SetCurrentInteractionMode(self.interactionNode.Place)),
                       # fiducial placement
                       ('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
-                      #('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
+                      ('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
                       ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.5
                       ('2', functools.partial(self.__change_foreground_opacity_discrete, 0.5)),  # change opacity to 0.5
                       ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
@@ -593,6 +607,36 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     except Exception as e:
       slicer.util.errorDisplay("Failed to change to 3 over 3 view. " + str(e))
 
+  def onSwitchOrderButton(self):
+    try:
+
+      self.switch = not self.switch
+
+      # reverse order of names
+      self.volumes_names.reverse()
+
+      # switch views
+      if self.linked and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
+        current_views = self.views_normal + self.views_plus
+      else:
+        current_views = self.views_normal
+
+      for view in current_views:
+        layoutManager = slicer.app.layoutManager()
+        view_logic = layoutManager.sliceWidget(view).sliceLogic()
+        self.compositeNode = view_logic.GetSliceCompositeNode()
+
+        current_background_id = self.compositeNode.GetBackgroundVolumeID()
+        current_foreground_id = self.compositeNode.GetForegroundVolumeID()
+
+        self.compositeNode.SetBackgroundVolumeID(current_foreground_id)
+        self.compositeNode.SetForegroundVolumeID(current_background_id)
+
+      # self.__initialise_views()
+
+    except Exception as e:
+      slicer.util.errorDisplay("Failed to change the display order. " + str(e))
+
   def onLinkCheckBox(self, link=False):
     try:
       self.linked = link
@@ -682,9 +726,6 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     if len(usVolumes) <= 1:
       slicer.util.errorDisplay("Select at most two MRIs")
       return
-
-    for vol in usVolumes:
-      print(vol.GetName())
 
     # initialise segment editor
     segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor("us_outlines")
