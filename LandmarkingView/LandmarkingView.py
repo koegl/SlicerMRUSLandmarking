@@ -704,6 +704,22 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         slicer.app.layoutManager().sliceWidget(self.views_normal[i]).mrmlSliceNode().SetViewGroup(group_normal)
         slicer.app.layoutManager().sliceWidget(self.views_plus[i]).mrmlSliceNode().SetViewGroup(group_plus)
 
+      # set lower row volumes to those of the upper view if we link again
+      if self.linked and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
+        layoutManager = slicer.app.layoutManager()
+        for i in range(3):
+          view_logic = layoutManager.sliceWidget(self.views_normal[i]).sliceLogic()
+          compositeNode_normal = view_logic.GetSliceCompositeNode()
+          view_logic = layoutManager.sliceWidget(self.views_plus[i]).sliceLogic()
+          compositeNode_plus = view_logic.GetSliceCompositeNode()
+
+          background_normal_id = compositeNode_normal.GetBackgroundVolumeID()
+          foreground_normal_id = compositeNode_normal.GetForegroundVolumeID()
+
+          compositeNode_plus.SetBackgroundVolumeID(background_normal_id)
+          compositeNode_plus.SetForegroundVolumeID(foreground_normal_id)
+
+
     except Exception as e:
       slicer.util.errorDisplay("Failed link (or unlink) views. " + str(e))
 
