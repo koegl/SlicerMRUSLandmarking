@@ -289,7 +289,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # print(forward_combinations)
     # print(current_volumes)
 
-    current_index = forward_combinations.index(current_volumes)
+    try:
+      current_index = forward_combinations.index(current_volumes)
+    except Exception as e:
+      slicer.util.errorDisplay("Reset views to a valid order for volume switching. " + str(e))
+      return current_volumes
     combinations = forward_combinations
 
     if self.switch and direction == "forward":
@@ -564,7 +568,16 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
 
       slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutFourUpView)
-      
+
+      # reset slice orientation
+      sliceNodes = slicer.util.getNodesByClass("vtkMRMLSliceNode")
+      sliceNodes[0].SetOrientationToAxial()
+      sliceNodes[1].SetOrientationToCoronal()
+      sliceNodes[2].SetOrientationToSagittal()
+      sliceNodes[3].SetOrientationToAxial()
+      sliceNodes[4].SetOrientationToCoronal()
+      sliceNodes[5].SetOrientationToSagittal()
+
     except Exception as e:
       slicer.util.errorDisplay("Could not reset views - try manually. " + str(e))
 
