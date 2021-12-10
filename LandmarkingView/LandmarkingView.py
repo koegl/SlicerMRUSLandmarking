@@ -446,6 +446,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:
         slicer.util.errorDisplay("No volumes to set for foreground and background")
 
+      # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
+      slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
+
   def __createFiducialPlacer(self):
     """
     Switch to the fiducial placer tool
@@ -713,12 +716,19 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           view_logic = layoutManager.sliceWidget(self.views_plus[i]).sliceLogic()
           compositeNode_plus = view_logic.GetSliceCompositeNode()
 
+          # change volumes to those from the top row
           background_normal_id = compositeNode_normal.GetBackgroundVolumeID()
           foreground_normal_id = compositeNode_normal.GetForegroundVolumeID()
 
           compositeNode_plus.SetBackgroundVolumeID(background_normal_id)
           compositeNode_plus.SetForegroundVolumeID(foreground_normal_id)
 
+          # change foreground opacities to those from the top row
+          compositeNode_plus.SetForegroundOpacity(compositeNode_normal.GetForegroundOpacity())
+
+          # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
+          slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
+          slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
 
     except Exception as e:
       slicer.util.errorDisplay("Failed link (or unlink) views. " + str(e))
