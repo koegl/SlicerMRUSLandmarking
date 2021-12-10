@@ -101,6 +101,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
     # Buttons
+    # reset views
+    self.ui.resetViewsButton.setStyleSheet('background-color: red;')
+    self.ui.resetViewsButton.connect('clicked(bool)', self.onResetViewsButton)
     # create intersection outline
     self.ui.intersectionButton.connect('clicked(bool)', self.onIntersectionButton)
     # set foreground threshold to 1 for all chosen volumes
@@ -169,8 +172,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.setParameterNode(self.logic.getParameterNode())
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
-    input_volumes = ["InputVolume1", "InputVolume2", "InputVolume3"]
-    us_volumes = ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
+    input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3"]
+    us_volumes = ["3D AX T1 Post-contrast Pre-op Thin-cut 0.5mm July", "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
     for input_volume, volume_name in zip(input_volumes, us_volumes):
       if not self._parameterNode.GetNodeReference(input_volume):
         volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
@@ -212,13 +215,15 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Make sure GUI changes do not call updateParameterNodeFromGUI (it could cause infinite loop)
     self._updatingGUIFromParameterNode = True
 
-    # Update node selectors and sliders
+    # Update node selectors
+    self.ui.inputSelector1.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume0"))
     self.ui.inputSelector1.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume1"))
     self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
     self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
 
     # update button states and tooltips - only if volumes are chosen, enable buttons
-    if self._parameterNode.GetNodeReference("InputVolume1") and \
+    if self._parameterNode.GetNodeReference("InputVolume0") and \
+       self._parameterNode.GetNodeReference("InputVolume1") and \
        self._parameterNode.GetNodeReference("InputVolume2") and \
        self._parameterNode.GetNodeReference("InputVolume3"):
       self.ui.intersectionButton.toolTip = "Compute intersection"
@@ -247,6 +252,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     wasModified = self._parameterNode.StartModify()  # Modify all properties in a single batch
 
+    self._parameterNode.SetNodeReferenceID("InputVolume0", self.ui.inputSelector0.currentNodeID)
     self._parameterNode.SetNodeReferenceID("InputVolume1", self.ui.inputSelector1.currentNodeID)
     self._parameterNode.SetNodeReferenceID("InputVolume2", self.ui.inputSelector2.currentNodeID)
     self._parameterNode.SetNodeReferenceID("InputVolume3", self.ui.inputSelector3.currentNodeID)
@@ -254,7 +260,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode.EndModify(wasModified)
 
     # update volumes
-    self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
+    self.volumes_names = [self.ui.inputSelector0.currentNode().GetName(),
+                          self.ui.inputSelector1.currentNode().GetName(),
                           self.ui.inputSelector2.currentNode().GetName(),
                           self.ui.inputSelector3.currentNode().GetName()]
 
@@ -277,6 +284,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         index2 = i + 1
 
       forward_combinations.append([self.volumes_names[index1], self.volumes_names[index2]])
+
+    # print(self.volumes_names)
+    # print(forward_combinations)
+    # print(current_volumes)
 
     current_index = forward_combinations.index(current_volumes)
     combinations = forward_combinations
@@ -381,7 +392,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     # TODO try to simplify code, seems very complex
 
-    if self.ui.inputSelector1.currentNode() is None or\
+    if self.ui.inputSelector0.currentNode() is None or\
+       self.ui.inputSelector1.currentNode() is None or\
        self.ui.inputSelector2.currentNode() is None or\
        self.ui.inputSelector3.currentNode() is None:
       slicer.util.errorDisplay("Not enough volumes given for the volume switching shortcut (choose all in the 'Common "
@@ -531,27 +543,54 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     for sliceCompositeNode in sliceCompositeNodes:
       sliceCompositeNode.SetLinkedControl(True)
 
+  def onResetViewsButton(self):
+
+    try:
+      # decide on slices to be updated depending on the view chosen
+      if self.linked and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
+        current_views = self.views_normal + self.views_plus
+      else:
+        current_views = self.views_normal
+
+      for view in current_views:
+        layoutManager = slicer.app.layoutManager()
+        view_logic = layoutManager.sliceWidget(view).sliceLogic()
+        self.compositeNode = view_logic.GetSliceCompositeNode()
+
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[-1])
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[-2])
+
+        self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
+        self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+
+      slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutFourUpView)
+      
+    except Exception as e:
+      slicer.util.errorDisplay("Could not reset views - try manually. " + str(e))
+
   def onIntersectionButton(self):
     """
     Run processing when user clicks "Create intersection" button.
     """
     try:
       # Compute output
-      self.logic.process(self.ui.inputSelector1.currentNode(),
+      self.logic.process([self.ui.inputSelector1.currentNode(),
+                         self.ui.inputSelector1.currentNode(),
                          self.ui.inputSelector2.currentNode(),
-                         self.ui.inputSelector3.currentNode())
+                         self.ui.inputSelector3.currentNode()])
 
       self.__initialise_views()
 
-    except:
-      pass
+    except Exception as e:
+      slicer.util.errorDisplay("Failed to create intersection. " + str(e))
 
   def onThresholdButton(self):
     try:
       threshold = 1
 
       # loop through all selected volumes
-      for volume in [self.ui.inputSelector1.currentNode(),
+      for volume in [self.ui.inputSelector0.currentNode(),
+                     self.ui.inputSelector1.currentNode(),
                      self.ui.inputSelector2.currentNode(),
                      self.ui.inputSelector3.currentNode()]:
 
@@ -704,27 +743,22 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     return segmentEditorWidget, segmentEditorNode, segmentationNode
 
-  def process(self, volume1, volume2, volume3):
+  def process(self, volumes=None):
     """
     Creates the intersection of the us volumes and diplays it as an outline
     """
-
-    if volume1 is None or volume2 is None or volume3 is None:
-      slicer.util.errorDisplay("Select all three volumes")
-      return
-
     import time
     startTime = time.time()
     logging.info('Processing started')
 
     # usVolumes_names = [vol.GetName() for vol in usVolumes]
     usVolumes = []
-    for volume in [volume1, volume2, volume3]:
+    for volume in volumes:
       if "US" in volume.GetName():
         usVolumes.append(volume)
 
     if len(usVolumes) <= 1:
-      slicer.util.errorDisplay("Select at most two MRIs")
+      slicer.util.errorDisplay("Select at least two US volumes (intersection is only calculated for US volumes)")
       return
 
     # initialise segment editor
