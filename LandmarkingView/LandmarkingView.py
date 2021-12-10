@@ -93,6 +93,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
     # (in the selected parameter node).
+    self.ui.inputSelector0.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector1.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
@@ -243,6 +244,46 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self._parameterNode.EndModify(wasModified)
 
+  def get_next_combination(self, current_volumes=None, direction="forward"):
+    if not self.volumes_names or not current_volumes:
+      return None
+    if direction not in ["forward", "backward"]:
+      return None
+
+    forward_combinations = []
+    next_index = None
+
+    # create list of possible forward pairs
+    for i in range(len(self.volumes_names)):
+      if i == len(self.volumes_names) - 1:
+        index1 = len(self.volumes_names) - 1
+        index2 = 0
+      else:
+        index1 = i
+        index2 = i + 1
+
+      forward_combinations.append([self.volumes_names[index2], self.volumes_names[index1]])
+
+    print(self.volumes_names)
+    print(forward_combinations)
+
+    current_index = forward_combinations.index(current_volumes)
+    combinations = forward_combinations
+
+    if direction == "forward":
+      if current_index == len(self.volumes_names) - 1:
+        next_index = 0
+      else:
+        next_index = current_index + 1
+
+    elif direction == "backward":
+      if current_index == 0:
+        next_index = len(self.volumes_names) - 1
+      else:
+        next_index = current_index - 1
+
+    return combinations[next_index]
+
   def __initialise_views(self):
     """
     Initialise views with the US volumes
@@ -253,7 +294,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                           self.ui.inputSelector2.currentNode().GetName(),
                           self.ui.inputSelector1.currentNode().GetName()]
 
-    # get current foreground and background volumes
+    # decide on slices to be updated depending on the view chosen
     if self.linked and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
       current_views = self.views_normal + self.views_plus
     else:
@@ -275,16 +316,16 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # if it's not the correct volume, set the background and foreground
         if current_background_name not in self.volumes_names:
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
 
           # update volumes
           self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
           self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
 
       else:  # there is no background
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
 
         # update volumes
         self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
@@ -292,20 +333,20 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # check if there is a foreground
       if current_foreground_id is not None:
-        current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_background_id)
+        current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
         current_foreground_name = current_foreground_volume.GetName()
 
         # if it's not the correct volume, set the background and foreground
         if current_foreground_name not in self.volumes_names:
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
           # update volumes
           self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
           self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
 
       else:  # there is no foreground
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
 
         # update volumes
         self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
@@ -340,9 +381,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       view_logic = view_logic.sliceLogic()
       self.compositeNode = view_logic.GetSliceCompositeNode()
 
-      volume_background = None
-      volume_foreground = None
-
       # get current foreground and background volumes
       current_foreground_id = self.compositeNode.GetForegroundVolumeID()
       current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
@@ -353,55 +391,24 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # switch backgrounds
       if direction == 'forward':
-        if current_background_name == self.volumes_names[2] and current_foreground_name == self.volumes_names[1]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
-        elif current_background_name == self.volumes_names[1] and current_foreground_name == self.volumes_names[0]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        elif current_background_name == self.volumes_names[0] and current_foreground_name == self.volumes_names[2]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
-        elif current_background_name == self.volumes_names[2] and current_foreground_name == self.volumes_names[0]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
-        elif current_background_name == self.volumes_names[0] and current_foreground_name == self.volumes_names[1]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        elif current_background_name == self.volumes_names[1] and current_foreground_name == self.volumes_names[2]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
+        next_combination = self.get_next_combination([current_foreground_name, current_background_name], "forward")
 
       elif direction == 'backward':
-        if current_background_name == self.volumes_names[2] and current_foreground_name == self.volumes_names[1]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
-        elif current_background_name == self.volumes_names[1] and current_foreground_name == self.volumes_names[0]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        elif current_background_name == self.volumes_names[0] and current_foreground_name == self.volumes_names[2]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
-        elif current_background_name == self.volumes_names[2] and current_foreground_name == self.volumes_names[0]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
-        elif current_background_name == self.volumes_names[0] and current_foreground_name == self.volumes_names[1]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        elif current_background_name == self.volumes_names[1] and current_foreground_name == self.volumes_names[2]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
+        next_combination = self.get_next_combination([current_foreground_name, current_background_name], "backward")
+
+      volume_foreground = slicer.mrmlScene.GetFirstNodeByName(next_combination[1])
+      volume_background = slicer.mrmlScene.GetFirstNodeByName(next_combination[0])
 
       # update volumes (if they both exist)
       if volume_foreground and volume_background:
         if direction == 'backward' or direction == 'forward':
           self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
           self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
-          # slicer.util.setSliceViewerLayers(background=volume_background, foreground=volume_foreground)
+
         else:
-          print("wrong direction")
+          slicer.util.errorDisplay("wrong direction")
       else:
-        print("No volumes to set for foreground and background")
+        slicer.util.errorDisplay("No volumes to set for foreground and background")
 
   def __createFiducialPlacer(self):
     """
@@ -470,7 +477,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.shortcuts = [('d', lambda: self.interactionNode.SetCurrentInteractionMode(self.interactionNode.Place)),
                       # fiducial placement
                       ('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
-                      ('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
+                      #('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
                       ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.5
                       ('2', functools.partial(self.__change_foreground_opacity_discrete, 0.5)),  # change opacity to 0.5
                       ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
