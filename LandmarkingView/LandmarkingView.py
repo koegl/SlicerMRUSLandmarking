@@ -190,7 +190,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.topRowCheck.toolTip = "Switch to 3-over-3 view to disable top row"
     self.ui.bottomRowCheck.toolTip = "Switch to 3-over-3 view to enable bottom row"
 
-
   def setParameterNode(self, inputParameterNode):
     """
     Set and observe parameter node.
@@ -321,16 +320,32 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     return combinations[next_index]
 
+  def get_current_views(self):
+    # both rows or no rows active in 3o3
+    if self.topRowActive and self.bottomRowActive and self.view == '3on3':
+      current_views = self.views_normal + self.views_plus
+
+    elif (not self.topRowActive) and (not self.bottomRowActive) and self.view == '3on3':
+      current_views = self.views_normal + self.views_plus
+
+    # bottom row active in 3o3
+    elif not self.topRowActive and self.bottomRowActive and self.view == '3on3':
+      current_views = self.views_plus
+
+    # all other times we only care about the top row (views_normal)
+    else:
+      current_views = self.views_normal
+
+    return current_views
+
   def __initialise_views(self):
     """
     Initialise views with the US volumes
     :return the composite node that can be used by the change view function
     """
     # decide on slices to be updated depending on the view chosen
-    if self.topRowActive and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
-      current_views = self.views_normal + self.views_plus
-    else:
-      current_views = self.views_normal
+
+    current_views = self.get_current_views()
 
     update = False
 
@@ -400,7 +415,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :param direction:
     :return:
     """
-    # TODO try to simplify code, seems very complex
+    # TODO make it so that when views are linked again, the slice position doesn't change
+    # TODO make it so that the when checking the top view it gets updated to the bottom view and when checking the
+    #  bottom view it gets
+    #  updated to the top view
 
     if self.ui.inputSelector0.currentNode() is None or\
        self.ui.inputSelector1.currentNode() is None or\
@@ -412,10 +430,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.__initialise_views()
 
-    if self.topRowActive and self.view == '3on3':  # if it is linked, we want it to change in all slices
-      current_views = self.views_normal + self.views_plus
-    else:
-      current_views = self.views_normal
+    current_views = self.get_current_views()
+    print(current_views)
 
     for view in current_views:
       layoutManager = slicer.app.layoutManager()
@@ -464,10 +480,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def __change_foreground_opacity_discrete(self, new_opacity=0.5):
     layoutManager = slicer.app.layoutManager()
 
-    if self.topRowActive and self.view == '3on3':  # if it is linked, we want it to change in all slices
-      current_views = self.views_normal + self.views_plus
-    else:
-      current_views = self.views_normal
+    current_views = self.get_current_views()
 
     # iterate through all views and set opacity to
     for sliceViewName in current_views:
@@ -481,10 +494,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # TODO threshold change needs to be initialized once with setting it to 0.5 with discrete, otherwise it's stuck
     layoutManager = slicer.app.layoutManager()
 
-    if self.topRowActive and self.view == '3on3':  # if it is linked, we want it to change in all slices
-      current_views = self.views_normal + self.views_plus
-    else:
-      current_views = self.views_normal
+    current_views = self.get_current_views()
 
     # iterate through all views and set opacity to
     for sliceViewName in current_views:
@@ -560,10 +570,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     try:
       # decide on slices to be updated depending on the view chosen
-      if self.topRowActive and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
-        current_views = self.views_normal + self.views_plus
-      else:
-        current_views = self.views_normal
+      current_views = self.get_current_views()
 
       for view in current_views:
         layoutManager = slicer.app.layoutManager()
@@ -687,10 +694,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.volumes_names.reverse()
 
       # switch views
-      if self.topRowActive and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
-        current_views = self.views_normal + self.views_plus
-      else:
-        current_views = self.views_normal
+      current_views = self.get_current_views()
 
       for view in current_views:
         layoutManager = slicer.app.layoutManager()
@@ -719,6 +723,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       else:  # when both are checked or unchecked
         group_normal = 0
         group_plus = 0
+
+        # unchecked means that we can check them again, as both unchecked doesn't make sense
+        self.topRowActive = True
+        self.bottomRowActive = True
+
+        self.ui.topRowCheck.checked = True
+        self.ui.bottomRowCheck.checked = True
 
       # set groups
       for i in range(3):
@@ -756,12 +767,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def onTopRowCheck(self, activate=True):
     self.topRowActive = activate
-    print("top")
     self.activeRowsUpdate()
 
   def onBottomRowCheck(self, activate=False):
     self.bottomRowActive = activate
-    print("bottom")
     self.activeRowsUpdate()
 
 
