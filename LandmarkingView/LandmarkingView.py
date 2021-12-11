@@ -181,7 +181,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
     # update volumes
-    self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
+    self.volumes_names = [self.ui.inputSelector0.currentNode().GetName(),
+                          self.ui.inputSelector1.currentNode().GetName(),
                           self.ui.inputSelector2.currentNode().GetName(),
                           self.ui.inputSelector3.currentNode().GetName()]
 
@@ -216,7 +217,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._updatingGUIFromParameterNode = True
 
     # Update node selectors
-    self.ui.inputSelector1.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume0"))
+    self.ui.inputSelector0.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume0"))
     self.ui.inputSelector1.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume1"))
     self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
     self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
