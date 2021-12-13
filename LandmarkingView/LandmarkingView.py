@@ -67,6 +67,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.switch = False
 
+    # used for updating the correct row when rows are linked
+    self.previous_active_row = "top"
+
   def setup(self):
     """
     Called when the user opens the module the first time and the widget is initialized.
@@ -431,7 +434,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.__initialise_views()
 
     current_views = self.get_current_views()
-    print(current_views)
 
     for view in current_views:
       layoutManager = slicer.app.layoutManager()
@@ -742,6 +744,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         layoutManager = slicer.app.layoutManager()
 
+        # TODO the changing to new previous active row changes three times in the for loop -> it should change once
+
         for i in range(3):
           view_logic = layoutManager.sliceWidget(self.views_normal[i]).sliceLogic()
           compositeNode_normal = view_logic.GetSliceCompositeNode()
@@ -751,16 +755,32 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           # change volumes to those from the top row
           background_normal_id = compositeNode_normal.GetBackgroundVolumeID()
           foreground_normal_id = compositeNode_normal.GetForegroundVolumeID()
+          background_plus_id = compositeNode_plus.GetBackgroundVolumeID()
+          foreground_plus_id = compositeNode_plus.GetForegroundVolumeID()
 
-          compositeNode_plus.SetBackgroundVolumeID(background_normal_id)
-          compositeNode_plus.SetForegroundVolumeID(foreground_normal_id)
+          if self.previous_active_row == "bottom":
+            compositeNode_plus.SetBackgroundVolumeID(background_normal_id)
+            compositeNode_plus.SetForegroundVolumeID(foreground_normal_id)
 
-          # change foreground opacities to those from the top row
-          compositeNode_plus.SetForegroundOpacity(compositeNode_normal.GetForegroundOpacity())
+            # change foreground opacities to those from the top row
+            compositeNode_plus.SetForegroundOpacity(compositeNode_normal.GetForegroundOpacity())
+
+          elif self.previous_active_row == "top":
+            compositeNode_normal.SetBackgroundVolumeID(background_plus_id)
+            compositeNode_normal.SetForegroundVolumeID(foreground_plus_id)
+
+            # change foreground opacities to those from the top row
+            compositeNode_normal.SetForegroundOpacity(compositeNode_plus.GetForegroundOpacity())
 
           # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
           slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
           slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
+
+        if self.previous_active_row == "bottom":
+          self.previous_active_row = "top"
+        elif self.previous_active_row == "top":
+          self.previous_active_row = "bottom"
+
 
     except Exception as e:
       slicer.util.errorDisplay("Could not change active row(s). " + str(e))
