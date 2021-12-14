@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>633</width>
-    <height>405</height>
+    <height>717</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -27,26 +27,6 @@
       <bool>false</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_2">
-      <item row="6" column="0" colspan="2">
-       <widget class="QPushButton" name="intersectionButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="text">
-         <string>Create intersection</string>
-        </property>
-       </widget>
-      </item>
-      <item row="7" column="0" colspan="2">
-       <widget class="QPushButton" name="thresholdButton">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="text">
-         <string>Set lower thresholds to 1 (to make black pixels transparent)</string>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label0">
         <property name="text">
@@ -110,13 +90,33 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
-       <widget class="qMRMLNodeComboBox" name="inputSelector3"/>
-      </item>
       <item row="4" column="0">
        <widget class="QLabel" name="label3">
         <property name="text">
          <string>V4 (US3)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="qMRMLNodeComboBox" name="inputSelector3"/>
+      </item>
+      <item row="7" column="0" colspan="2">
+       <widget class="QPushButton" name="thresholdButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Set lower thresholds to 1 (to make black pixels transparent)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0" colspan="2">
+       <widget class="QPushButton" name="intersectionButton">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Create intersection</string>
         </property>
        </widget>
       </item>
@@ -159,23 +159,43 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QCheckBox" name="linkCheckBox">
+      <item row="5" column="0">
+       <widget class="QCheckBox" name="topRowCheck">
         <property name="enabled">
          <bool>false</bool>
         </property>
         <property name="text">
-         <string>Link top and bottom row</string>
+         <string>Top row</string>
         </property>
         <property name="checked">
-         <bool>false</bool>
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QPushButton" name="switchOrderButton">
+        <property name="text">
+         <string>Switch order of displayed volumes</string>
         </property>
        </widget>
       </item>
       <item row="4" column="0">
-       <widget class="QPushButton" name="switchOrderButton">
+       <widget class="QLabel" name="label">
         <property name="text">
-         <string>Switch order of displayed volumes</string>
+         <string>Choose active row(s)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QCheckBox" name="bottomRowCheck">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Bottom row</string>
+        </property>
+        <property name="checkable">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
