@@ -59,10 +59,17 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.volumes_names = None
 
     # variable saying if views in 3-over-3 are linked or not
-    self.linked = False
+    self.topRowActive = True
+    self.bottomRowActive = False
     self.view = 'normal'
     self.views_normal = ["Red", "Green", "Yellow"]
     self.views_plus = ["Red+", "Green+", "Yellow+"]
+
+    self.switch = False
+
+    # used for updating the correct row when rows are linked
+    self.previous_active_rows = {"top": True, "bottom": False}
+    self.changing = "bottom"
 
   def setup(self):
     """
@@ -93,11 +100,15 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
     # (in the selected parameter node).
+    self.ui.inputSelector0.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector1.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
     # Buttons
+    # reset views
+    self.ui.resetViewsButton.setStyleSheet('background-color: red;')
+    self.ui.resetViewsButton.connect('clicked(bool)', self.onResetViewsButton)
     # create intersection outline
     self.ui.intersectionButton.connect('clicked(bool)', self.onIntersectionButton)
     # set foreground threshold to 1 for all chosen volumes
@@ -106,11 +117,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.viewStandardButton.connect('clicked(bool)', self.onViewStandardButton)
     # change to 3 over 3 view view
     self.ui.view3o3Button.connect('clicked(bool)', self.onView3o3Button)
+    # switch order of displaying volumes
+    self.ui.switchOrderButton.connect('clicked(bool)', self.onSwitchOrderButton)
 
     # Check boxes
-    # link top and bottom view
-    self.ui.linkCheckBox.connect('toggled(bool)', self.onLinkCheckBox)
-    # self.ui.linkCheckBox.connect('not toggled(bool)', self.onLinkCheckBox)
+    # Activate top row
+    self.ui.topRowCheck.connect('clicked(bool)', self.onTopRowCheck)
+    self.ui.bottomRowCheck.connect('clicked(bool)', self.onBottomRowCheck)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -164,12 +177,22 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.setParameterNode(self.logic.getParameterNode())
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
-    for input_volume, volume_name in zip(["InputVolume1", "InputVolume2", "InputVolume3"],
-                                         ["US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]):
+    input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3"]
+    us_volumes = ["3D AX T1 Post-contrast Pre-op Thin-cut 0.5mm July", "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
+    for input_volume, volume_name in zip(input_volumes, us_volumes):
       if not self._parameterNode.GetNodeReference(input_volume):
         volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
         if volumeNode:
           self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
+
+    # update volumes
+    self.volumes_names = [self.ui.inputSelector0.currentNode().GetName(),
+                          self.ui.inputSelector1.currentNode().GetName(),
+                          self.ui.inputSelector2.currentNode().GetName(),
+                          self.ui.inputSelector3.currentNode().GetName()]
+
+    self.ui.topRowCheck.toolTip = "Switch to 3-over-3 view to disable top row"
+    self.ui.bottomRowCheck.toolTip = "Switch to 3-over-3 view to enable bottom row"
 
   def setParameterNode(self, inputParameterNode):
     """
@@ -201,13 +224,15 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Make sure GUI changes do not call updateParameterNodeFromGUI (it could cause infinite loop)
     self._updatingGUIFromParameterNode = True
 
-    # Update node selectors and sliders
+    # Update node selectors
+    self.ui.inputSelector0.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume0"))
     self.ui.inputSelector1.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume1"))
     self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
     self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
 
     # update button states and tooltips - only if volumes are chosen, enable buttons
-    if self._parameterNode.GetNodeReference("InputVolume1") and \
+    if self._parameterNode.GetNodeReference("InputVolume0") and \
+       self._parameterNode.GetNodeReference("InputVolume1") and \
        self._parameterNode.GetNodeReference("InputVolume2") and \
        self._parameterNode.GetNodeReference("InputVolume3"):
       self.ui.intersectionButton.toolTip = "Compute intersection"
@@ -236,27 +261,97 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     wasModified = self._parameterNode.StartModify()  # Modify all properties in a single batch
 
+    self._parameterNode.SetNodeReferenceID("InputVolume0", self.ui.inputSelector0.currentNodeID)
     self._parameterNode.SetNodeReferenceID("InputVolume1", self.ui.inputSelector1.currentNodeID)
     self._parameterNode.SetNodeReferenceID("InputVolume2", self.ui.inputSelector2.currentNodeID)
     self._parameterNode.SetNodeReferenceID("InputVolume3", self.ui.inputSelector3.currentNodeID)
 
     self._parameterNode.EndModify(wasModified)
 
+    # update volumes
+    self.volumes_names = [self.ui.inputSelector0.currentNode().GetName(),
+                          self.ui.inputSelector1.currentNode().GetName(),
+                          self.ui.inputSelector2.currentNode().GetName(),
+                          self.ui.inputSelector3.currentNode().GetName()]
+
+  def get_next_combination(self, current_volumes=None, direction="forward"):
+    if not self.volumes_names or not current_volumes:
+      return None
+    if direction not in ["forward", "backward"]:
+      return None
+
+    forward_combinations = []
+    next_index = None
+
+    # create list of possible forward pairs
+    for i in range(len(self.volumes_names)):
+      if i == len(self.volumes_names) - 1:
+        index1 = len(self.volumes_names) - 1
+        index2 = 0
+      else:
+        index1 = i
+        index2 = i + 1
+
+      forward_combinations.append([self.volumes_names[index1], self.volumes_names[index2]])
+
+    # print(self.volumes_names)
+    # print(forward_combinations)
+    # print(current_volumes)
+
+    try:
+      current_index = forward_combinations.index(current_volumes)
+    except Exception as e:
+      slicer.util.errorDisplay("Reset views to a valid order for volume switching. " + str(e))
+      return current_volumes
+    combinations = forward_combinations
+
+    if self.switch and direction == "forward":
+      direction = "backward"
+    elif self.switch and direction == "backward":
+      direction = "forward"
+
+    if direction == "forward":
+      if current_index == len(self.volumes_names) - 1:
+        next_index = 0
+      else:
+        next_index = current_index + 1
+
+    elif direction == "backward":
+      if current_index == 0:
+        next_index = len(self.volumes_names) - 1
+      else:
+        next_index = current_index - 1
+
+    return combinations[next_index]
+
+  def get_current_views(self):
+    # both rows or no rows active in 3o3
+    if self.topRowActive and self.bottomRowActive and self.view == '3on3':
+      current_views = self.views_normal + self.views_plus
+
+    elif (not self.topRowActive) and (not self.bottomRowActive) and self.view == '3on3':
+      current_views = self.views_normal + self.views_plus
+
+    # bottom row active in 3o3
+    elif not self.topRowActive and self.bottomRowActive and self.view == '3on3':
+      current_views = self.views_plus
+
+    # all other times we only care about the top row (views_normal)
+    else:
+      current_views = self.views_normal
+
+    return current_views
+
   def __initialise_views(self):
     """
     Initialise views with the US volumes
     :return the composite node that can be used by the change view function
     """
+    # decide on slices to be updated depending on the view chosen
 
-    self.volumes_names = [self.ui.inputSelector1.currentNode().GetName(),
-                          self.ui.inputSelector2.currentNode().GetName(),
-                          self.ui.inputSelector3.currentNode().GetName()]
+    current_views = self.get_current_views()
 
-    # get current foreground and background volumes
-    if self.linked and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
-      current_views = self.views_normal + self.views_plus
-    else:
-      current_views = self.views_normal
+    update = False
 
     for view in current_views:
 
@@ -274,41 +369,48 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # if it's not the correct volume, set the background and foreground
         if current_background_name not in self.volumes_names:
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
 
           # update volumes
-          self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
-          self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+          update = True
 
       else:  # there is no background
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
 
         # update volumes
+        update = True
+
+      if update:
         self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
         self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+        update = False
 
       # check if there is a foreground
       if current_foreground_id is not None:
-        current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_background_id)
+        current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
         current_foreground_name = current_foreground_volume.GetName()
 
         # if it's not the correct volume, set the background and foreground
         if current_foreground_name not in self.volumes_names:
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
+
           # update volumes
-          self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
-          self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+          update = True
 
       else:  # there is no foreground
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
 
         # update volumes
+        update = True
+
+      if update:
         self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
         self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+        update = False
 
   def __change_view(self, direction='forward'):
     """
@@ -317,9 +419,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :param direction:
     :return:
     """
-    # TODO try to simplify code, seems very complex
+    # TODO make it so that when views are linked again, the slice position doesn't change
+    # TODO make it so that the when checking the top view it gets updated to the bottom view and when checking the
+    #  bottom view it gets
+    #  updated to the top view
 
-    if self.ui.inputSelector1.currentNode() is None or\
+    if self.ui.inputSelector0.currentNode() is None or\
+       self.ui.inputSelector1.currentNode() is None or\
        self.ui.inputSelector2.currentNode() is None or\
        self.ui.inputSelector3.currentNode() is None:
       slicer.util.errorDisplay("Not enough volumes given for the volume switching shortcut (choose all in the 'Common "
@@ -328,19 +434,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.__initialise_views()
 
-    if self.linked and self.view == '3on3':  # if it is linked, we want it to change in all slices
-      current_views = self.views_normal + self.views_plus
-    else:
-      current_views = self.views_normal
+    current_views = self.get_current_views()
 
     for view in current_views:
       layoutManager = slicer.app.layoutManager()
       view_logic = layoutManager.sliceWidget(view)
       view_logic = view_logic.sliceLogic()
       self.compositeNode = view_logic.GetSliceCompositeNode()
-
-      volume_background = None
-      volume_foreground = None
 
       # get current foreground and background volumes
       current_foreground_id = self.compositeNode.GetForegroundVolumeID()
@@ -352,55 +452,27 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       # switch backgrounds
       if direction == 'forward':
-        if current_background_name == self.volumes_names[2] and current_foreground_name == self.volumes_names[1]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
-        elif current_background_name == self.volumes_names[1] and current_foreground_name == self.volumes_names[0]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        elif current_background_name == self.volumes_names[0] and current_foreground_name == self.volumes_names[2]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
-        elif current_background_name == self.volumes_names[2] and current_foreground_name == self.volumes_names[0]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
-        elif current_background_name == self.volumes_names[0] and current_foreground_name == self.volumes_names[1]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        elif current_background_name == self.volumes_names[1] and current_foreground_name == self.volumes_names[2]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
+        next_combination = self.get_next_combination([current_foreground_name, current_background_name], "forward")
 
       elif direction == 'backward':
-        if current_background_name == self.volumes_names[2] and current_foreground_name == self.volumes_names[1]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
-        elif current_background_name == self.volumes_names[1] and current_foreground_name == self.volumes_names[0]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        elif current_background_name == self.volumes_names[0] and current_foreground_name == self.volumes_names[2]:
-          volume_foreground = current_background_volume
-          volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
-        elif current_background_name == self.volumes_names[2] and current_foreground_name == self.volumes_names[0]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[1])
-        elif current_background_name == self.volumes_names[0] and current_foreground_name == self.volumes_names[1]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[2])
-        elif current_background_name == self.volumes_names[1] and current_foreground_name == self.volumes_names[2]:
-          volume_background = current_foreground_volume
-          volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[0])
+        next_combination = self.get_next_combination([current_foreground_name, current_background_name], "backward")
+
+      volume_foreground = slicer.mrmlScene.GetFirstNodeByName(next_combination[0])
+      volume_background = slicer.mrmlScene.GetFirstNodeByName(next_combination[1])
 
       # update volumes (if they both exist)
       if volume_foreground and volume_background:
         if direction == 'backward' or direction == 'forward':
           self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
           self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
-          # slicer.util.setSliceViewerLayers(background=volume_background, foreground=volume_foreground)
+
         else:
-          print("wrong direction")
+          slicer.util.errorDisplay("wrong direction")
       else:
-        print("No volumes to set for foreground and background")
+        slicer.util.errorDisplay("No volumes to set for foreground and background")
+
+      # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
+      slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
 
   def __createFiducialPlacer(self):
     """
@@ -411,10 +483,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def __change_foreground_opacity_discrete(self, new_opacity=0.5):
     layoutManager = slicer.app.layoutManager()
 
-    if self.linked and self.view == '3on3':  # if it is linked, we want it to change in all slices
-      current_views = self.views_normal + self.views_plus
-    else:
-      current_views = self.views_normal
+    current_views = self.get_current_views()
 
     # iterate through all views and set opacity to
     for sliceViewName in current_views:
@@ -428,10 +497,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # TODO threshold change needs to be initialized once with setting it to 0.5 with discrete, otherwise it's stuck
     layoutManager = slicer.app.layoutManager()
 
-    if self.linked and self.view == '3on3':  # if it is linked, we want it to change in all slices
-      current_views = self.views_normal + self.views_plus
-    else:
-      current_views = self.views_normal
+    current_views = self.get_current_views()
 
     # iterate through all views and set opacity to
     for sliceViewName in current_views:
@@ -503,36 +569,70 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     for sliceCompositeNode in sliceCompositeNodes:
       sliceCompositeNode.SetLinkedControl(True)
 
+  def onResetViewsButton(self):
+
+    try:
+      # decide on slices to be updated depending on the view chosen
+      current_views = self.get_current_views()
+
+      for view in current_views:
+        layoutManager = slicer.app.layoutManager()
+        view_logic = layoutManager.sliceWidget(view).sliceLogic()
+        self.compositeNode = view_logic.GetSliceCompositeNode()
+
+        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[-1])
+        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[-2])
+
+        self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
+        self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+
+      slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutFourUpView)
+
+      # reset slice orientation
+      sliceNodes = slicer.util.getNodesByClass("vtkMRMLSliceNode")
+      sliceNodes[0].SetOrientationToAxial()
+      sliceNodes[1].SetOrientationToCoronal()
+      sliceNodes[2].SetOrientationToSagittal()
+      sliceNodes[3].SetOrientationToAxial()
+      sliceNodes[4].SetOrientationToCoronal()
+      sliceNodes[5].SetOrientationToSagittal()
+
+    except Exception as e:
+      slicer.util.errorDisplay("Could not reset views - try manually. " + str(e))
+
   def onIntersectionButton(self):
     """
     Run processing when user clicks "Create intersection" button.
     """
     try:
       # Compute output
-      self.logic.process(self.ui.inputSelector1.currentNode(),
+      self.logic.process([self.ui.inputSelector1.currentNode(),
+                         self.ui.inputSelector1.currentNode(),
                          self.ui.inputSelector2.currentNode(),
-                         self.ui.inputSelector3.currentNode())
+                         self.ui.inputSelector3.currentNode()])
 
       self.__initialise_views()
 
-    except:
-      pass
+    except Exception as e:
+      slicer.util.errorDisplay("Failed to create intersection. " + str(e))
 
   def onThresholdButton(self):
     try:
       threshold = 1
 
       # loop through all selected volumes
-      for volume in [self.ui.inputSelector1.currentNode(),
+      for volume in [self.ui.inputSelector0.currentNode(),
+                     self.ui.inputSelector1.currentNode(),
                      self.ui.inputSelector2.currentNode(),
                      self.ui.inputSelector3.currentNode()]:
 
         current_name = volume.GetName()
 
-        volNode = slicer.util.getNode(current_name)
-        dispNode = volNode.GetDisplayNode()
-        dispNode.ApplyThresholdOn()
-        dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
+        if "US" in current_name:
+          volNode = slicer.util.getNode(current_name)
+          dispNode = volNode.GetDisplayNode()
+          dispNode.ApplyThresholdOn()
+          dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
 
     except Exception as e:
       slicer.util.errorDisplay("Failed to change lower thresholds. " + str(e))
@@ -547,8 +647,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       sliceNodes[1].SetOrientationToCoronal()
       sliceNodes[2].SetOrientationToSagittal()
 
-      self.ui.linkCheckBox.toolTip = "Switch to 3-over-3 view to enable linking of top and bottom row"
-      self.ui.linkCheckBox.enabled = False
+      self.ui.topRowCheck.toolTip = "Switch to 3-over-3 view to disable top row"
+      self.ui.topRowCheck.enabled = False
+      self.ui.topRowCheck.checked = True
+
+      self.ui.bottomRowCheck.toolTip = "Switch to 3-over-3 view to enable bottom row"
+      self.ui.bottomRowCheck.enabled = False
+      self.ui.bottomRowCheck.checked = False
 
       self.view = 'normal'
 
@@ -570,31 +675,122 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.__initialise_views()
 
-      self.ui.linkCheckBox.toolTip = "Enable linking of top and bottom row"
-      self.ui.linkCheckBox.enabled = True
+      self.ui.topRowCheck.toolTip = "Activate top row"
+      self.ui.topRowCheck.enabled = True
+      self.ui.topRowCheck.checked = True
+
+      self.ui.bottomRowCheck.toolTip = "Activate bottom row"
+      self.ui.bottomRowCheck.enabled = True
+      self.ui.bottomRowCheck.checked = False
 
       self.view = '3on3'
 
     except Exception as e:
       slicer.util.errorDisplay("Failed to change to 3 over 3 view. " + str(e))
 
-  def onLinkCheckBox(self, link=False):
+  def onSwitchOrderButton(self):
     try:
-      self.linked = link
 
-      if link:
-        group_normal = group_plus = 0
-      else:
+      self.switch = not self.switch
+
+      # reverse order of names
+      self.volumes_names.reverse()
+
+      # switch views
+      current_views = self.get_current_views()
+
+      for view in current_views:
+        layoutManager = slicer.app.layoutManager()
+        view_logic = layoutManager.sliceWidget(view).sliceLogic()
+        self.compositeNode = view_logic.GetSliceCompositeNode()
+
+        current_background_id = self.compositeNode.GetBackgroundVolumeID()
+        current_foreground_id = self.compositeNode.GetForegroundVolumeID()
+
+        self.compositeNode.SetBackgroundVolumeID(current_foreground_id)
+        self.compositeNode.SetForegroundVolumeID(current_background_id)
+
+      # self.__initialise_views()
+
+    except Exception as e:
+      slicer.util.errorDisplay("Failed to change the display order. " + str(e))
+
+  def activeRowsUpdate(self):
+    try:
+      if self.topRowActive and not self.bottomRowActive:
         group_normal = 0
         group_plus = 1
+      elif not self.topRowActive and self.bottomRowActive:
+        group_normal = 1
+        group_plus = 0
+      else:  # when both are checked or unchecked
+        group_normal = 0
+        group_plus = 0
+
+        # unchecked means that we can check them again, as both unchecked doesn't make sense
+        self.topRowActive = True
+        self.bottomRowActive = True
+
+        self.ui.topRowCheck.checked = True
+        self.ui.bottomRowCheck.checked = True
 
       # set groups
       for i in range(3):
         slicer.app.layoutManager().sliceWidget(self.views_normal[i]).mrmlSliceNode().SetViewGroup(group_normal)
         slicer.app.layoutManager().sliceWidget(self.views_plus[i]).mrmlSliceNode().SetViewGroup(group_plus)
 
+      # set lower row volumes to those of the upper view if both or none are active in 3o3
+      if self.topRowActive and self.bottomRowActive and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
+
+        layoutManager = slicer.app.layoutManager()
+
+        # TODO linked views should have same zoom level and in plane shift
+
+        for i in range(3):
+          view_logic = layoutManager.sliceWidget(self.views_normal[i]).sliceLogic()
+          compositeNode_normal = view_logic.GetSliceCompositeNode()
+          view_logic = layoutManager.sliceWidget(self.views_plus[i]).sliceLogic()
+          compositeNode_plus = view_logic.GetSliceCompositeNode()
+
+          # change volumes to those from the top row
+          background_normal_id = compositeNode_normal.GetBackgroundVolumeID()
+          foreground_normal_id = compositeNode_normal.GetForegroundVolumeID()
+          background_plus_id = compositeNode_plus.GetBackgroundVolumeID()
+          foreground_plus_id = compositeNode_plus.GetForegroundVolumeID()
+
+          if self.changing == "bottom":
+            # print("previous was " + self.previous_active_rows)
+            compositeNode_plus.SetBackgroundVolumeID(background_normal_id)
+            compositeNode_plus.SetForegroundVolumeID(foreground_normal_id)
+
+            # change foreground opacities to those from the top row
+            compositeNode_plus.SetForegroundOpacity(compositeNode_normal.GetForegroundOpacity())
+
+          elif self.changing == "top":
+            # print("previous was " + self.previous_active_rows)
+            compositeNode_normal.SetBackgroundVolumeID(background_plus_id)
+            compositeNode_normal.SetForegroundVolumeID(foreground_plus_id)
+
+            # change foreground opacities to those from the top row
+            compositeNode_normal.SetForegroundOpacity(compositeNode_plus.GetForegroundOpacity())
+
+          # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
+          slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
+          slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
+
+
     except Exception as e:
-      slicer.util.errorDisplay("Failed link (or unlink) views. " + str(e))
+      slicer.util.errorDisplay("Could not change active row(s). " + str(e))
+
+  def onTopRowCheck(self, activate=True):
+    self.topRowActive = activate
+    self.changing = "top"
+    self.activeRowsUpdate()
+
+  def onBottomRowCheck(self, activate=False):
+    self.bottomRowActive = activate
+    self.changing = "bottom"
+    self.activeRowsUpdate()
 
 
 #
@@ -645,21 +841,23 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     return segmentEditorWidget, segmentEditorNode, segmentationNode
 
-  def process(self, volume1, volume2, volume3):
+  def process(self, volumes=None):
     """
-    Creates the intersectin of the first three volumes and siplays it as an outline
+    Creates the intersection of the us volumes and diplays it as an outline
     """
-
-    if volume1 is None or volume2 is None or volume3 is None:
-      slicer.util.errorDisplay( "Select all three volumes")
-      return
-
     import time
     startTime = time.time()
     logging.info('Processing started')
 
-    # usVolumes = slicer.util.getNodesByClass("vtkMRMLScalarVolumeNode")
-    usVolumes = (volume1, volume2, volume3)
+    # usVolumes_names = [vol.GetName() for vol in usVolumes]
+    usVolumes = []
+    for volume in volumes:
+      if "US" in volume.GetName():
+        usVolumes.append(volume)
+
+    if len(usVolumes) <= 1:
+      slicer.util.errorDisplay("Select at least two US volumes (intersection is only calculated for US volumes)")
+      return
 
     # initialise segment editor
     segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor("us_outlines")
@@ -693,17 +891,15 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     # add first segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_UNION)
 
-    effect.setParameter("ModifierSegmentID", volume1.GetName()[0:3] + "_bb")
+    effect.setParameter("ModifierSegmentID", usVolumes[0].GetName()[0:3] + "_bb")
     effect.self().onApply()
 
     # intersect with the next two segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_INTERSECT)
 
-    effect.setParameter("ModifierSegmentID", volume2.GetName()[0:3] + "_bb")
-    effect.self().onApply()
-
-    effect.setParameter("ModifierSegmentID", volume3.GetName()[0:3] + "_bb")
-    effect.self().onApply()
+    for volume in usVolumes:
+      effect.setParameter("ModifierSegmentID", volume.GetName()[0:3] + "_bb")
+      effect.self().onApply()
 
     # remove segments
     for id in addedSegmentID:
