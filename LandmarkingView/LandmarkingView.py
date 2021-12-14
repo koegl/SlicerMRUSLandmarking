@@ -68,7 +68,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.switch = False
 
     # used for updating the correct row when rows are linked
-    self.previous_active_row = "top"
+    self.previous_active_rows = {"top": True, "bottom": False}
+    self.changing = "bottom"
 
   def setup(self):
     """
@@ -121,8 +122,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Check boxes
     # Activate top row
-    self.ui.topRowCheck.connect('toggled(bool)', self.onTopRowCheck)
-    self.ui.bottomRowCheck.connect('toggled(bool)', self.onBottomRowCheck)
+    self.ui.topRowCheck.connect('clicked(bool)', self.onTopRowCheck)
+    self.ui.bottomRowCheck.connect('clicked(bool)', self.onBottomRowCheck)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -739,12 +740,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         slicer.app.layoutManager().sliceWidget(self.views_plus[i]).mrmlSliceNode().SetViewGroup(group_plus)
 
       # set lower row volumes to those of the upper view if both or none are active in 3o3
-      if ((self.topRowActive and self.bottomRowActive) or not (self.topRowActive and self.bottomRowActive)) and \
-           self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
+      if self.topRowActive and self.bottomRowActive and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
 
         layoutManager = slicer.app.layoutManager()
 
-        # TODO the changing to new previous active row changes three times in the for loop -> it should change once
+        # TODO linked views should have same zoom level and in plane shift
 
         for i in range(3):
           view_logic = layoutManager.sliceWidget(self.views_normal[i]).sliceLogic()
@@ -758,14 +758,16 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           background_plus_id = compositeNode_plus.GetBackgroundVolumeID()
           foreground_plus_id = compositeNode_plus.GetForegroundVolumeID()
 
-          if self.previous_active_row == "bottom":
+          if self.changing == "bottom":
+            # print("previous was " + self.previous_active_rows)
             compositeNode_plus.SetBackgroundVolumeID(background_normal_id)
             compositeNode_plus.SetForegroundVolumeID(foreground_normal_id)
 
             # change foreground opacities to those from the top row
             compositeNode_plus.SetForegroundOpacity(compositeNode_normal.GetForegroundOpacity())
 
-          elif self.previous_active_row == "top":
+          elif self.changing == "top":
+            # print("previous was " + self.previous_active_rows)
             compositeNode_normal.SetBackgroundVolumeID(background_plus_id)
             compositeNode_normal.SetForegroundVolumeID(foreground_plus_id)
 
@@ -776,25 +778,19 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
           slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
 
-        if self.previous_active_row == "bottom":
-          self.previous_active_row = "top"
-        elif self.previous_active_row == "top":
-          self.previous_active_row = "bottom"
-
 
     except Exception as e:
       slicer.util.errorDisplay("Could not change active row(s). " + str(e))
 
   def onTopRowCheck(self, activate=True):
     self.topRowActive = activate
+    self.changing = "top"
     self.activeRowsUpdate()
 
   def onBottomRowCheck(self, activate=False):
     self.bottomRowActive = activate
+    self.changing = "bottom"
     self.activeRowsUpdate()
-
-
-
 
 
 #
