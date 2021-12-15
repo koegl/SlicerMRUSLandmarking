@@ -485,7 +485,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         slicer.util.errorDisplay("No volumes to set for foreground and background")
 
       # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
-      slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
+      #slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
 
   def __createFiducialPlacer(self):
     """
@@ -848,9 +848,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # update offset (sometimes when updating rows, they are updated to the wrong offset)
             # view_logic_normal.SetSliceOffset(view_logic_plus.GetSliceOffset())
 
+          # todo fix rotate to volume - it creates crossections in different oreintations, however, otherwise slices are shifted in plane in different directions
           # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
-          slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
-          slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
+          #slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
+          #slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
 
 
     except Exception as e:
