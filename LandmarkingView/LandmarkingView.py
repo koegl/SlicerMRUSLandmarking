@@ -188,10 +188,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
     # update volumes
-    self.volumes_names = [self.ui.inputSelector0.currentNode().GetName(),
-                          self.ui.inputSelector1.currentNode().GetName(),
-                          self.ui.inputSelector2.currentNode().GetName(),
-                          self.ui.inputSelector3.currentNode().GetName()]
+    try:
+      self.volumes_names = [self.ui.inputSelector0.currentNode().GetName(),
+                            self.ui.inputSelector1.currentNode().GetName(),
+                            self.ui.inputSelector2.currentNode().GetName(),
+                            self.ui.inputSelector3.currentNode().GetName()]
+    except:
+      print("No volumes selected, so cannot execute initializeParameterNode()")
 
     self.ui.topRowCheck.toolTip = "Switch to 3-over-3 view to disable top row"
     self.ui.bottomRowCheck.toolTip = "Switch to 3-over-3 view to enable bottom row"
@@ -271,10 +274,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode.EndModify(wasModified)
 
     # update volumes
-    self.volumes_names = [self.ui.inputSelector0.currentNode().GetName(),
-                          self.ui.inputSelector1.currentNode().GetName(),
-                          self.ui.inputSelector2.currentNode().GetName(),
-                          self.ui.inputSelector3.currentNode().GetName()]
+    try:
+      self.volumes_names = [self.ui.inputSelector0.currentNode().GetName(),
+                            self.ui.inputSelector1.currentNode().GetName(),
+                            self.ui.inputSelector2.currentNode().GetName(),
+                            self.ui.inputSelector3.currentNode().GetName()]
+    except:
+      print("No volumes selected, so cannot execute updateParameterNodeFromGUI()")
 
   def get_next_combination(self, current_volumes=None, direction="forward"):
     if not self.volumes_names or not current_volumes:
