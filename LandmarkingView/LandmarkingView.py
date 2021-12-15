@@ -833,20 +833,20 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             compositeNode_plus.SetForegroundVolumeID(foreground_normal_id)
 
             # change foreground opacities to those from the top row
-            compositeNode_plus.SetForegroundOpacity(compositeNode_normal.GetForegroundOpacity())
+            # compositeNode_plus.SetForegroundOpacity(compositeNode_normal.GetForegroundOpacity())
 
             # update offset (sometimes when updating rows, they are updated to the wrong offset)
-            view_logic_plus.SetSliceOffset(view_logic_normal.GetSliceOffset())
+            # view_logic_plus.SetSliceOffset(view_logic_normal.GetSliceOffset())
 
           elif self.changing == "top":
             compositeNode_normal.SetBackgroundVolumeID(background_plus_id)
             compositeNode_normal.SetForegroundVolumeID(foreground_plus_id)
 
             # change foreground opacities to those from the top row
-            compositeNode_normal.SetForegroundOpacity(compositeNode_plus.GetForegroundOpacity())
+            # compositeNode_normal.SetForegroundOpacity(compositeNode_plus.GetForegroundOpacity())
 
             # update offset (sometimes when updating rows, they are updated to the wrong offset)
-            view_logic_normal.SetSliceOffset(view_logic_plus.GetSliceOffset())
+            # view_logic_normal.SetSliceOffset(view_logic_plus.GetSliceOffset())
 
           # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
           slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
