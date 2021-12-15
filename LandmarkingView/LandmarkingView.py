@@ -185,7 +185,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
     input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3"]
-    us_volumes = ["3D AX T1 Post-contrast Pre-op Thin-cut 0.5mm July", "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
+    us_volumes = ["3D AX T2 SPACE Pre-op Thin-cut", "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
     for input_volume, volume_name in zip(input_volumes, us_volumes):
       if not self._parameterNode.GetNodeReference(input_volume):
         volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
@@ -869,22 +869,26 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def load_numpy_landmarks(self):
 
-    file_path = "C:/Users/fryde/Documents/university/master/thesis/code/mthesis-slicerLandmarkingView/misc/lmrks5"
+    file_path = "C:/Users/fryde/Documents/university/master/thesis/code/mthesis-slicerLandmarkingView/misc/ag2146_T2SPACE_US1predura"
+    file_name = os.path.basename(file_path)
+
+    # split filename so we can extract to which volumes the landmarks relate to
+    file_name = file_name.split('_')
 
     # load picked file
     # todo loading file shouldn't be hardcoded - let the user choose in the GUI which file to load
+    # todo the pickled file needs to specify somewhere (in the filename) which dataset and especially which volumes
     with open(file_path, 'rb') as landmarks_file:
       landmarks = pickle.load(landmarks_file)
 
     # create and activate new node for new (loaded) landmarks
-    markup_node_id = slicer.modules.markups.logic().AddNewFiducialNode("loaded_landmarks")  # get id
+    markup_node_id = slicer.modules.markups.logic().AddNewFiducialNode("F")  # get id
     markup_node = slicer.mrmlScene.GetNodeByID(markup_node_id)  # get id with node
-    slicer.modules.markups.logic().SetActiveListID(markup_node)  # set the node to be active so we add points to it
 
-    for i in range(2):
-      for j in range(landmarks[i].shape[0]):
+    for j in range(landmarks[0].shape[0]):
+      for i in range(2):
         cors = landmarks[i][j]
-        slicer.modules.markups.logic().AddFiducial(cors[0], cors[1], cors[2])
+        markup_node.AddFiducial(cors[0], cors[1], cors[2], "{}_{}".format(file_name[i+1], j))  # +1 because 0th is AG
 
 #
 # LandmarkingViewLogic
