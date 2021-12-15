@@ -6,6 +6,9 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import SegmentEditorEffects
 import functools
+import pickle
+from inspect import currentframe, getframeinfo
+
 
 #
 # LandmarkingView
@@ -72,6 +75,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # for switching between markup control points
     self.current_control_point_idx = 0
+
+    self.load_numpy_landmarks()
 
   def setup(self):
     """
@@ -861,6 +866,24 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.changing = "bottom"
     self.activeRowsUpdate()
 
+  def load_numpy_landmarks(self):
+
+    file_path = "C:/Users/fryde/Documents/university/master/thesis/code/mthesis-slicerLandmarkingView/misc/lmrks5"
+
+    # load picked file
+    # todo loading file shouldn't be hardcoded - let the user choose in the GUI which file to load
+    with open(file_path, 'rb') as landmarks_file:
+      landmarks = pickle.load(landmarks_file)
+
+    # create and activate new node for new (loaded) landmarks
+    markup_node_id = slicer.modules.markups.logic().AddNewFiducialNode("loaded_landmarks")  # get id
+    markup_node = slicer.mrmlScene.GetNodeByID(markup_node_id)  # get id with node
+    slicer.modules.markups.logic().SetActiveListID(markup_node)  # set the node to be active so we add points to it
+
+    for i in range(2):
+      for j in range(landmarks[i].shape[0]):
+        cors = landmarks[i][j]
+        slicer.modules.markups.logic().AddFiducial(cors[0], cors[1], cors[2])
 
 #
 # LandmarkingViewLogic
