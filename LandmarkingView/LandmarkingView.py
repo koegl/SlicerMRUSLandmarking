@@ -533,7 +533,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   def __jump_to_next_landmark(self, direction="forward"):
 
     # get markup node
-    x = slicer.util.getNode("F")
+    try:
+      x = slicer.util.getNode("F")
+
+    except Exception as e:
+      slicer.util.errorDisplay("Create landmarks (control points) before trying to switch between them. " + str(e))
 
     # get amount of control points
     control_points_amount = x.GetNumberOfControlPoints()
