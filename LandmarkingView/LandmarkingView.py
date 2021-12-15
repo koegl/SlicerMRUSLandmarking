@@ -68,8 +68,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.switch = False
 
     # used for updating the correct row when rows are linked
-    self.previous_active_rows = {"top": True, "bottom": False}
     self.changing = "bottom"
+
+    # for switching between markup control points
+    self.current_control_point_idx = 0
 
   def setup(self):
     """
@@ -528,6 +530,56 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
     #current_foreground_volume.AddObserver(slicer.vtkMRMLScalarVolumeDisplayNode.PointModifiedEvent, dispNode.SetLowerThreshold)
 
+  def __jump_to_next_landmark(self, direction="forward"):
+
+    # get markup node
+    x = slicer.util.getNode("F")
+
+    # get amount of control points
+    control_points_amount = x.GetNumberOfControlPoints()
+
+    # if there are 0 control points
+    if control_points_amount == 0:
+      slicer.util.errorDisplay("Create landmarks (control points) before trying to switch between them")
+      return
+
+    # increase or decrease index according to direction
+    if direction == "forward":
+      self.current_control_point_idx += 1
+
+      # if it's too big, circle back to 0-th index
+      if self.current_control_point_idx >= control_points_amount:
+        self.current_control_point_idx = 0
+
+    elif direction == "backward":
+      self.current_control_point_idx -= 1
+
+      # if it's too small start ath the last index again
+      if self.current_control_point_idx < 0:
+        self.current_control_point_idx = control_points_amount - 1
+
+    else:  # wrong direction
+      slicer.util.errorDisplay("Wrong switching direction (error in code).")
+      return
+
+    # get n-th control point vector
+    pos = x.GetNthControlPointPositionVector(self.current_control_point_idx)
+
+    # get view group to be updated
+    if self.topRowActive and not self.bottomRowActive:
+      group = 0
+    elif not self.topRowActive and self.bottomRowActive:
+      group = 1
+    else:  # when both are checked or unchecked
+      group = 1
+
+    # center views on current control point
+    slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], False, 0)
+
+    # center crosshair on current control point
+    crosshairNode = slicer.util.getNode("Crosshair")
+    crosshairNode.SetCrosshairRAS(pos)
+
   def __create_shortcuts(self):
 
     self.__createFiducialPlacer()
@@ -541,7 +593,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                       ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
                       ('q', functools.partial(self.__change_foreground_opacity_continuous, 0.02)),  # incr. op. by .01
                       ('w', functools.partial(self.__change_foreground_opacity_continuous, -0.02)),  # decr. op. by .01
-                      ('l', functools.partial(self.__set_foreground_threshold, 1))]  # set foreground threshold to 1
+                      ('l', functools.partial(self.__set_foreground_threshold, 1)),
+                      ('z', functools.partial(self.__jump_to_next_landmark, "backward")),
+                      ('x', functools.partial(self.__jump_to_next_landmark, "forward"))]
 
   def __initialiseShortcuts(self):
 
@@ -747,10 +801,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # TODO linked views should have same zoom level and in plane shift
 
         for i in range(3):
-          view_logic = layoutManager.sliceWidget(self.views_normal[i]).sliceLogic()
-          compositeNode_normal = view_logic.GetSliceCompositeNode()
-          view_logic = layoutManager.sliceWidget(self.views_plus[i]).sliceLogic()
-          compositeNode_plus = view_logic.GetSliceCompositeNode()
+          view_logic_normal = layoutManager.sliceWidget(self.views_normal[i]).sliceLogic()
+          compositeNode_normal = view_logic_normal.GetSliceCompositeNode()
+          view_logic_plus = layoutManager.sliceWidget(self.views_plus[i]).sliceLogic()
+          compositeNode_plus = view_logic_plus.GetSliceCompositeNode()
 
           # change volumes to those from the top row
           background_normal_id = compositeNode_normal.GetBackgroundVolumeID()
@@ -759,20 +813,24 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           foreground_plus_id = compositeNode_plus.GetForegroundVolumeID()
 
           if self.changing == "bottom":
-            # print("previous was " + self.previous_active_rows)
             compositeNode_plus.SetBackgroundVolumeID(background_normal_id)
             compositeNode_plus.SetForegroundVolumeID(foreground_normal_id)
 
             # change foreground opacities to those from the top row
             compositeNode_plus.SetForegroundOpacity(compositeNode_normal.GetForegroundOpacity())
 
+            # update offset (sometimes when updating rows, they are updated to the wrong offset)
+            view_logic_plus.SetSliceOffset(view_logic_normal.GetSliceOffset())
+
           elif self.changing == "top":
-            # print("previous was " + self.previous_active_rows)
             compositeNode_normal.SetBackgroundVolumeID(background_plus_id)
             compositeNode_normal.SetForegroundVolumeID(foreground_plus_id)
 
             # change foreground opacities to those from the top row
             compositeNode_normal.SetForegroundOpacity(compositeNode_plus.GetForegroundOpacity())
+
+            # update offset (sometimes when updating rows, they are updated to the wrong offset)
+            view_logic_normal.SetSliceOffset(view_logic_plus.GetSliceOffset())
 
           # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
           slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
