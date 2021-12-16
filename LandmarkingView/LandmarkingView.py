@@ -106,7 +106,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.addObserver(slicer.mrmlScene, slicer.mrmlScene.EndCloseEvent, self.onSceneEndClose)
 
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
-    # (in the selected parameter node).
+    # volume selectors
     self.ui.inputSelector0.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector1.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
@@ -126,6 +126,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.view3o3Button.connect('clicked(bool)', self.onView3o3Button)
     # switch order of displaying volumes
     self.ui.switchOrderButton.connect('clicked(bool)', self.onSwitchOrderButton)
+    # add landmark file
+    self.ui.AddFilesButton.connect('clicked(bool)', self.onAddFilesButton)
+    # load landmarks
+    self.ui.loadLandmarksButton.connect('clicked(bool)', self.onLoadLandmarksButton)
 
     # Check boxes
     # Activate top row
@@ -889,6 +893,12 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       for i in range(2):
         cors = landmarks[i][j]
         markup_node.AddFiducial(cors[0], cors[1], cors[2], "{}_{}".format(file_name[i+1], j))  # +1 because 0th is AG
+
+  def onAddFilesButton(self):
+    slicer.util.openAddVolumeDialog()
+
+  def onLoadLandmarksButton(self):
+    pass
 
 #
 # LandmarkingViewLogic
