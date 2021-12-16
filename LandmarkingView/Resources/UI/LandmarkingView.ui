@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>633</width>
-    <height>717</height>
+    <height>639</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -293,7 +293,7 @@
       <string>Keyboard shortcuts</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_2">
       <item row="0" column="1">
