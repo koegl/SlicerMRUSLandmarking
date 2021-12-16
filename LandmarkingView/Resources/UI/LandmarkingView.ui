@@ -243,7 +243,7 @@
       <string>Import/Export landmarks</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_2">
       <item row="1" column="1">
