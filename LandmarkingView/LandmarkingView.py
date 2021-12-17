@@ -476,7 +476,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         slicer.util.errorDisplay("No volumes to set for foreground and background")
 
       # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
-      slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
+      # slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
 
   def __createFiducialPlacer(self):
     """
@@ -842,8 +842,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             view_logic_normal.SetSliceOffset(view_logic_plus.GetSliceOffset())
 
           # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
-          slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
-          slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
+          # slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
+          # slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
 
 
     except Exception as e:
