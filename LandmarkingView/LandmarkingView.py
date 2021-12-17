@@ -658,9 +658,12 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       sliceNodes[0].SetOrientationToAxial()
       sliceNodes[1].SetOrientationToCoronal()
       sliceNodes[2].SetOrientationToSagittal()
-      sliceNodes[3].SetOrientationToAxial()
-      sliceNodes[4].SetOrientationToCoronal()
-      sliceNodes[5].SetOrientationToSagittal()
+
+      # those below exist only if we have the 3o3 view
+      if self.view == '3on3':
+        sliceNodes[3].SetOrientationToAxial()
+        sliceNodes[4].SetOrientationToCoronal()
+        sliceNodes[5].SetOrientationToSagittal()
 
     except Exception as e:
       slicer.util.errorDisplay("Could not reset views - try manually. " + str(e))
