@@ -9,6 +9,9 @@ import functools
 import pickle
 from inspect import currentframe, getframeinfo
 
+# todo every time the input selector is activate (the user selects something), the volume names should be updaed
+# todo ask why after reloading the shortcuts don;t work
+# todo why does creating the intersection change volumes?
 
 #
 # LandmarkingView
