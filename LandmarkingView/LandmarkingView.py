@@ -427,10 +427,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :param direction:
     :return:
     """
-    # TODO make it so that when views are linked again, the slice position doesn't change
-    # TODO make it so that the when checking the top view it gets updated to the bottom view and when checking the
-    #  bottom view it gets
-    #  updated to the top view
 
     if self.ui.inputSelector0.currentNode() is None or\
        self.ui.inputSelector1.currentNode() is None or\
@@ -534,7 +530,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     dispNode = volNode.GetDisplayNode()
     dispNode.ApplyThresholdOn()
     dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
-    #current_foreground_volume.AddObserver(slicer.vtkMRMLScalarVolumeDisplayNode.PointModifiedEvent, dispNode.SetLowerThreshold)
 
   def __jump_to_next_landmark(self, direction="forward"):
 
