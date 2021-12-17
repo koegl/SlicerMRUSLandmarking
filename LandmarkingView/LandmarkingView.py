@@ -180,7 +180,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
     input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3"]
-    us_volumes = ["3D AX T1 Post-contrast Pre-op Thin-cut 0.5mm July", "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
+    us_volumes = ["3D AX T2 SPACE Pre-op Thin-cut", "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
     for input_volume, volume_name in zip(input_volumes, us_volumes):
       if not self._parameterNode.GetNodeReference(input_volume):
         volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
@@ -189,10 +189,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # update volumes
     try:
-      self.volumes_names = [self.ui.inputSelector0.currentNode().GetName(),
-                            self.ui.inputSelector1.currentNode().GetName(),
+      self.volumes_names = [self.ui.inputSelector3.currentNode().GetName(),
                             self.ui.inputSelector2.currentNode().GetName(),
-                            self.ui.inputSelector3.currentNode().GetName()]
+                            self.ui.inputSelector1.currentNode().GetName(),
+                            self.ui.inputSelector0.currentNode().GetName()]
     except:
       print("No volumes selected, so cannot execute initializeParameterNode()")
 
