@@ -180,7 +180,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
     input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3"]
-    us_volumes = ["3D AX T1 Post-contrast Pre-op Thin-cut 0.5mm July", "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
+    us_volumes = ["3D AX T2 SPACE Pre-op Thin-cut", "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control"]
     for input_volume, volume_name in zip(input_volumes, us_volumes):
       if not self._parameterNode.GetNodeReference(input_volume):
         volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
@@ -189,10 +189,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # update volumes
     try:
-      self.volumes_names = [self.ui.inputSelector0.currentNode().GetName(),
-                            self.ui.inputSelector1.currentNode().GetName(),
+      self.volumes_names = [self.ui.inputSelector3.currentNode().GetName(),
                             self.ui.inputSelector2.currentNode().GetName(),
-                            self.ui.inputSelector3.currentNode().GetName()]
+                            self.ui.inputSelector1.currentNode().GetName(),
+                            self.ui.inputSelector0.currentNode().GetName()]
     except:
       print("No volumes selected, so cannot execute initializeParameterNode()")
 
@@ -427,10 +427,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :param direction:
     :return:
     """
-    # TODO make it so that when views are linked again, the slice position doesn't change
-    # TODO make it so that the when checking the top view it gets updated to the bottom view and when checking the
-    #  bottom view it gets
-    #  updated to the top view
 
     if self.ui.inputSelector0.currentNode() is None or\
        self.ui.inputSelector1.currentNode() is None or\
@@ -480,7 +476,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         slicer.util.errorDisplay("No volumes to set for foreground and background")
 
       # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
-      slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
+      # slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
 
   def __createFiducialPlacer(self):
     """
@@ -534,7 +530,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     dispNode = volNode.GetDisplayNode()
     dispNode.ApplyThresholdOn()
     dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
-    #current_foreground_volume.AddObserver(slicer.vtkMRMLScalarVolumeDisplayNode.PointModifiedEvent, dispNode.SetLowerThreshold)
 
   def __jump_to_next_landmark(self, direction="forward"):
 
@@ -658,9 +653,12 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       sliceNodes[0].SetOrientationToAxial()
       sliceNodes[1].SetOrientationToCoronal()
       sliceNodes[2].SetOrientationToSagittal()
-      sliceNodes[3].SetOrientationToAxial()
-      sliceNodes[4].SetOrientationToCoronal()
-      sliceNodes[5].SetOrientationToSagittal()
+
+      # those below exist only if we have the 3o3 view
+      if self.view == '3on3':
+        sliceNodes[3].SetOrientationToAxial()
+        sliceNodes[4].SetOrientationToCoronal()
+        sliceNodes[5].SetOrientationToSagittal()
 
     except Exception as e:
       slicer.util.errorDisplay("Could not reset views - try manually. " + str(e))
@@ -844,8 +842,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             view_logic_normal.SetSliceOffset(view_logic_plus.GetSliceOffset())
 
           # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
-          slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
-          slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
+          # slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
+          # slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
 
 
     except Exception as e:
