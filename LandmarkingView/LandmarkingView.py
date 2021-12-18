@@ -7,7 +7,6 @@ from slicer.util import VTKObservationMixin
 import SegmentEditorEffects
 import functools
 import pickle
-from inspect import currentframe, getframeinfo
 
 # todo every time the input selector is activate (the user selects something), the volume names should be updaed
 # todo ask why after reloading the shortcuts don;t work
@@ -906,6 +905,108 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 #
 # LandmarkingViewLogic
 #
+
+class SlicerScriptedFileReaderWriterTestFileReader:
+
+  def __init__(self, parent):
+    self.parent = parent
+
+  def description(self):
+    return 'Load pickled fie'
+
+  def fileType(self):
+    return 'pickle'
+
+  def extensions(self):
+    return ['none']
+
+  def canLoadFile(self, filePath):
+    # Only enable this reader in testing mode
+    # if not slicer.app.testingEnabled():
+    #   return False
+
+    with open(filePath, 'rb') as landmarks_file:
+      try:
+        pickle.load(landmarks_file)
+        return True
+
+      except Exception as e:
+        return False
+
+  def load(self, properties):
+    try:
+      filePath = properties['fileName']
+
+      # Get node base name from filename
+      if 'name' in properties.keys():
+        baseName = properties['name']
+      else:
+        baseName = os.path.splitext(os.path.basename(filePath))[0]
+        baseName = slicer.mrmlScene.GenerateUniqueName(baseName)
+
+      # Read file content
+      with open(filePath, 'rb') as landmarks_file:
+        landmarks = pickle.load(landmarks_file)
+
+      # Load content into new node
+      loadedNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLTextNode', baseName)
+      loadedNode.SetText(''.join(landmarks[1:]))
+
+      # Uncomment the next line to display a warning message to the user.
+      # self.parent.userMessages().AddMessage(vtk.vtkCommand.WarningEvent, "This is a warning message")
+
+    except Exception as e:
+      logging.error('Failed to load file: '+str(e))
+      import traceback
+      traceback.print_exc()
+      return False
+
+    self.parent.loadedNodes = [loadedNode.GetID()]
+    return True
+
+"""
+class SlicerScriptedFileReaderWriterTestFileWriter:
+
+  def __init__(self, parent):
+    self.parent = parent
+
+  def description(self):
+    return 'My file type'
+
+  def fileType(self):
+    return 'MyFileType'
+
+  def extensions(self, obj):
+    return ['My file type (*.mft)']
+
+  def canWriteObject(self, obj):
+    # Only enable this writer in testing mode
+    if not slicer.app.testingEnabled():
+      return False
+
+    return bool(obj.IsA("vtkMRMLTextNode"))
+
+  def write(self, properties):
+    try:
+
+      # Get node
+      node = slicer.mrmlScene.GetNodeByID(properties["nodeID"])
+
+      # Write node content to file
+      filePath = properties['fileName']
+      with open (filePath, 'w') as myfile:
+        myfile.write("magic\n")
+        myfile.write(node.GetText())
+
+    except Exception as e:
+      logging.error('Failed to write file: '+str(e))
+      import traceback
+      traceback.print_exc()
+      return False
+
+    self.parent.writtenNodes = [node.GetID()]
+    return True
+"""
 
 class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
