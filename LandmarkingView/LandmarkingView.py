@@ -37,7 +37,7 @@ class LandmarkingView(ScriptedLoadableModule):
 #
 # LandmarkingViewWidget
 #
-
+# todo when a different volume is chosen other volumes are updated
 class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -94,6 +94,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # in batch mode, without a graphical user interface.
     self.logic = LandmarkingViewLogic()
 
+    # enable none option for input selectors
+    self.ui.inputSelector0.noneEnabled = True
+    self.ui.inputSelector1.noneEnabled = True
+    self.ui.inputSelector2.noneEnabled = True
+    self.ui.inputSelector3.noneEnabled = True
+    self.ui.inputSelector4.noneEnabled = True
+
     # Connections
 
     # These connections ensure that we update parameter node when scene is closed
@@ -102,12 +109,18 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
     # (in the selected parameter node).
-    # TODO add second MRI as the last volume
+
     self.ui.inputSelector0.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector1.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector4.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+
+    self.input_selectors = [self.ui.inputSelector4,
+                            self.ui.inputSelector3,
+                            self.ui.inputSelector2,
+                            self.ui.inputSelector1,
+                            self.ui.inputSelector0]
 
     # Buttons
     # reset views
@@ -192,14 +205,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
           self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
     # update volumes
-    try:
-      self.volumes_ids = [self.ui.inputSelector4.currentNode().GetID(),
-                          self.ui.inputSelector3.currentNode().GetID(),
-                          self.ui.inputSelector2.currentNode().GetID(),
-                          self.ui.inputSelector1.currentNode().GetID(),
-                          self.ui.inputSelector0.currentNode().GetID()]
-    except:
-      print("No volumes selected, so cannot execute initializeParameterNode()")
+    self.volumes_ids = []
+
+    for selector in self.input_selectors:
+      if selector.currentNode():
+        self.volumes_ids.append(selector.currentNode().GetID())
 
     self.ui.topRowCheck.toolTip = "Switch to 3-over-3 view to disable top row"
     self.ui.bottomRowCheck.toolTip = "Switch to 3-over-3 view to enable bottom row"
@@ -242,10 +252,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.inputSelector4.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume4"))
 
     # update button states and tooltips - only if volumes are chosen, enable buttons
-    if self._parameterNode.GetNodeReference("InputVolume0") and \
-       self._parameterNode.GetNodeReference("InputVolume1") and \
-       self._parameterNode.GetNodeReference("InputVolume2") and \
-       self._parameterNode.GetNodeReference("InputVolume3") and \
+    if self._parameterNode.GetNodeReference("InputVolume0") or \
+       self._parameterNode.GetNodeReference("InputVolume1") or \
+       self._parameterNode.GetNodeReference("InputVolume2") or \
+       self._parameterNode.GetNodeReference("InputVolume3") or \
        self._parameterNode.GetNodeReference("InputVolume4"):
       self.ui.intersectionButton.toolTip = "Compute intersection"
       self.ui.intersectionButton.enabled = True
@@ -282,14 +292,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode.EndModify(wasModified)
 
     # update volumes
-    try:
-      self.volumes_ids = [self.ui.inputSelector4.currentNode().GetID(),
-                          self.ui.inputSelector3.currentNode().GetID(),
-                          self.ui.inputSelector2.currentNode().GetID(),
-                          self.ui.inputSelector1.currentNode().GetID(),
-                          self.ui.inputSelector0.currentNode().GetID()]
-    except:
-      print("No volumes selected, so cannot execute updateParameterNodeFromGUI()")
+    self.volumes_ids = []
+
+    for selector in self.input_selectors:
+      if selector.currentNode():
+        self.volumes_ids.append(selector.currentNode().GetID())
 
   def get_next_combination(self, current_volume_ids=None, direction="forward"):
     if not self.volumes_ids or not current_volume_ids:
@@ -417,10 +424,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :return:
     """
 
-    if self.ui.inputSelector0.currentNode() is None or\
-       self.ui.inputSelector1.currentNode() is None or\
-       self.ui.inputSelector2.currentNode() is None or\
-       self.ui.inputSelector3.currentNode() is None or\
+    if self.ui.inputSelector0.currentNode() is None and\
+       self.ui.inputSelector1.currentNode() is None and\
+       self.ui.inputSelector2.currentNode() is None and\
+       self.ui.inputSelector3.currentNode() is None and\
        self.ui.inputSelector4.currentNode() is None:
       slicer.util.errorDisplay("Not enough volumes given for the volume switching shortcut (choose all in the 'Common "
                                "field of view'")
@@ -640,11 +647,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     try:
       # Compute output
-      self.logic.process([self.ui.inputSelector0.currentNode(),
-                          self.ui.inputSelector1.currentNode(),
-                          self.ui.inputSelector2.currentNode(),
-                          self.ui.inputSelector3.currentNode(),
-                          self.ui.inputSelector4.currentNode()], self.get_current_views())
+      self.logic.process([selector.currentNode() for selector in self.input_selectors if selector.currentNode()],
+                         self.get_current_views())
 
       self.__initialise_views()
 
@@ -881,7 +885,6 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     return segmentEditorWidget, segmentEditorNode, segmentationNode
 
-  # only IDs
   def process(self, volumes=None, current_views=None):
     """
     Creates the intersection of the us volumes and diplays it as an outline
