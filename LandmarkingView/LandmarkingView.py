@@ -860,19 +860,18 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     ScriptedLoadableModuleLogic.__init__(self)
 
   @staticmethod
-  def setup_segment_editor(segment_name, segmentationNode=None, volumeNode=None):
+  def setup_segment_editor(segmentationNode=None, volumeNode=None):
     """
     Runs standard setup of segment editor widget and segment editor node
     :param segmentationNode a seg node you can also pass
     :param volumeNode a volume node you can pass
     """
-
+  
     if segmentationNode is None:
       # Create segmentation node
       segmentationNode = slicer.vtkMRMLSegmentationNode()
       slicer.mrmlScene.AddNode(segmentationNode)
       segmentationNode.CreateDefaultDisplayNodes()
-      segmentationNode.SetName(segment_name)
 
     segmentEditorWidget = slicer.qMRMLSegmentEditorWidget()
     segmentEditorNode = slicer.vtkMRMLSegmentEditorNode()
@@ -881,21 +880,24 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     segmentEditorWidget.setMRMLSegmentEditorNode(segmentEditorNode)
     segmentEditorWidget.setSegmentationNode(segmentationNode)
     segmentEditorWidget.setMRMLScene(slicer.mrmlScene)
-
+  
     if volumeNode:
       segmentEditorWidget.setMasterVolumeNode(volumeNode)
 
     return segmentEditorWidget, segmentEditorNode, segmentationNode
 
+  # only IDs
   def process(self, volumes=None):
     """
     Creates the intersection of the us volumes and diplays it as an outline
     """
+
+    # todo when the intersection is created, the displayed volumes shouldn't change
+
     import time
     startTime = time.time()
     logging.info('Processing started')
 
-    # usVolumes_names = [vol.GetName() for vol in usVolumes]
     usVolumes = []
     for volume in volumes:
       if "us" in volume.GetName().lower():
@@ -906,7 +908,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
       return
 
     # initialise segment editor
-    segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor("us_outlines")
+    segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor()
 
     addedSegmentID = []
 
@@ -915,7 +917,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
       segmentEditorWidget.setMasterVolumeNode(volume)
 
       # Create segment
-      addedSegmentID.append(segmentationNode.GetSegmentation().AddEmptySegment(volume.GetName() + "_bb"))
+      addedSegmentID.append(segmentationNode.GetSegmentation().AddEmptySegment())
       segmentEditorNode.SetSelectedSegmentID(addedSegmentID[idx])
 
       # Fill by thresholding
@@ -929,7 +931,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     # https://discourse.slicer.org/t/how-to-programmatically-use-logical-operator-add-function-from-segment-editor/16581/2
     # https://discourse.slicer.org/t/how-to-change-the-slice-fill-in-segmentations-in-a-python-script/20871/2
     # Display settings are stored in the display node
-    intersection_segment_id = segmentationNode.GetSegmentation().AddEmptySegment("intersection")
+    intersection_segment_id = segmentationNode.GetSegmentation().AddEmptySegment()
     segmentEditorNode.SetSelectedSegmentID(intersection_segment_id)
     segmentEditorWidget.setActiveEffectByName("Logical operators")
     effect = segmentEditorWidget.activeEffect()
@@ -937,25 +939,23 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     # add first segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_UNION)
 
-    effect.setParameter("ModifierSegmentID", usVolumes[0].GetName() + "_bb")
+    effect.setParameter("ModifierSegmentID", addedSegmentID[0])
     effect.self().onApply()
 
     # intersect with the next two segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_INTERSECT)
 
-    for volume in usVolumes:
-      effect.setParameter("ModifierSegmentID", volume.GetName() + "_bb")
+    for id in addedSegmentID:
+      effect.setParameter("ModifierSegmentID", id)
       effect.self().onApply()
 
-    # remove segments
-    for id in addedSegmentID:
-      if "intersection" not in id:
-        segmentationNode.RemoveSegment(id)
+      # remove segments
+      segmentationNode.RemoveSegment(id)
 
     # display only outline
     # https://slicer.readthedocs.io/en/latest/developer_guide/script_repository.html#modify-segmentation-display-options
     # http://apidocs.slicer.org/master/classvtkMRMLSegmentationDisplayNode.html#afeca62a2a79513ab275db3840136709c
-    segmentation = slicer.mrmlScene.GetFirstNodeByName('us_outlines')
+    segmentation = slicer.mrmlScene.GetNodeByID(segmentationNode.GetID())
     displayNode = segmentation.GetDisplayNode()
     displayNode.SetSegmentOpacity2DFill(intersection_segment_id, 0.0)  # Set fill opacity of a single segment
     displayNode.SetSegmentOpacity2DOutline(intersection_segment_id, 1.0)  # Set outline opacity of a single segment
