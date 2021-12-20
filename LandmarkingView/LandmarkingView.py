@@ -494,13 +494,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
 
   def __jump_to_next_landmark(self, direction="forward"):
-    # TODO rewrite try-except - try shoul contain everything
     # get markup node
     try:
       x = slicer.util.getNode("F")
 
     except Exception as e:
-      slicer.util.errorDisplay("Create landmarks (control points) before trying to switch between them. " + str(e))
+      slicer.util.errorDisplay("Create landmarks (control points) before trying to switch between them. The landmarks "
+                               "list has to be named 'F'" + str(e))
 
     # get amount of control points
     control_points_amount = x.GetNumberOfControlPoints()
