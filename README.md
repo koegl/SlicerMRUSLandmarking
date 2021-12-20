@@ -13,6 +13,9 @@ Repository to create a module for slicer which improves the choosing of landmark
 
 
 ### Instructions for using the module
+
+*A dummy dataset based on RESECT[1] can be found
+[here](https://www.dropbox.com/sh/gabm0rqdh8kttj6/AADJfwfJnduJG4GJ92tygPufa?dl=0)*
 1. Search for the module **'LandmarkingView'** and open it
 2. (Ignore the 'Reload and Test' section)
 3. In **'Inputs'** choose the three US volumes
