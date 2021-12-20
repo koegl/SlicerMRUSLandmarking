@@ -17,30 +17,40 @@ Repository to create a module for slicer which improves the choosing of landmark
 *A dummy dataset based on RESECT[1] can be found
 [here](https://www.dropbox.com/sh/gabm0rqdh8kttj6/AADJfwfJnduJG4GJ92tygPufa?dl=0)*
 1. Search for the module **'LandmarkingView'** and open it
-2. (Ignore the 'Reload and Test' section)
-3. In **'Inputs'** choose the three US volumes
-4. Click on **'Create intersection'**
-5. Wait for a few seconds for the intersection to be created
-6. Now you can switch between the outline and the filled slice with:
-   1. either the button marked in red in the screenshot below
-   ![Outline/fill button in views](misc/outline_button.png)
-   2. or in the Segmentations module with the buttons marked in red in the screenshot below
-   ![Outline/fill button in the Segmentation module](misc/outline_button_insegs.png)
+   1. (Ignore the 'Reload and Test' section)
 
+![Extension screenshot](./misc/extension_screenshot.png)
 
-### Startup file
-A file containing code that can be executed at each startup is included in
-[/misc/startup_file.py](./misc/startup_file.py). To use it, paste the code into .slicerrc.py (replace the entire content
-of .slicerrc.py with the content of [/misc/startup_file.py](./misc/startup_file.py). You can find .slicerrc.py by going
-to Edit->Settings in Slicer3D. Then, the path to .slicerrc.py can be seen marked with red in the screenshot below (by
-pressing on the button marked in blue the file will open automatically)
+*Starting from the top:*
 
-![How to open .slicerrc.py](misc/Inkedslicerrc_file.jpg)
+1. **'Common field of view'**
+   1. choose the MR and three US volumes
+   2. CLick on 'Set lower threshold to 1...' to set the lower threshld of the US volumes to 1
+      1. thanks to this the black border surrounding the US volumes (which consists of 0s) will disappear in the overlay
+   3. Click on 'Create intersection' - this will create the intersection of the three US images (intersection as the
+   logical operator - the common field of view)
+   4. Wait for a few seconds for the intersection to be created and displayed
 
-####Current startup functionality:
-1. Link all views together
-2. Shortcuts:
-   1. **'d'** - change to the tool for placing markups (fiducials)
-   2. **'s'** - switch between three us volumes forward (their names are hard-coded at the moment and need to be
-   "US1 Pre-dura", "US2 Post-dura" and "US3 Resection Control")
-   3. **'a'** - same functionality as 's,' only the switching occurs in the opposite direction
+2. **'View controls'**
+   1. Choose between the standard view (as seen in the screenshot) and the 3-over-3 view
+   2. When the 3-over-3 view is activated, choose which row(s) (top, bottom or both) should be active
+      1. 'active' meaning which controls (e.g. switching between volumes) will act on them
+   3. Click on 'Switch order of displayed volumes' if you want the order in which the volumes are displayed switched
+
+3. **'Keyblard shortcuts'**
+   1. **d** - set a new fiducial
+   2. **a** - move forwards through the selected volumes (two volumes are displayed at all times, e.g. 2&3 and upon
+   moving forward 3&4 are displayed, then 4&1 and finally 1&2)
+      1. switching the order of displayed volumes would switch e.g. from 1&2 to 2&1
+   3. **s** - move backwards through the selected volumes
+   4. **y** - move forwards through the created landmarks (the landmark list hast to be named 'F')
+   5. **x** - move backwards through the created landmars
+   6. **1** - set foreground opacity to 0.0
+   7. **2** - set foreground opacity to 0.5
+   8. **3** - set foreground opacity to 1.0
+   9. **q** - increase foreground opacity by 0.02
+   10. **2** - decrease foreground opacity by 0.02
+      
+
+[1] Xiao, Yiming, et al. "RE troSpective Evaluation of Cerebral Tumors (RESECT): A clinical database of pre‐operative
+MRI and intra‐operative ultrasound in low‐grade glioma surgeries." Medical physics 44.7 (2017): 3875-3882.
