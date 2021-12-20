@@ -57,6 +57,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.compositeNode = None
     self.volumes_names = None
+    self.volumes = None
 
     # variable saying if views in 3-over-3 are linked or not
     self.topRowActive = True
@@ -195,6 +196,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                             self.ui.inputSelector2.currentNode().GetName(),
                             self.ui.inputSelector1.currentNode().GetName(),
                             self.ui.inputSelector0.currentNode().GetName()]
+      self.volumes = [self.ui.inputSelector3.currentNode(),
+                            self.ui.inputSelector2.currentNode(),
+                            self.ui.inputSelector1.currentNode(),
+                            self.ui.inputSelector0.currentNode()]
     except:
       print("No volumes selected, so cannot execute initializeParameterNode()")
 
@@ -282,6 +287,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                             self.ui.inputSelector1.currentNode().GetName(),
                             self.ui.inputSelector2.currentNode().GetName(),
                             self.ui.inputSelector3.currentNode().GetName()]
+      self.volumes = [self.ui.inputSelector3.currentNode(),
+                      self.ui.inputSelector2.currentNode(),
+                      self.ui.inputSelector1.currentNode(),
+                      self.ui.inputSelector0.currentNode()]
     except:
       print("No volumes selected, so cannot execute updateParameterNodeFromGUI()")
 
