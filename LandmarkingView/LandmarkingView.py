@@ -547,7 +547,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # center crosshair on current control point
     crosshairNode = slicer.util.getNode("Crosshair")
     crosshairNode.SetCrosshairRAS(pos)
-    crosshairNode.SetCrosshairMode(1)  # make it visible  # TODO change 1 to basic as in script repo
+    crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
   def __create_shortcuts(self):
 
