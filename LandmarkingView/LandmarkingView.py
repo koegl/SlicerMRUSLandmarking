@@ -38,6 +38,7 @@ class LandmarkingView(ScriptedLoadableModule):
 # LandmarkingViewWidget
 #
 # todo when a different volume is chosen other volumes are updated
+# todo changing module changes volumes s
 class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -298,6 +299,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       if selector.currentNode():
         self.volumes_ids.append(selector.currentNode().GetID())
 
+  # todo get next combination should check if 1,2 or 2,1 is in the list to make it more robust
   def get_next_combination(self, current_volume_ids=None, direction="forward"):
     if not self.volumes_ids or not current_volume_ids:
       return None
