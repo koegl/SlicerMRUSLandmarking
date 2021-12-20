@@ -208,7 +208,7 @@
       <string>Keyboard shortcuts</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_2">
       <item row="0" column="1">
@@ -226,22 +226,22 @@
         </item>
         <item>
          <property name="text">
-          <string>a: move forward through US volumes (choose volumes first)</string>
+          <string>a: move forwards through US volumes (choose volumes first)</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>s: move forward through US volumes (choose volumes first)</string>
+          <string>s: move bakcwards through US volumes (choose volumes first)</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>y: move forward through landmarks (create landmarks first)</string>
+          <string>y: move forwards through landmarks (create landmarks first)</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>x: move backward through landmarks (create landmarks first)</string>
+          <string>x: move bakcwards through landmarks (create landmarks first)</string>
          </property>
         </item>
         <item>
