@@ -306,10 +306,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       forward_combinations.append([self.volumes_names[index1], self.volumes_names[index2]])
 
-    # print(self.volumes_names)
-    # print(forward_combinations)
-    # print(current_volumes)
-
     try:
       current_index = forward_combinations.index(current_volumes)
     except Exception as e:
