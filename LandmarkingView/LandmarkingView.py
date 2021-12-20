@@ -642,6 +642,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.util.errorDisplay("Failed to create intersection. " + str(e))
 
   def onThresholdButton(self):
+    # works only if us is somehwere in the file name
     try:
       threshold = 1
 
@@ -653,8 +654,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         current_name = volume.GetName()
 
-        # TODO lowercase
-        if "US" in current_name:
+        if "us" in current_name.lower():
           volNode = slicer.util.getNode(current_name)
           dispNode = volNode.GetDisplayNode()
           dispNode.ApplyThresholdOn()
