@@ -886,6 +886,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     return segmentEditorWidget, segmentEditorNode, segmentationNode
 
+  # only IDs
   def process(self, volumes=None):
     """
     Creates the intersection of the us volumes and diplays it as an outline
