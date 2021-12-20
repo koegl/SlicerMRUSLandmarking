@@ -169,6 +169,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     if self.parent.isEntered:
       self.initializeParameterNode()
 
+  # TODO name2id
   def initializeParameterNode(self):
     """
     Ensure parameter node exists and observed.
@@ -255,6 +256,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # All the GUI updates are done
     self._updatingGUIFromParameterNode = False
 
+  # TODO name2id
   def updateParameterNodeFromGUI(self, caller=None, event=None):
     """
     This method is called when the user makes any change in the GUI.
@@ -282,6 +284,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     except:
       print("No volumes selected, so cannot execute updateParameterNodeFromGUI()")
 
+  # TODO name2id
   def get_next_combination(self, current_volumes=None, direction="forward"):
     if not self.volumes_names or not current_volumes:
       return None
@@ -350,6 +353,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     return current_views
 
+  # TODO name2id
   def __initialise_views(self):
     """
     Initialise views with the US volumes
@@ -420,6 +424,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
         update = False
 
+  # TODO name2id
   def __change_view(self, direction='forward'):
     """
     Change the view forward or backward (take the list three possible volumes and for the two displayed volumes increase
@@ -608,6 +613,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     for sliceCompositeNode in sliceCompositeNodes:
       sliceCompositeNode.SetLinkedControl(True)
 
+  # TODO name2id
   def onResetViewsButton(self):
 
     try:
