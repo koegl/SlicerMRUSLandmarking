@@ -1,7 +1,5 @@
 # mthesis-slicerAnnotationView
-Repository to create a module for slicer which improves visualisation of data for annotating, especially landmarking
-
-THE MODULE CAN CURRENTLY CREATE AN INTERSECTION OF THREE US VOLUMES
+Repository to create a module for slicer which improves the choosing of landmarks between MR and US volumes
 
 ### Instructions for installing the module
 1. On this webpage press the green button **'Code'** and choose **'Donwload ZIP'** from the dropdown menu
