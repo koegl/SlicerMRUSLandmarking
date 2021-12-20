@@ -905,7 +905,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
       return
 
     # initialise segment editor
-    segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor("us_outlines")
+    segmentEditorWidget, segmentEditorNode, segmentationNode = self.setup_segment_editor()
 
     addedSegmentID = []
 
@@ -946,7 +946,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
       effect.setParameter("ModifierSegmentID", id)
       effect.self().onApply()
 
-    # remove segments
+      # remove segments
       segmentationNode.RemoveSegment(id)
 
     # display only outline
