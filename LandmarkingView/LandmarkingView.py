@@ -669,7 +669,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     try:
       # Compute output
-      self.logic.process([self.ui.inputSelector1.currentNode(),
+      self.logic.process([self.ui.inputSelector0.currentNode(),
                          self.ui.inputSelector1.currentNode(),
                          self.ui.inputSelector2.currentNode(),
                          self.ui.inputSelector3.currentNode()])
