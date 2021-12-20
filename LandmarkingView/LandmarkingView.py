@@ -891,6 +891,9 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     """
     Creates the intersection of the us volumes and diplays it as an outline
     """
+
+    # todo when the intersection is created, the displayed volumes shouldn't change
+
     import time
     startTime = time.time()
     logging.info('Processing started')
