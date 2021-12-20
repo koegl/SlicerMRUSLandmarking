@@ -632,8 +632,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         view_logic = layoutManager.sliceWidget(view).sliceLogic()
         self.compositeNode = view_logic.GetSliceCompositeNode()
 
-        volume_background = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[-1])
-        volume_foreground = slicer.mrmlScene.GetFirstNodeByName(self.volumes_names[-2])
+        volume_background = slicer.mrmlScene.GetNodeByID(self.volumes[-1].GetID())
+        volume_foreground = slicer.mrmlScene.GetNodeByID(self.volumes[-2].GetID())
 
         self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
         self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
