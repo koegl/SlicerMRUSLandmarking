@@ -936,7 +936,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
       segmentEditorWidget.setMasterVolumeNode(volume)
 
       # Create segment
-      addedSegmentID.append(segmentationNode.GetSegmentation().AddEmptySegment(volume.GetName()[0:3] + "_bb"))
+      addedSegmentID.append(segmentationNode.GetSegmentation().AddEmptySegment(volume.GetName() + "_bb"))
       segmentEditorNode.SetSelectedSegmentID(addedSegmentID[idx])
 
       # Fill by thresholding
@@ -958,14 +958,14 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     # add first segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_UNION)
 
-    effect.setParameter("ModifierSegmentID", usVolumes[0].GetName()[0:3] + "_bb")
+    effect.setParameter("ModifierSegmentID", usVolumes[0].GetName() + "_bb")
     effect.self().onApply()
 
     # intersect with the next two segmentations
     effect.setParameter("Operation", SegmentEditorEffects.LOGICAL_INTERSECT)
 
     for volume in usVolumes:
-      effect.setParameter("ModifierSegmentID", volume.GetName()[0:3] + "_bb")
+      effect.setParameter("ModifierSegmentID", volume.GetName() + "_bb")
       effect.self().onApply()
 
     # remove segments
