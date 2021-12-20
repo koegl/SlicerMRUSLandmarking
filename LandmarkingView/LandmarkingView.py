@@ -634,7 +634,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.logic.process([self.ui.inputSelector0.currentNode(),
                          self.ui.inputSelector1.currentNode(),
                          self.ui.inputSelector2.currentNode(),
-                         self.ui.inputSelector3.currentNode()])
+                         self.ui.inputSelector3.currentNode()], self.get_current_views())
 
       self.__initialise_views()
 
@@ -871,12 +871,20 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     return segmentEditorWidget, segmentEditorNode, segmentationNode
 
   # only IDs
-  def process(self, volumes=None):
+  def process(self, volumes=None, current_views=None):
     """
     Creates the intersection of the us volumes and diplays it as an outline
     """
 
-    # todo when the intersection is created, the displayed volumes shouldn't change
+    if current_views is None:
+      current_views = ["Red", "Green", "Yellow"]
+
+    # save current background and foreground (because changing the master volume twice changes the back-/foregrounds
+    layoutManager = slicer.app.layoutManager()
+    view_logic = layoutManager.sliceWidget(current_views[0]).sliceLogic()
+    self.compositeNode = view_logic.GetSliceCompositeNode()
+    current_background_id = self.compositeNode.GetBackgroundVolumeID()
+    current_foreground_id = self.compositeNode.GetForegroundVolumeID()
 
     import time
     startTime = time.time()
@@ -898,6 +906,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     # for each volume create a threshold segmentation
     for idx, volume in enumerate(usVolumes):
+
       segmentEditorWidget.setMasterVolumeNode(volume)
 
       # Create segment
@@ -910,6 +919,15 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
       effect.setParameter("MinimumThreshold", "1")
       effect.setParameter("MaximumThreshold", "255")
       effect.self().onApply()
+
+
+    # set background and foreground in all views
+    for view in current_views:
+      layoutManager = slicer.app.layoutManager()
+      view_logic = layoutManager.sliceWidget(view).sliceLogic()
+      self.compositeNode = view_logic.GetSliceCompositeNode()
+      self.compositeNode.SetBackgroundVolumeID(current_background_id)
+      self.compositeNode.SetForegroundVolumeID(current_foreground_id)
 
     # https://slicer.readthedocs.io/en/latest/developer_guide/modules/segmenteditor.html#effect-parameters
     # https://discourse.slicer.org/t/how-to-programmatically-use-logical-operator-add-function-from-segment-editor/16581/2
