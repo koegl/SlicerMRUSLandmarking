@@ -30,7 +30,7 @@
       <item row="1" column="0">
        <widget class="QLabel" name="label0">
         <property name="text">
-         <string>V1 (MRI)</string>
+         <string>V1 (MR 1)</string>
         </property>
        </widget>
       </item>
@@ -40,7 +40,7 @@
       <item row="2" column="0">
        <widget class="QLabel" name="label1">
         <property name="text">
-         <string>V2 (US1)</string>
+         <string>V2 (US 1)</string>
         </property>
        </widget>
       </item>
@@ -68,7 +68,7 @@
       <item row="3" column="0">
        <widget class="QLabel" name="label2">
         <property name="text">
-         <string>V3 (US2)</string>
+         <string>V3 (US 2)</string>
         </property>
        </widget>
       </item>
@@ -93,7 +93,7 @@
       <item row="4" column="0">
        <widget class="QLabel" name="label3">
         <property name="text">
-         <string>V4 (US3)</string>
+         <string>V4 (US 3)</string>
         </property>
        </widget>
       </item>
@@ -119,6 +119,16 @@
          <string>Create intersection</string>
         </property>
        </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label4">
+        <property name="text">
+         <string>V5 (MR 2)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="qMRMLNodeComboBox" name="inputSelector4"/>
       </item>
      </layout>
     </widget>
@@ -362,6 +372,22 @@
    <sender>LandmarkingView</sender>
    <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
    <receiver>inputSelector3</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>122</x>
+     <y>132</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>248</x>
+     <y>61</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>LandmarkingView</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>inputSelector4</receiver>
    <slot>setMRMLScene(vtkMRMLScene*)</slot>
    <hints>
     <hint type="sourcelabel">
