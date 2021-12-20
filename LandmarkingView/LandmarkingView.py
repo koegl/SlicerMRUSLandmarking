@@ -511,26 +511,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       compositeNode = sliceLogic.GetSliceCompositeNode()
       compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
 
-  def __set_foreground_threshold(self, threshold):
-    """
-    Set foreground threshold to 1, so that the surrounding black pixels disappear
-    """
-    # get current foreground
-    layoutManager = slicer.app.layoutManager()
-    view = layoutManager.sliceWidget('Red').sliceView()
-    sliceNode = view.mrmlSliceNode()
-    sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
-    compositeNode = sliceLogic.GetSliceCompositeNode()
-
-    current_foreground_id = compositeNode.GetForegroundVolumeID()
-    current_foreground_volume = slicer.mrmlScene.GetNodeByID(current_foreground_id)
-    current_foreground_name = current_foreground_volume.GetName()
-
-    volNode = slicer.util.getNode(current_foreground_name)
-    dispNode = volNode.GetDisplayNode()
-    dispNode.ApplyThresholdOn()
-    dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
-
   def __jump_to_next_landmark(self, direction="forward"):
 
     # get markup node
@@ -599,7 +579,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                       ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
                       ('q', functools.partial(self.__change_foreground_opacity_continuous, 0.02)),  # incr. op. by .01
                       ('w', functools.partial(self.__change_foreground_opacity_continuous, -0.02)),  # decr. op. by .01
-                      ('l', functools.partial(self.__set_foreground_threshold, 1)),
                       ('z', functools.partial(self.__jump_to_next_landmark, "backward")),
                       ('x', functools.partial(self.__jump_to_next_landmark, "forward"))]
 
