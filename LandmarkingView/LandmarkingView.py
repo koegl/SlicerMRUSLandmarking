@@ -102,6 +102,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # These connections ensure that whenever user changes some settings on the GUI, that is saved in the MRML scene
     # (in the selected parameter node).
+    # TODO add second MRI as the last volume
     self.ui.inputSelector0.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector1.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
     self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
@@ -503,7 +504,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       compositeNode.SetForegroundOpacity(new_opacity)
 
   def __change_foreground_opacity_continuous(self, opacity_change=0.01):
-    # TODO threshold change needs to be initialized once with setting it to 0.5 with discrete, otherwise it's stuck
+
     layoutManager = slicer.app.layoutManager()
 
     current_views = self.get_current_views()
@@ -517,7 +518,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
 
   def __jump_to_next_landmark(self, direction="forward"):
-
+    # TODO rewrite try-except - try shoul contain everything
     # get markup node
     try:
       x = slicer.util.getNode("F")
@@ -555,6 +556,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # get n-th control point vector
     pos = x.GetNthControlPointPositionVector(self.current_control_point_idx)
 
+    # remove if-elif-else - it has no effec
     # get view group to be updated
     if self.topRowActive and not self.bottomRowActive:
       group = 0
@@ -569,7 +571,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # center crosshair on current control point
     crosshairNode = slicer.util.getNode("Crosshair")
     crosshairNode.SetCrosshairRAS(pos)
-    crosshairNode.SetCrosshairMode(1)  # make it visible
+    crosshairNode.SetCrosshairMode(1)  # make it visible  # TODO change 1 to basic as in script repo
 
   def __create_shortcuts(self):
 
@@ -676,6 +678,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         current_name = volume.GetName()
 
+        # TODO lowercase
         if "US" in current_name:
           volNode = slicer.util.getNode(current_name)
           dispNode = volNode.GetDisplayNode()
