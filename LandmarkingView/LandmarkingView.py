@@ -37,7 +37,6 @@ class LandmarkingView(ScriptedLoadableModule):
 #
 # LandmarkingViewWidget
 #
-# todo when a different volume is chosen other volumes are updated
 # todo changing module changes volumes
 class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
@@ -207,13 +206,18 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     us_volumes = ["3D AX T2 SPACE Pre-op Thin-cut",
                   "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control",
                   "3D SAG T2 SPC FLAIR Intra-op Thin-cut"]
-    for input_volume, volume_name in zip(input_volumes, us_volumes):
-      if not self._parameterNode.GetNodeReference(input_volume):
-        volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
-        if volumeNode:
-          self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
-    # update volumes
+    # only select default nodes when nothing is selected (otherwise changing modules back and forth triggers this)
+    chosen_nodes = [selector.currentNode() for selector in self.input_selectors]
+    # nothing is selected means that we have only None in the list
+    if not any(chosen_nodes):
+      for input_volume, volume_name in zip(input_volumes, us_volumes):
+        if not self._parameterNode.GetNodeReference(input_volume):
+          volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
+          if volumeNode:
+            self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
+
+    # update chosen volumes
     self.volumes_ids = []
 
     for selector in self.input_selectors:
