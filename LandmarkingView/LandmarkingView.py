@@ -38,7 +38,7 @@ class LandmarkingView(ScriptedLoadableModule):
 # LandmarkingViewWidget
 #
 # todo when a different volume is chosen other volumes are updated
-# todo changing module changes volumes s
+# todo changing module changes volumes
 class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -557,15 +557,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # get n-th control point vector
     pos = x.GetNthControlPointPositionVector(self.current_control_point_idx)
-
-    # todo remove if-elif-else - it has no effec
-    # get view group to be updated
-    if self.topRowActive and not self.bottomRowActive:
-      group = 0
-    elif not self.topRowActive and self.bottomRowActive:
-      group = 1
-    else:  # when both are checked or unchecked
-      group = 1
 
     # center views on current control point
     slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], False, 0)
