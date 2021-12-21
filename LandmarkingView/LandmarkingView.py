@@ -37,7 +37,7 @@ class LandmarkingView(ScriptedLoadableModule):
 #
 # LandmarkingViewWidget
 #
-
+# todo document all functions
 class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -672,13 +672,14 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                      self.ui.inputSelector3.currentNode(),
                      self.ui.inputSelector4.currentNode()]:
 
-        current_name = volume.GetName()
+        if volume:  # we need to check if it is not none - nothing selected means the current node is none
+          current_name = volume.GetName()
 
-        if "us" in current_name.lower():
-          volNode = slicer.util.getNode(current_name)
-          dispNode = volNode.GetDisplayNode()
-          dispNode.ApplyThresholdOn()
-          dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
+          if "us" in current_name.lower():
+            volNode = slicer.util.getNode(current_name)
+            dispNode = volNode.GetDisplayNode()
+            dispNode.ApplyThresholdOn()
+            dispNode.SetLowerThreshold(threshold)  # 1 because we want to surrounding black pixels to disappear
 
     except Exception as e:
       slicer.util.errorDisplay("Failed to change lower thresholds. " + str(e))
