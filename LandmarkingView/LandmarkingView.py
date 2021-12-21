@@ -613,7 +613,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       sliceCompositeNode.SetLinkedControl(True)
 
   def onResetViewsButton(self):
-
+    # todo it should disable the buttons like its normal in the normal view
     try:
       # decide on slices to be updated depending on the view chosen
       current_views = self.get_current_views()
