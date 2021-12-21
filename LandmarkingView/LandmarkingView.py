@@ -202,7 +202,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.setParameterNode(self.logic.getParameterNode())
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
-    input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3"]
+    # todo figure out a way to make this InputVolumeX stuff not hardcoded
+    input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3", "InputVolume4"]
     us_volumes = ["3D AX T2 SPACE Pre-op Thin-cut",
                   "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control",
                   "3D SAG T2 SPC FLAIR Intra-op Thin-cut"]
