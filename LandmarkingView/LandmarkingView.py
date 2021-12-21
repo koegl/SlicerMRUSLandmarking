@@ -37,7 +37,7 @@ class LandmarkingView(ScriptedLoadableModule):
 #
 # LandmarkingViewWidget
 #
-# todo changing module changes volumes
+
 class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
