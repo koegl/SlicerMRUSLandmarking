@@ -37,8 +37,7 @@ class LandmarkingView(ScriptedLoadableModule):
 #
 # LandmarkingViewWidget
 #
-# todo when a different volume is chosen other volumes are updated
-# todo changing module changes volumes s
+
 class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -101,6 +100,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.inputSelector2.noneEnabled = True
     self.ui.inputSelector3.noneEnabled = True
     self.ui.inputSelector4.noneEnabled = True
+
+    # set node type for input selectors
+    self.ui.inputSelector0.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+    self.ui.inputSelector1.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+    self.ui.inputSelector2.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+    self.ui.inputSelector3.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+    self.ui.inputSelector4.nodeTypes = ["vtkMRMLScalarVolumeNode"]
 
     # Connections
 
@@ -195,17 +201,23 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.setParameterNode(self.logic.getParameterNode())
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
-    input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3"]
+    # todo figure out a way to make this InputVolumeX stuff not hardcoded
+    input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3", "InputVolume4"]
     us_volumes = ["3D AX T2 SPACE Pre-op Thin-cut",
                   "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control",
                   "3D SAG T2 SPC FLAIR Intra-op Thin-cut"]
-    for input_volume, volume_name in zip(input_volumes, us_volumes):
-      if not self._parameterNode.GetNodeReference(input_volume):
-        volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
-        if volumeNode:
-          self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
-    # update volumes
+    # only select default nodes when nothing is selected (otherwise changing modules back and forth triggers this)
+    chosen_nodes = [selector.currentNode() for selector in self.input_selectors]
+    # nothing is selected means that we have only None in the list
+    if not any(chosen_nodes):
+      for input_volume, volume_name in zip(input_volumes, us_volumes):
+        if not self._parameterNode.GetNodeReference(input_volume):
+          volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
+          if volumeNode:
+            self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
+
+    # update chosen volumes
     self.volumes_ids = []
 
     for selector in self.input_selectors:
@@ -288,7 +300,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self._parameterNode.SetNodeReferenceID("InputVolume1", self.ui.inputSelector1.currentNodeID)
     self._parameterNode.SetNodeReferenceID("InputVolume2", self.ui.inputSelector2.currentNodeID)
     self._parameterNode.SetNodeReferenceID("InputVolume3", self.ui.inputSelector3.currentNodeID)
-    self._parameterNode.SetNodeReferenceID("InputVolume4", self.ui.inputSelector3.currentNodeID)
+    self._parameterNode.SetNodeReferenceID("InputVolume4", self.ui.inputSelector4.currentNodeID)
 
     self._parameterNode.EndModify(wasModified)
 
@@ -549,15 +561,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # get n-th control point vector
     pos = x.GetNthControlPointPositionVector(self.current_control_point_idx)
-
-    # todo remove if-elif-else - it has no effec
-    # get view group to be updated
-    if self.topRowActive and not self.bottomRowActive:
-      group = 0
-    elif not self.topRowActive and self.bottomRowActive:
-      group = 1
-    else:  # when both are checked or unchecked
-      group = 1
 
     # center views on current control point
     slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], False, 0)
