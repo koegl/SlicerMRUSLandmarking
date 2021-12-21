@@ -102,6 +102,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.inputSelector3.noneEnabled = True
     self.ui.inputSelector4.noneEnabled = True
 
+    # set node type for input selectors
+    self.ui.inputSelector0.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+    self.ui.inputSelector1.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+    self.ui.inputSelector2.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+    self.ui.inputSelector3.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+    self.ui.inputSelector4.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+
     # Connections
 
     # These connections ensure that we update parameter node when scene is closed
