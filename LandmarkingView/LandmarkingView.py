@@ -1051,7 +1051,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 #
 # LandmarkingViewTest
 #
-
+# todo write tests
 class LandmarkingViewTest(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
