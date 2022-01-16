@@ -313,6 +313,15 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   # todo get next combination should check if 1,2 or 2,1 is in the list to make it more robust
   def get_next_combination(self, current_volume_ids=None, direction="forward"):
+    """
+    Used for the shortcut to loop through the volumes. The idea is that always two consecutive images are overlayed. If
+    we have images [A,B,C,D] then if we start with images [A,B] the next combination will b [B,C] etc. This function
+    gets the current volume IDs and the switching direction as inputs and returns the next volume IDs.
+    :param current_volume_ids: Two currently displayed volumes
+    :param direction: The direction in which the switching will occur
+    :return: The next two IDs which should be displayed
+    """
+
     if not self.volumes_ids or not current_volume_ids:
       return None
     if direction not in ["forward", "backward"]:
@@ -360,6 +369,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     return combinations[next_index]
 
   def get_current_views(self):
+    """
+    Function to determine currently active views (slices) ('active' means the ones for which all the functionality
+    applies)
+    return: An array of current views
+    """
     # both rows or no rows active in 3o3
     if self.topRowActive and self.bottomRowActive and self.view == '3on3':
       current_views = self.views_normal + self.views_plus
@@ -379,8 +393,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def __initialise_views(self):
     """
-    Initialise views with the US volumes
-    :return the composite node that can be used by the change view function
+    Initialise views with volumes. It only changes volumes if the currently displayed volumes are not in the list of
+    chosen volumes.
+    :return the composite node that can be used by the __change_view() function
     """
     # decide on slices to be updated depending on the view chosen
     current_views = self.get_current_views()
@@ -432,10 +447,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def __change_view(self, direction='forward'):
     """
-    Change the view forward or backward (take the list three possible volumes and for the two displayed volumes increase
-    their index by one)
-    :param direction:
-    :return:
+    (This function is used as a shortcut)
+    Change the view forward or backward (take the list of possible volumes and for the two displayed volumes increase
+    their index by one) using the get_current_views() function
+    :param direction: The direction in which the volumes are switched
     """
 
     if self.ui.inputSelector0.currentNode() is None and\
@@ -492,11 +507,18 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def __createFiducialPlacer(self):
     """
+    (This function is used as a shortcut)
     Switch to the fiducial placer tool
     """
     self.interactionNode = slicer.app.applicationLogic().GetInteractionNode()
 
   def __change_foreground_opacity_discrete(self, new_opacity=0.5):
+    """
+    (This function is used as a shortcut)
+    Changes the foreground opacity to a given value.
+    :param new_opacity: The new foreground opacity
+
+    """
     layoutManager = slicer.app.layoutManager()
 
     current_views = self.get_current_views()
@@ -510,6 +532,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       compositeNode.SetForegroundOpacity(new_opacity)
 
   def __change_foreground_opacity_continuous(self, opacity_change=0.01):
+    """
+    (This function is used as a shortcut)
+    Increases or decreases the foreground opacity by a given value
+    :param opacity_change: The change in foreground opacity
+    """
 
     layoutManager = slicer.app.layoutManager()
 
@@ -524,6 +551,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
 
   def __jump_to_next_landmark(self, direction="forward"):
+    """
+    (This function is used as a shortcut)
+    Jumps through all set landmarks.
+    :param direction: The direction in which the landmarks are switched
+    """
     # get markup node
     try:
       x = slicer.util.getNode("F")
@@ -571,6 +603,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
   def __create_shortcuts(self):
+    """
+    Function to create all shortcuts
+    """
 
     self.__createFiducialPlacer()
 
@@ -587,6 +622,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                       ('x', functools.partial(self.__jump_to_next_landmark, "forward"))]
 
   def __initialiseShortcuts(self):
+    """
+    Function to initialise shortcuts created with __create_shortcuts()
+    """
 
     self.__create_shortcuts()
 
@@ -597,8 +635,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
   def __linkViews(self):
     """
-    # link views
-    # Set linked slice views  in all existing slice composite nodes and in the default node
+    Set linked slice views in all existing slice composite nodes and in the default node
     """
 
     sliceCompositeNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
@@ -613,6 +650,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       sliceCompositeNode.SetLinkedControl(True)
 
   def onResetViewsButton(self):
+    """
+    Resets to the standard view when the reset button is clicked
+    """
     # todo it should disable the buttons like its normal in the normal view
     try:
       # decide on slices to be updated depending on the view chosen
@@ -661,6 +701,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.util.errorDisplay("Failed to create intersection. " + str(e))
 
   def onThresholdButton(self):
+    """
+    Sets all lower thresholds of the US volumes to 1, so the black border disappears
+    """
     # works only if us is somehwere in the file name
     try:
       threshold = 1
@@ -685,6 +728,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.util.errorDisplay("Failed to change lower thresholds. " + str(e))
 
   def onViewStandardButton(self):
+    """
+    Changes the view to standard
+    """
     try:
       slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutFourUpView)
 
@@ -708,6 +754,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.util.errorDisplay("Failed to change to standard view. " + str(e))
 
   def onView3o3Button(self):
+    """
+    CHanges the view to 3 over 3
+    """
     try:
       slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutThreeOverThreeView)
 
@@ -736,6 +785,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.util.errorDisplay("Failed to change to 3 over 3 view. " + str(e))
 
   def onSwitchOrderButton(self):
+    """
+    Changes the order in which the volumes are displayed
+    """
     try:
 
       self.switch = not self.switch
@@ -763,6 +815,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.util.errorDisplay("Failed to change the display order. " + str(e))
 
   def activeRowsUpdate(self):
+    """
+    Updates the previously inactive row of slices (views) to the previously active - so that they are synced
+    """
     try:
       if self.topRowActive and not self.bottomRowActive:
         group_normal = 0
@@ -834,11 +889,19 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       slicer.util.errorDisplay("Could not change active row(s). " + str(e))
 
   def onTopRowCheck(self, activate=True):
+    """
+    Updates the top row
+    :param activate: Boolean value to define if row is activated
+    """
     self.topRowActive = activate
     self.changing = "top"
     self.activeRowsUpdate()
 
   def onBottomRowCheck(self, activate=False):
+    """
+    Updates the bottom row
+    :param activate: Boolean value to define if row is activated
+    """
     self.bottomRowActive = activate
     self.changing = "bottom"
     self.activeRowsUpdate()
@@ -893,7 +956,7 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
   def process(self, volumes=None, current_views=None):
     """
-    Creates the intersection of the us volumes and diplays it as an outline
+    Creates the intersection of the us volumes and displays it as an outline
     """
 
     if current_views is None:
