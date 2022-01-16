@@ -613,7 +613,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                       # fiducial placement
                       ('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
                       ('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
-                      ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.5
+                      ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.0
                       ('2', functools.partial(self.__change_foreground_opacity_discrete, 0.5)),  # change opacity to 0.5
                       ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
                       ('q', functools.partial(self.__change_foreground_opacity_continuous, 0.02)),  # incr. op. by .01
