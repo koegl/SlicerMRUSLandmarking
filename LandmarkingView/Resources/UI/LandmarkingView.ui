@@ -144,6 +144,9 @@
      <layout class="QGridLayout" name="formLayout_3">
       <item row="2" column="0">
        <widget class="QPushButton" name="viewStandardButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
         <property name="minimumSize">
          <size>
           <width>160</width>
