@@ -160,6 +160,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.__initialiseShortcuts()  # those that depend on the volumes - they have to be defined in this class,
     # as they need the updated ui stuff to work
 
+    # custom view layout
+    self.custom_layout()
+
   def cleanup(self):
     """
     Called when the application closes and the module widget is destroyed.
@@ -314,6 +317,37 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     for selector in self.input_selectors:
       if selector.currentNode():
         self.volumes_ids.append(selector.currentNode().GetID())
+
+  def custom_layout(self):
+    customLayout = """
+      <layout type="vertical" split="true">
+        <item>
+        <view class="vtkMRMLViewNode" singletontag="1">
+          <property name="viewlabel" action="default">1</property>
+        </view>
+        </item>
+        <item>
+        <view class="vtkMRMLSliceNode" singletontag="Red">
+          <property name="orientation" action="default">Axial</property>
+          <property name="viewlabel" action="default">R</property>
+          <property name="viewcolor" action="default">#F34A33</property>
+        </view>
+        </item>
+      </layout>
+      """
+
+    # Built-in layout IDs are all below 100, so you can choose any large random number
+    # for your custom layout ID.
+    customLayoutId = 501
+
+    # Add button to layout selector toolbar for this custom layout
+    viewToolBar = slicer.util.mainWindow().findChild("QToolBar", "ViewToolBar")
+    layoutMenu = viewToolBar.widgetForAction(viewToolBar.actions()[0]).menu()
+    layoutSwitchActionParent = layoutMenu  # use `layoutMenu` to add inside layout list, use `viewToolBar` to add next the standard layout list
+    layoutSwitchAction = layoutSwitchActionParent.addAction("My view")  # add inside layout list
+    layoutSwitchAction.setData(customLayoutId)
+    layoutSwitchAction.setIcon(qt.QIcon(":Icons/Go.png"))
+    layoutSwitchAction.setToolTip("3D and slice view")
 
   # todo get next combination should check if 1,2 or 2,1 is in the list to make it more robust
   def get_next_combination(self, current_volume_ids=None, direction="forward"):
