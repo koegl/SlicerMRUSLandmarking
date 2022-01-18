@@ -604,6 +604,27 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     crosshairNode.SetCrosshairRAS(pos)
     crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
+  def __create_all_fiducial_nodes(self):
+    """
+    Creates all fiducial nodes (one for each volume) (or updates the existing one)
+    """
+
+    # for volume_id in self.volumes_ids:
+    #   volume.GetName()
+    for volume in [self.ui.inputSelector0.currentNode(),
+                   self.ui.inputSelector1.currentNode(),
+                   self.ui.inputSelector2.currentNode(),
+                   self.ui.inputSelector3.currentNode(),
+                   self.ui.inputSelector4.currentNode()]:
+
+      if volume:  # we need to check if it is not none - nothing selected means the current node is none
+        volume_name = volume.GetName()
+        fiducial_name = volume_name + "_fid"
+
+        if not slicer.mrmlScene.GetFirstNodeByName(fiducial_name):  # if the fiducial node does not exist
+          # create it and append the id
+          self.fiducial_nodes.append(slicer.modules.markups.logic().AddNewFiducialNode(fiducial_name))
+
   def __activate_fiducial_node(self):
     """
     Function to activate the correct fiducial node. If the foreground opacity is bigger than 0, set the fiducial to the
