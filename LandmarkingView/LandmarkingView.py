@@ -68,7 +68,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.switch = False
 
     # used for updating the correct row when rows are linked
-    self.changing = "bottom"
+    # self.changing = "bottom"
 
     # for switching between markup control points
     self.current_control_point_idx = 0
@@ -894,7 +894,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :param activate: Boolean value to define if row is activated
     """
     self.topRowActive = activate
-    self.changing = "top"
     self.activeRowsUpdate()
 
   def onBottomRowCheck(self, activate=False):
@@ -903,7 +902,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     :param activate: Boolean value to define if row is activated
     """
     self.bottomRowActive = activate
-    self.changing = "bottom"
     self.activeRowsUpdate()
 
 
