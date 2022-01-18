@@ -617,8 +617,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         fiducial_name = volume_name + "_fid"
 
         if not slicer.mrmlScene.GetFirstNodeByName(fiducial_name):  # if the fiducial node does not exist
-          # create it and append the id
-          self.fiducial_nodes.append(slicer.modules.markups.logic().AddNewFiducialNode(fiducial_name))
+          # create it and append the voume id and the fiducial id
+          self.fiducial_nodes[volume.GetID()] = slicer.modules.markups.logic().AddNewFiducialNode(fiducial_name)
 
   def __activate_fiducial_node(self):
     """
@@ -630,24 +630,45 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # todo change the code so that all the logic below applies only to the view where the fiducial is being placed
 
     # get background and foreground IDs
+    layoutManager = slicer.app.layoutManager()
+    view_logic = layoutManager.sliceWidget("Red").sliceLogic()
+    compositeNode = view_logic.GetSliceCompositeNode()
+
+    background_id = compositeNode.GetBackgroundVolumeID()
+    foreground_id = compositeNode.GetForegroundVolumeID()
 
     # get foreground opacity
+    foreground_opacity = compositeNode.GetForegroundOpacity()
 
     # get appropriate fiducial node (or create if it does not exist)
 
-    # activate the node
+    selectionNode = slicer.app.applicationLogic().GetSelectionNode()
+    selectionNode.SetReferenceActivePlaceNodeClassName("vtkMRMLMarkupsFiducialNode")
 
-    pass
+    if foreground_opacity > 0:  # then activate the foreground fiducial node, else the background
+      print("act foreground")
+      pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[foreground_id])
+    else:
+      print("act background")
+      pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[background_id])
+
+    selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
+
+  def __fiducials(self):
+    """
+    Entire fiducial logic - create list, activate appropriate list and set the placement widget
+    """
+    self.__create_all_fiducial_nodes()
+    self.__activate_fiducial_node()
+    interactionNode = slicer.app.applicationLogic().GetInteractionNode()
+    interactionNode.SetCurrentInteractionMode(interactionNode.Place)
 
   def __create_shortcuts(self):
     """
     Function to create all shortcuts
     """
 
-    self.__createFiducialPlacer()
-
-    self.shortcuts = [('d', lambda: self.interactionNode.SetCurrentInteractionMode(self.interactionNode.Place)),
-                      # fiducial placement
+    self.shortcuts = [('d', lambda: self.__fiducials()),  # fiducial placement
                       ('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
                       ('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
                       ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.0
