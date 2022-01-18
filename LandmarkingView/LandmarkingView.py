@@ -67,6 +67,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.switch = False
 
+    self.fiducial_nodes = {}  # a dict that will contain all fiducial node ids and their corresponding volume ids
+
     # used for updating the correct row when rows are linked
     # self.changing = "bottom"
 
