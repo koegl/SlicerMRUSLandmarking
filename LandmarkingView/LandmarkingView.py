@@ -686,7 +686,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       dispNode.SetAndObserveColorNodeID(iron.GetID())
       dispNode.SetScalarVisibility(1)
       dispNode.SetLineThickness(1.2)
-
+      dispNode.UpdateAssignedAttribute()
+      dispNode.Modified()
 
   def __fiducials(self):
     """
