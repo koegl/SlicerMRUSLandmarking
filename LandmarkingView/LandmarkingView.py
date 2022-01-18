@@ -143,6 +143,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.view3o3Button.connect('clicked(bool)', self.onView3o3Button)
     # switch order of displaying volumes
     self.ui.switchOrderButton.connect('clicked(bool)', self.onSwitchOrderButton)
+    # sync all views
+    self.ui.syncViewsButton.connect('clicked(bool)', self.onSyncViewsButton)
 
     # Check boxes
     # Activate top row
@@ -750,6 +752,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
       self.view = 'normal'
 
+      # set sync views button to disabled
+      self.ui.syncViewsButton.enabled = False
+
+      # disable the button and enable 3o3 button
+      self.ui.view3o3Button.enabled = True
+      self.ui.viewStandardButton.enabled = False
+
     except Exception as e:
       slicer.util.errorDisplay("Failed to change to standard view. " + str(e))
 
@@ -780,6 +789,13 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.ui.bottomRowCheck.checked = False
 
       self.view = '3on3'
+
+      # set sync views button to enabled
+      self.ui.syncViewsButton.enabled = True
+
+      # disable the button and enable normal button
+      self.ui.view3o3Button.enabled = False
+      self.ui.viewStandardButton.enabled = True
 
     except Exception as e:
       slicer.util.errorDisplay("Failed to change to 3 over 3 view. " + str(e))
@@ -814,6 +830,42 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     except Exception as e:
       slicer.util.errorDisplay("Failed to change the display order. " + str(e))
 
+  def onSyncViewsButton(self):
+    """
+    Sync all views in the 3o3 view
+    """
+
+    # set lower row volumes to those of the upper view
+    if self.view == '3on3':  # if it is 3on3, we want it to update all slices
+
+      layoutManager = slicer.app.layoutManager()
+
+      # TODO linked views should have same zoom level and in plane shift
+
+      for i in range(3):
+        view_logic_normal = layoutManager.sliceWidget(self.views_normal[i]).sliceLogic()
+        compositeNode_normal = view_logic_normal.GetSliceCompositeNode()
+        view_logic_plus = layoutManager.sliceWidget(self.views_plus[i]).sliceLogic()
+        compositeNode_plus = view_logic_plus.GetSliceCompositeNode()
+
+        # change volumes to those from the top row
+        background_normal_id = compositeNode_normal.GetBackgroundVolumeID()
+        foreground_normal_id = compositeNode_normal.GetForegroundVolumeID()
+
+        compositeNode_plus.SetBackgroundVolumeID(background_normal_id)
+        compositeNode_plus.SetForegroundVolumeID(foreground_normal_id)
+
+        # change foreground opacities to those from the top row
+        compositeNode_plus.SetForegroundOpacity(compositeNode_normal.GetForegroundOpacity())
+
+        # update offset (sometimes when updating rows, they are updated to the wrong offset)
+        view_logic_plus.SetSliceOffset(view_logic_normal.GetSliceOffset())
+
+      # link rest of funcitonality
+      self.topRowActive = True
+      self.bottomRowActive = True
+      self.activeRowsUpdate()
+
   def activeRowsUpdate(self):
     """
     Updates the previously inactive row of slices (views) to the previously active - so that they are synced
@@ -840,50 +892,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       for i in range(3):
         slicer.app.layoutManager().sliceWidget(self.views_normal[i]).mrmlSliceNode().SetViewGroup(group_normal)
         slicer.app.layoutManager().sliceWidget(self.views_plus[i]).mrmlSliceNode().SetViewGroup(group_plus)
-
-      # set lower row volumes to those of the upper view if both or none are active in 3o3
-      if self.topRowActive and self.bottomRowActive and self.view == '3on3':  # if it is linked and 3on3, we want it to change in all slices
-
-        layoutManager = slicer.app.layoutManager()
-
-        # TODO linked views should have same zoom level and in plane shift
-
-        for i in range(3):
-          view_logic_normal = layoutManager.sliceWidget(self.views_normal[i]).sliceLogic()
-          compositeNode_normal = view_logic_normal.GetSliceCompositeNode()
-          view_logic_plus = layoutManager.sliceWidget(self.views_plus[i]).sliceLogic()
-          compositeNode_plus = view_logic_plus.GetSliceCompositeNode()
-
-          # change volumes to those from the top row
-          background_normal_id = compositeNode_normal.GetBackgroundVolumeID()
-          foreground_normal_id = compositeNode_normal.GetForegroundVolumeID()
-          background_plus_id = compositeNode_plus.GetBackgroundVolumeID()
-          foreground_plus_id = compositeNode_plus.GetForegroundVolumeID()
-
-          if self.changing == "bottom":
-            compositeNode_plus.SetBackgroundVolumeID(background_normal_id)
-            compositeNode_plus.SetForegroundVolumeID(foreground_normal_id)
-
-            # change foreground opacities to those from the top row
-            compositeNode_plus.SetForegroundOpacity(compositeNode_normal.GetForegroundOpacity())
-
-            # update offset (sometimes when updating rows, they are updated to the wrong offset)
-            view_logic_plus.SetSliceOffset(view_logic_normal.GetSliceOffset())
-
-          elif self.changing == "top":
-            compositeNode_normal.SetBackgroundVolumeID(background_plus_id)
-            compositeNode_normal.SetForegroundVolumeID(foreground_plus_id)
-
-            # change foreground opacities to those from the top row
-            compositeNode_normal.SetForegroundOpacity(compositeNode_plus.GetForegroundOpacity())
-
-            # update offset (sometimes when updating rows, they are updated to the wrong offset)
-            view_logic_normal.SetSliceOffset(view_logic_plus.GetSliceOffset())
-
-          # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
-          # slicer.app.layoutManager().sliceWidget(self.views_normal[i]).sliceController().rotateSliceToLowestVolumeAxes()
-          # slicer.app.layoutManager().sliceWidget(self.views_plus[i]).sliceController().rotateSliceToLowestVolumeAxes()
-
 
     except Exception as e:
       slicer.util.errorDisplay("Could not change active row(s). " + str(e))
