@@ -509,13 +509,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
       # slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
 
-  def __createFiducialPlacer(self):
-    """
-    (This function is used as a shortcut)
-    Switch to the fiducial placer tool
-    """
-    self.interactionNode = slicer.app.applicationLogic().GetInteractionNode()
-
   def __change_foreground_opacity_discrete(self, new_opacity=0.5):
     """
     (This function is used as a shortcut)
