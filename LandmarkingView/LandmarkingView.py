@@ -604,6 +604,25 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     crosshairNode.SetCrosshairRAS(pos)
     crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
+  def __activate_fiducial_node(self):
+    """
+    Function to activate the correct fiducial node. If the foreground opacity is bigger than 0, set the fiducial to the
+    node corresponding to the foreground node, otherwise set it to the node corresponding to the background node
+    """
+
+    # for now we only consider top row
+    # todo change the code so that all the logic below applies only to the view where the fiducial is being placed
+
+    # get background and foreground IDs
+
+    # get foreground opacity
+
+    # get appropriate fiducial node (or create if it does not exist)
+
+    # activate the node
+
+    pass
+
   def __create_shortcuts(self):
     """
     Function to create all shortcuts
