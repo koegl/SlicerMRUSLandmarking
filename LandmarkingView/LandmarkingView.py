@@ -1,5 +1,6 @@
 import os
 import unittest
+import numpy as np
 import logging
 import vtk, qt, ctk, slicer
 from slicer.ScriptedLoadableModule import *
@@ -68,6 +69,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.switch = False
 
     self.fiducial_nodes = {}  # a dict that will contain all fiducial node ids and their corresponding volume ids
+    self.curve_nodes = {}  # a dict that will contain all curve node ids and their corresponding fiducial node ids
 
     # used for updating the correct row when rows are linked
     # self.changing = "bottom"
@@ -599,13 +601,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     crosshairNode.SetCrosshairRAS(pos)
     crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
-  def __create_all_fiducial_nodes(self):
+  def __create_all_fiducial_and_curve_nodes(self):
     """
     Creates all fiducial nodes (one for each volume) (or updates the existing one)
     """
-
-    # for volume_id in self.volumes_ids:
-    #   volume.GetName()
     for volume in [self.ui.inputSelector0.currentNode(),
                    self.ui.inputSelector1.currentNode(),
                    self.ui.inputSelector2.currentNode(),
@@ -619,6 +618,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if not slicer.mrmlScene.GetFirstNodeByName(fiducial_name):  # if the fiducial node does not exist
           # create it and append the voume id and the fiducial id
           self.fiducial_nodes[volume.GetID()] = slicer.modules.markups.logic().AddNewFiducialNode(fiducial_name)
+          self.curve_nodes[self.fiducial_nodes[volume.GetID()]] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
 
   def __activate_fiducial_node(self):
     """
@@ -646,22 +646,58 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     selectionNode.SetReferenceActivePlaceNodeClassName("vtkMRMLMarkupsFiducialNode")
 
     if foreground_opacity > 0:  # then activate the foreground fiducial node, else the background
-      print("act foreground")
       pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[foreground_id])
     else:
-      print("act background")
       pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[background_id])
 
     selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
+
+  def __update_fiducial_flow(self):
+    """
+    Everytime a new fiducial is placed, add it to the 3D view flow. Corresponding landmarks are connected with a line
+    that should show the deformation over time (from volume to volume). The flow should be 'sensible'
+    """
+
+    # get color table
+    iron = slicer.util.getFirstNodeByName("Iron")
+
+    # loop through all fiducial nodes
+    for key, value in self.fiducial_nodes.items():
+      # for each node, add all points to the control curve
+      pointListNode = slicer.mrmlScene.GetNodeByID(value)
+      numControlPoints = pointListNode.GetNumberOfControlPoints()
+      positions = []
+      for i in range(numControlPoints):
+        vector = pointListNode.GetNthControlPointPositionVector(i)
+        positions.append([vector.GetX(), vector.GetY(), vector.GetZ()])
+
+      positions = np.asarray(positions)
+      curve_node_id = self.curve_nodes[value]
+
+      slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, positions)
+
+      # set visibility to only 3D
+      curveNode = slicer.mrmlScene.GetNodeByID(curve_node_id.GetID())
+      dispNode = curveNode.GetDisplayNode()
+      dispNode.Visibility2DOff()
+
+      # change curve to gradient
+      dispNode.SetActiveScalarName("PedigreeIDs")
+      dispNode.SetAndObserveColorNodeID(iron.GetID())
+      dispNode.SetScalarVisibility(1)
+      dispNode.SetLineThickness(1.2)
+
 
   def __fiducials(self):
     """
     Entire fiducial logic - create list, activate appropriate list and set the placement widget
     """
-    self.__create_all_fiducial_nodes()
+    self.__create_all_fiducial_and_curve_nodes()
     self.__activate_fiducial_node()
     interactionNode = slicer.app.applicationLogic().GetInteractionNode()
     interactionNode.SetCurrentInteractionMode(interactionNode.Place)
+
+    self.__update_fiducial_flow()
 
   def __create_shortcuts(self):
     """
