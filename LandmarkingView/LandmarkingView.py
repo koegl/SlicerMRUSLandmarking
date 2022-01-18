@@ -67,6 +67,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.switch = False
 
+    self.fiducial_nodes = {}  # a dict that will contain all fiducial node ids and their corresponding volume ids
+
     # used for updating the correct row when rows are linked
     # self.changing = "bottom"
 
@@ -507,13 +509,6 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
       # slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
 
-  def __createFiducialPlacer(self):
-    """
-    (This function is used as a shortcut)
-    Switch to the fiducial placer tool
-    """
-    self.interactionNode = slicer.app.applicationLogic().GetInteractionNode()
-
   def __change_foreground_opacity_discrete(self, new_opacity=0.5):
     """
     (This function is used as a shortcut)
@@ -604,15 +599,76 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     crosshairNode.SetCrosshairRAS(pos)
     crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
+  def __create_all_fiducial_nodes(self):
+    """
+    Creates all fiducial nodes (one for each volume) (or updates the existing one)
+    """
+
+    # for volume_id in self.volumes_ids:
+    #   volume.GetName()
+    for volume in [self.ui.inputSelector0.currentNode(),
+                   self.ui.inputSelector1.currentNode(),
+                   self.ui.inputSelector2.currentNode(),
+                   self.ui.inputSelector3.currentNode(),
+                   self.ui.inputSelector4.currentNode()]:
+
+      if volume:  # we need to check if it is not none - nothing selected means the current node is none
+        volume_name = volume.GetName()
+        fiducial_name = volume_name + "_fid"
+
+        if not slicer.mrmlScene.GetFirstNodeByName(fiducial_name):  # if the fiducial node does not exist
+          # create it and append the voume id and the fiducial id
+          self.fiducial_nodes[volume.GetID()] = slicer.modules.markups.logic().AddNewFiducialNode(fiducial_name)
+
+  def __activate_fiducial_node(self):
+    """
+    Function to activate the correct fiducial node. If the foreground opacity is bigger than 0, set the fiducial to the
+    node corresponding to the foreground node, otherwise set it to the node corresponding to the background node
+    """
+
+    # for now we only consider top row
+    # todo change the code so that all the logic below applies only to the view where the fiducial is being placed
+
+    # get background and foreground IDs
+    layoutManager = slicer.app.layoutManager()
+    view_logic = layoutManager.sliceWidget("Red").sliceLogic()
+    compositeNode = view_logic.GetSliceCompositeNode()
+
+    background_id = compositeNode.GetBackgroundVolumeID()
+    foreground_id = compositeNode.GetForegroundVolumeID()
+
+    # get foreground opacity
+    foreground_opacity = compositeNode.GetForegroundOpacity()
+
+    # get appropriate fiducial node (or create if it does not exist)
+
+    selectionNode = slicer.app.applicationLogic().GetSelectionNode()
+    selectionNode.SetReferenceActivePlaceNodeClassName("vtkMRMLMarkupsFiducialNode")
+
+    if foreground_opacity > 0:  # then activate the foreground fiducial node, else the background
+      print("act foreground")
+      pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[foreground_id])
+    else:
+      print("act background")
+      pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[background_id])
+
+    selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
+
+  def __fiducials(self):
+    """
+    Entire fiducial logic - create list, activate appropriate list and set the placement widget
+    """
+    self.__create_all_fiducial_nodes()
+    self.__activate_fiducial_node()
+    interactionNode = slicer.app.applicationLogic().GetInteractionNode()
+    interactionNode.SetCurrentInteractionMode(interactionNode.Place)
+
   def __create_shortcuts(self):
     """
     Function to create all shortcuts
     """
 
-    self.__createFiducialPlacer()
-
-    self.shortcuts = [('d', lambda: self.interactionNode.SetCurrentInteractionMode(self.interactionNode.Place)),
-                      # fiducial placement
+    self.shortcuts = [('d', lambda: self.__fiducials()),  # fiducial placement
                       ('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
                       ('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
                       ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.0
