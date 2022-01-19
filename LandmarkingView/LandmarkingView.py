@@ -342,6 +342,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 <property name="orientation" action="default">Axial</property>
                 <property name="viewlabel" action="default">K</property>
                 <property name="viewcolor" action="default">#808080</property>
+				<property name="viewgroup" action="default">99</property>"
               </view>
             </item>
             <item>
@@ -356,6 +357,57 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 <property name="orientation" action="default">Coronal</property>
                 <property name="viewlabel" action="default">G</property>
                 <property name="viewcolor" action="default">#6EB04B</property>
+              </view>
+            </item>
+          </layout>
+        </item>
+		<item>
+          <layout type="horizontal">
+            <item>
+              <view class ="vtkMRMLSliceNode" singletontag="Red+">
+                <property name="orientation" action="default">Axial</property>
+                <property name="viewlabel" action="default">R+</property>
+                <property name="viewcolor" action="default">#F34A33</property>
+				<property name="viewgroup" action="default">0</property>"
+              </view>
+            </item>
+			<item>
+				<view class="vtkMRMLViewNode" singletontag="1">
+					<property name="viewlabel" action="default">1</property>
+				</view>
+			</item>
+            <item>
+              <view class ="vtkMRMLSliceNode" singletontag="Yellow">
+                <property name="orientation" action="default">Saggital</property>
+                <property name="viewlabel" action="default">Y</property>
+                <property name="viewcolor" action="default">#EDD54C</property>
+              </view>
+            </item>
+          </layout>
+        </item>
+		<item>
+          <layout type="horizontal">
+            <item>
+              <view class ="vtkMRMLSliceNode" singletontag="Green+">
+                <property name="orientation" action="default">Coronal</property>
+                <property name="viewlabel" action="default">G+</property>
+                <property name="viewcolor" action="default">#6EB04B</property>
+				<property name="viewgroup" action="default">0</property>"
+              </view>
+            </item>
+            <item>
+              <view class ="vtkMRMLSliceNode" singletontag="Yellow+">
+                <property name="orientation" action="default">Saggital</property>
+                <property name="viewlabel" action="default">Y+</property>
+                <property name="viewcolor" action="default">#EDD54C</property>
+              </view>
+            </item>
+            <item>
+              <view class ="vtkMRMLSliceNode" singletontag="None2">
+                <property name="orientation" action="default">Axial</property>
+                <property name="viewlabel" action="default">K</property>
+                <property name="viewcolor" action="default">#808080</property>
+				<property name="viewgroup" action="default">99</property>"
               </view>
             </item>
           </layout>
@@ -398,7 +450,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     viewToolBar = slicer.util.mainWindow().findChild("QToolBar", "ViewToolBar")
     layoutMenu = viewToolBar.widgetForAction(viewToolBar.actions()[0]).menu()
     layoutSwitchActionParent = layoutMenu  # use `layoutMenu` to add inside layout list, use `viewToolBar` to add next the standard layout list
-    layoutSwitchAction = layoutSwitchActionParent.addAction("My view")  # add inside layout list
+    layoutSwitchAction = layoutSwitchActionParent.addAction("My_view")  # add inside layout list
     layoutSwitchAction.setData(customLayoutId)
     layoutSwitchAction.setIcon(qt.QIcon(":Icons/Go.png"))
     layoutSwitchAction.setToolTip("3D and slice view")
@@ -911,7 +963,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     CHanges the view to 3 over 3
     """
     try:
-      slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutThreeOverThreeView)
+      slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutMy_view)
 
       # set slice orientation
       sliceNodes = slicer.util.getNodesByClass("vtkMRMLSliceNode")
