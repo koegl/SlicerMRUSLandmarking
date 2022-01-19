@@ -340,8 +340,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             <item>
               <view class ="vtkMRMLSliceNode" singletontag="None">
                 <property name="orientation" action="default">Axial</property>
-                <property name="viewlabel" action="default">R</property>
-                <property name="viewcolor" action="default">#F34A33</property>
+                <property name="viewlabel" action="default">K</property>
+                <property name="viewcolor" action="default">#808080</property>
               </view>
             </item>
             <item>
