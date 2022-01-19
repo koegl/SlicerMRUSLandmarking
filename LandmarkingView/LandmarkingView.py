@@ -441,10 +441,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Built-in layout IDs are all below 100, so you can choose any large random number
     # for your custom layout ID.
-    customLayoutId = 501
+    self.customLayoutId = 501
 
     layoutManager = slicer.app.layoutManager()
-    layoutManager.layoutLogic().GetLayoutNode().AddLayoutDescription(customLayoutId, customLayout)
+    layoutManager.layoutLogic().GetLayoutNode().AddLayoutDescription(self.customLayoutId, customLayout)
 
     # Add button to layout selector toolbar for this custom layout
     viewToolBar = slicer.util.mainWindow().findChild("QToolBar", "ViewToolBar")
@@ -963,7 +963,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     CHanges the view to 3 over 3
     """
     try:
-      slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutMy_view)
+      #slicer.app.layoutManager().setLayout(slicer.vtkMRMLLayoutNode.SlicerLayoutMy_view)
+      slicer.app.layoutManager().setLayout(self.customLayoutId)
 
       # set slice orientation
       sliceNodes = slicer.util.getNodesByClass("vtkMRMLSliceNode")
