@@ -319,19 +319,70 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.volumes_ids.append(selector.currentNode().GetID())
 
   def custom_layout(self):
+    """
+    <item>
+    </item>
+
+    <view>
+    </view>
+
+    <view class ="vtkMRMLViewNode" singletontag="1">
+    </view>
+
+    <layout type>
+    </layout>
+    """
+
     customLayout = """
-      <layout type="vertical" split="true">
+      <layout type="vertical">
         <item>
-        <view class="vtkMRMLViewNode" singletontag="1">
-          <property name="viewlabel" action="default">1</property>
-        </view>
+          <layout type="horizontal">
+            <item>
+              <view class ="vtkMRMLSliceNode" singletontag="None">
+                <property name="orientation" action="default">Axial</property>
+                <property name="viewlabel" action="default">R</property>
+                <property name="viewcolor" action="default">#F34A33</property>
+              </view>
+            </item>
+            <item>
+              <view class ="vtkMRMLSliceNode" singletontag="Red">
+                <property name="orientation" action="default">Axial</property>
+                <property name="viewlabel" action="default">R</property>
+                <property name="viewcolor" action="default">#F34A33</property>
+              </view>
+            </item>
+            <item>
+              <view class ="vtkMRMLSliceNode" singletontag="Green">
+                <property name="orientation" action="default">Coronal</property>
+                <property name="viewlabel" action="default">G</property>
+                <property name="viewcolor" action="default">#6EB04B</property>
+              </view>
+            </item>
+          </layout>
         </item>
-        <item>
-        <view class="vtkMRMLSliceNode" singletontag="Red">
-          <property name="orientation" action="default">Axial</property>
-          <property name="viewlabel" action="default">R</property>
-          <property name="viewcolor" action="default">#F34A33</property>
-        </view>
+      </layout>
+    """
+
+    customLayoutx = """
+      <layout type="vertical" split="true">
+        <item splitSize="500">
+          <view class="vtkMRMLViewNode" singletontag="1">
+            <property name="viewlabel" action="default">1</property>
+          </view>
+        </item>
+        <item splitSize="500">
+          <layout type="horizontal">
+            <item>
+              <view class="vtkMRMLViewNode" singletontag="2" type="secondary">
+                <property name="viewlabel" action="default">2</property>
+              </view>
+            </item>
+            <item>
+              <view class="vtkMRMLViewNode" singletontag="3" type="secondary">
+                <property name="viewlabel" action="default">3</property>
+              </view>
+            </item>
+          </layout>
         </item>
       </layout>
       """
@@ -339,6 +390,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # Built-in layout IDs are all below 100, so you can choose any large random number
     # for your custom layout ID.
     customLayoutId = 501
+
+    layoutManager = slicer.app.layoutManager()
+    layoutManager.layoutLogic().GetLayoutNode().AddLayoutDescription(customLayoutId, customLayout)
 
     # Add button to layout selector toolbar for this custom layout
     viewToolBar = slicer.util.mainWindow().findChild("QToolBar", "ViewToolBar")
