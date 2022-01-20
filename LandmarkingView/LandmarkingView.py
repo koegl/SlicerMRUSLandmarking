@@ -606,15 +606,17 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # for volume_id in self.volumes_ids:
     #   volume.GetName()
-    for volume in [self.ui.inputSelector0.currentNode(),
-                   self.ui.inputSelector1.currentNode(),
-                   self.ui.inputSelector2.currentNode(),
-                   self.ui.inputSelector3.currentNode(),
-                   self.ui.inputSelector4.currentNode()]:
+
+    fiducial_names = ["M1__f", "U1__f", "U2__f", "U3__f", "M2__f"]
+
+    for name, volume in zip(fiducial_names, [self.ui.inputSelector0.currentNode(),
+                                              self.ui.inputSelector1.currentNode(),
+                                              self.ui.inputSelector2.currentNode(),
+                                              self.ui.inputSelector3.currentNode(),
+                                              self.ui.inputSelector4.currentNode()]):
 
       if volume:  # we need to check if it is not none - nothing selected means the current node is none
-        volume_name = volume.GetName()
-        fiducial_name = volume_name + "_fid"
+        fiducial_name = name
 
         if not slicer.mrmlScene.GetFirstNodeByName(fiducial_name):  # if the fiducial node does not exist
           # create it and append the voume id and the fiducial id
