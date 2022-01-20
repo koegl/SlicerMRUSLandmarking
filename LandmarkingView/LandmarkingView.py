@@ -555,7 +555,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     # get markup node
     try:
-      x = slicer.util.getNode("F")
+      selectionNode = slicer.app.applicationLogic().GetSelectionNode()
+      activeNodeID = selectionNode.GetActivePlaceNodeID()
+      x = slicer.mrmlScene.GetNodeByID(activeNodeID)
 
     except Exception as e:
       slicer.util.errorDisplay("Create landmarks (control points) before trying to switch between them. The landmarks "
