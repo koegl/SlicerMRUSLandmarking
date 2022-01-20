@@ -609,18 +609,22 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Get the maximum number of landmarks stored in all fiducial nodes (that's how many curves need to exist)
     :return: The maximum
     """
+
     max_amount = 0
+    try:
+      # loop through all fiducial nodes
+      for key, value in self.fiducial_nodes.items():
+        # for each node, add all points to the control curve
+        pointListNode = slicer.mrmlScene.GetNodeByID(value)
+        numControlPoints = pointListNode.GetNumberOfControlPoints()
 
-    # loop through all fiducial nodes
-    for key, value in self.fiducial_nodes.items():
-      # for each node, add all points to the control curve
-      pointListNode = slicer.mrmlScene.GetNodeByID(value)
-      numControlPoints = pointListNode.GetNumberOfControlPoints()
+        if numControlPoints > max_amount:
+          max_amount = numControlPoints
 
-      if numControlPoints > max_amount:
-        max_amount = numControlPoints
+      return max_amount
 
-    return max_amount
+    except:
+      return 0
 
   def __create_all_fiducial_nodes(self):
     """
@@ -720,14 +724,12 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.landmarks[i].append([vector.GetX(), vector.GetY(), vector.GetZ()])
         # positions.append([vector.GetX(), vector.GetY(), vector.GetZ()])
 
-      self.__markup_curve_adjustment(self.curve_nodes)
+    for index, curve_node_id in self.curve_nodes.items():
+      positions = np.asarray(self.landmarks[index])
 
-    # for index, curve_node_id in self.curve_nodes.items():
-    #   positions = np.asarray(self.landmarks[index])
-    #
-    #   slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, positions)
-    #
-    #   self.__markup_curve_adjustment(curve_node_id)
+      slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, positions)
+
+      self.__markup_curve_adjustment(curve_node_id)
 
   def __markup_curve_adjustment(self, curve_node_id):
     # get color table
@@ -754,11 +756,11 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     Entire fiducial logic - create list, activate appropriate list and set the placement widget
     """
-    self.__create_all_fiducial_nodes()
-    self.__create_all_curve_nodes()
-    self.__activate_fiducial_node()
     interactionNode = slicer.app.applicationLogic().GetInteractionNode()
     interactionNode.SetCurrentInteractionMode(interactionNode.Place)
+
+    self.__create_all_fiducial_nodes()
+    self.__activate_fiducial_node()
 
     # set control point visibility off in 3D
     for fiducial_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode"):
