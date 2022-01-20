@@ -1039,7 +1039,8 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
 
     usVolumes = []
     for volume in volumes:
-      if "us" in volume.GetName().lower():
+      matches = ["us1", "us2", "us3", "us4", "us5", "us6"]
+      if any(x in volume.GetName().lower() for x in matches):
         usVolumes.append(volume)
 
     if len(usVolumes) <= 1:
