@@ -729,8 +729,12 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     # change curve to gradient
     dispNode.SetActiveScalarName("PedigreeIDs")
     dispNode.SetAndObserveColorNodeID(iron.GetID())
+
+    # other parameters
     dispNode.SetScalarVisibility(1)
-    dispNode.SetLineThickness(1.2)
+    dispNode.SetLineThickness(0.6)
+    dispNode.SetTextScale(0)
+
     dispNode.UpdateAssignedAttribute()
     dispNode.Modified()
 
