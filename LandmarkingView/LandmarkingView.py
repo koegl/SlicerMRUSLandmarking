@@ -69,7 +69,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.switch = False
 
     self.fiducial_nodes = {}  # a dict that will contain all fiducial node ids and their corresponding volume ids
-    self.curve_nodes = {}  # a dict that will contain all curve node ids and their corresponding fiducial node ids
+    self.curve_nodes = {}  # a dict that will contain all curve node ids and their corresponding fiducial index
+    self.landmarks = {}  # dict that stores all the landmarks (key is the index, value is the []x3 array of points
 
     # used for updating the correct row when rows are linked
     # self.changing = "bottom"
@@ -601,7 +602,25 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     crosshairNode.SetCrosshairRAS(pos)
     crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
-  def __create_all_fiducial_and_curve_nodes(self):
+  def __get_max_amount_of_fiducials(self):
+    """
+    Get the maximum number of landmarks stored in all fiducial nodes (that's how many curves need to exist)
+    :return: The maximum
+    """
+    max_amount = 0
+
+    # loop through all fiducial nodes
+    for key, value in self.fiducial_nodes.items():
+      # for each node, add all points to the control curve
+      pointListNode = slicer.mrmlScene.GetNodeByID(value)
+      numControlPoints = pointListNode.GetNumberOfControlPoints()
+
+      if numControlPoints > max_amount:
+        max_amount = numControlPoints
+
+    return max_amount
+
+  def __create_all_fiducial_nodes(self):
     """
     Creates all fiducial nodes (one for each volume) (or updates the existing one)
     """
@@ -618,7 +637,16 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if not slicer.mrmlScene.GetFirstNodeByName(fiducial_name):  # if the fiducial node does not exist
           # create it and append the voume id and the fiducial id
           self.fiducial_nodes[volume.GetID()] = slicer.modules.markups.logic().AddNewFiducialNode(fiducial_name)
-          self.curve_nodes[self.fiducial_nodes[volume.GetID()]] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
+          # self.curve_nodes[self.fiducial_nodes[volume.GetID()]] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
+
+  def __create_all_curve_nodes(self):
+    """
+    Creates as many curve nodes as there are fiducials in the longest list
+    """
+    max_points = self.__get_max_amount_of_fiducials()
+
+    for i in range(len(self.curve_nodes), max_points):  # add the difference in points
+      self.curve_nodes[i + 1] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
 
   def __activate_fiducial_node(self):
     """
@@ -658,42 +686,51 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     that should show the deformation over time (from volume to volume). The flow should be 'sensible'
     """
 
-    # get color table
-    iron = slicer.util.getFirstNodeByName("Iron")
-
     # loop through all fiducial nodes
     for key, value in self.fiducial_nodes.items():
       # for each node, add all points to the control curve
       pointListNode = slicer.mrmlScene.GetNodeByID(value)
       numControlPoints = pointListNode.GetNumberOfControlPoints()
       positions = []
-      for i in range(numControlPoints):
-        vector = pointListNode.GetNthControlPointPositionVector(i)
-        positions.append([vector.GetX(), vector.GetY(), vector.GetZ()])
+      for i in range(1, numControlPoints+1):  # we start at 1 because that's how slicer numbers landmarks
+        vector = pointListNode.GetNthControlPointPositionVector(i-1)
 
-      positions = np.asarray(positions)
-      curve_node_id = self.curve_nodes[value]
+        # create entry in landmark dict
+        if i not in self.landmarks:
+          self.landmarks[i] = []
+        self.landmarks[i].append([vector.GetX(), vector.GetY(), vector.GetZ()])
+        # positions.append([vector.GetX(), vector.GetY(), vector.GetZ()])
+
+    for index, curve_node_id in self.curve_nodes.items():
+      positions = np.asarray(self.landmarks[index])
 
       slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, positions)
 
-      # set visibility to only 3D
-      curveNode = slicer.mrmlScene.GetNodeByID(curve_node_id.GetID())
-      dispNode = curveNode.GetDisplayNode()
-      dispNode.Visibility2DOff()
+      self.__markup_curve_adjustment(curve_node_id)
 
-      # change curve to gradient
-      dispNode.SetActiveScalarName("PedigreeIDs")
-      dispNode.SetAndObserveColorNodeID(iron.GetID())
-      dispNode.SetScalarVisibility(1)
-      dispNode.SetLineThickness(1.2)
-      dispNode.UpdateAssignedAttribute()
-      dispNode.Modified()
+  def __markup_curve_adjustment(self, curve_node_id):
+    # get color table
+    iron = slicer.util.getFirstNodeByName("Iron")
+
+    # set visibility to only 3D
+    curveNode = slicer.mrmlScene.GetNodeByID(curve_node_id.GetID())
+    dispNode = curveNode.GetDisplayNode()
+    dispNode.Visibility2DOff()
+
+    # change curve to gradient
+    dispNode.SetActiveScalarName("PedigreeIDs")
+    dispNode.SetAndObserveColorNodeID(iron.GetID())
+    dispNode.SetScalarVisibility(1)
+    dispNode.SetLineThickness(1.2)
+    dispNode.UpdateAssignedAttribute()
+    dispNode.Modified()
 
   def __fiducials(self):
     """
     Entire fiducial logic - create list, activate appropriate list and set the placement widget
     """
-    self.__create_all_fiducial_and_curve_nodes()
+    self.__create_all_fiducial_nodes()
+    self.__create_all_curve_nodes()
     self.__activate_fiducial_node()
     interactionNode = slicer.app.applicationLogic().GetInteractionNode()
     interactionNode.SetCurrentInteractionMode(interactionNode.Place)
