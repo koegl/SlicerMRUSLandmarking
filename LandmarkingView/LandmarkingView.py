@@ -693,6 +693,18 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     that should show the deformation over time (from volume to volume). The flow should be 'sensible'
     """
 
+    # delete old curve nodes
+    try:
+      for curve_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsCurveNode"):
+        slicer.mrmlScene.RemoveNode(curve_node)
+      self.curve_nodes = {}
+      self.landmarks = {}
+    except Exception as e:
+      print(e)
+
+    # create curve nodes again
+    self.__create_all_curve_nodes()
+
     # loop through all fiducial nodes
     for key, value in self.fiducial_nodes.items():
       # for each node, add all points to the control curve
