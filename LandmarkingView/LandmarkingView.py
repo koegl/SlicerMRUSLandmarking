@@ -648,10 +648,8 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     selectionNode.SetReferenceActivePlaceNodeClassName("vtkMRMLMarkupsFiducialNode")
 
     if foreground_opacity > 0:  # then activate the foreground fiducial node, else the background
-      print("act foreground")
       pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[foreground_id])
     else:
-      print("act background")
       pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[background_id])
 
     selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
