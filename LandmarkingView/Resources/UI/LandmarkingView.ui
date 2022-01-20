@@ -269,6 +269,11 @@
         </item>
         <item>
          <property name="text">
+          <string>u: update fiducials in 3D</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>1: foreground opacity to 0.0</string>
          </property>
         </item>
