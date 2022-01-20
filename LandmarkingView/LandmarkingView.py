@@ -708,12 +708,14 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.landmarks[i].append([vector.GetX(), vector.GetY(), vector.GetZ()])
         # positions.append([vector.GetX(), vector.GetY(), vector.GetZ()])
 
-    for index, curve_node_id in self.curve_nodes.items():
-      positions = np.asarray(self.landmarks[index])
+      self.__markup_curve_adjustment(self.curve_nodes)
 
-      slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, positions)
-
-      self.__markup_curve_adjustment(curve_node_id)
+    # for index, curve_node_id in self.curve_nodes.items():
+    #   positions = np.asarray(self.landmarks[index])
+    #
+    #   slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, positions)
+    #
+    #   self.__markup_curve_adjustment(curve_node_id)
 
   def __markup_curve_adjustment(self, curve_node_id):
     # get color table
