@@ -744,7 +744,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     interactionNode = slicer.app.applicationLogic().GetInteractionNode()
     interactionNode.SetCurrentInteractionMode(interactionNode.Place)
 
-    self.__update_fiducial_flow()
+    # set control point visibility off in 3D
+    for fiducial_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode"):
+      d = fiducial_node.GetDisplayNode()
+      d.Visibility3DOff()
 
   def __create_shortcuts(self):
     """
