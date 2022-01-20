@@ -558,7 +558,9 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     # get markup node
     try:
-      x = slicer.util.getNode("F")
+      selectionNode = slicer.app.applicationLogic().GetSelectionNode()
+      activeNodeID = selectionNode.GetActivePlaceNodeID()
+      x = slicer.mrmlScene.GetNodeByID(activeNodeID)
 
     except Exception as e:
       slicer.util.errorDisplay("Create landmarks (control points) before trying to switch between them. The landmarks "
@@ -624,15 +626,20 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     Creates all fiducial nodes (one for each volume) (or updates the existing one)
     """
-    for volume in [self.ui.inputSelector0.currentNode(),
-                   self.ui.inputSelector1.currentNode(),
-                   self.ui.inputSelector2.currentNode(),
-                   self.ui.inputSelector3.currentNode(),
-                   self.ui.inputSelector4.currentNode()]:
+
+    # for volume_id in self.volumes_ids:
+    #   volume.GetName()
+
+    fiducial_names = ["M1__f", "U1__f", "U2__f", "U3__f", "M2__f"]
+
+    for name, volume in zip(fiducial_names, [self.ui.inputSelector0.currentNode(),
+                                              self.ui.inputSelector1.currentNode(),
+                                              self.ui.inputSelector2.currentNode(),
+                                              self.ui.inputSelector3.currentNode(),
+                                              self.ui.inputSelector4.currentNode()]):
 
       if volume:  # we need to check if it is not none - nothing selected means the current node is none
-        volume_name = volume.GetName()
-        fiducial_name = volume_name + "_fid"
+        fiducial_name = name
 
         if not slicer.mrmlScene.GetFirstNodeByName(fiducial_name):  # if the fiducial node does not exist
           # create it and append the voume id and the fiducial id
