@@ -732,7 +732,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     self.shortcuts = [('d', lambda: self.__fiducials()),  # fiducial placement
                       ('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
                       ('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
-                      ('u', lambda: self.__update_fiducial_flow()),  # update fiducial flow
                       ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),  # change opacity to 0.0
                       ('2', functools.partial(self.__change_foreground_opacity_discrete, 0.5)),  # change opacity to 0.5
                       ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),  # change opacity to 1.0
