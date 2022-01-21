@@ -8,24 +8,24 @@ import SegmentEditorEffects
 import functools
 
 #
-# LandmarkingView
+# SlicerMRUSLandmarking
 #
 
-class LandmarkingView(ScriptedLoadableModule):
+class SlicerMRUSLandmarking(ScriptedLoadableModule):
   """Uses ScriptedLoadableModule base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "LandmarkingView"  # TODO: make this more human readable by adding spaces
+    self.parent.title = "SlicerMRUSLandmarking"  # TODO: make this more human readable by adding spaces
     self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
     self.parent.dependencies = []  # TODO: add here list of module names that this module requires
     self.parent.contributors = ["Fryderyk Koegl (BWH, TUM)"]
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
     This is an example of scripted loadable module bundled in an extension.
-    See more information in <a href="https://github.com/organization/projectname#LandmarkingView">module documentation</a>.
+    See more information in <a href="https://github.com/organization/projectname#SlicerMRUSLandmarking">module documentation</a>.
     """
     # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
@@ -35,10 +35,10 @@ class LandmarkingView(ScriptedLoadableModule):
 
 
 #
-# LandmarkingViewWidget
+# SlicerMRUSLandmarkingWidget
 #
 # todo document all functions
-class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
+class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
   """
@@ -83,7 +83,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Load widget from .ui file (created by Qt Designer).
     # Additional widgets can be instantiated manually and added to self.layout.
-    uiWidget = slicer.util.loadUI(self.resourcePath('UI/LandmarkingView.ui'))
+    uiWidget = slicer.util.loadUI(self.resourcePath('UI/SlicerMRUSLandmarking.ui'))
     self.layout.addWidget(uiWidget)
     self.ui = slicer.util.childWidgetVariables(uiWidget)
 
@@ -94,7 +94,7 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     # Create logic class. Logic implements all computations that should be possible to run
     # in batch mode, without a graphical user interface.
-    self.logic = LandmarkingViewLogic()
+    self.logic = SlicerMRUSLandmarkingLogic()
 
     # enable none option for input selectors
     self.ui.inputSelector0.noneEnabled = True
@@ -972,10 +972,10 @@ class LandmarkingViewWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
 
 #
-# LandmarkingViewLogic
+# SlicerMRUSLandmarkingLogic
 #
 
-class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
+class SlicerMRUSLandmarkingLogic(ScriptedLoadableModuleLogic):
   """This class should implement all the actual
   computation done by your module.  The interface
   should be such that other python code can import
@@ -1115,10 +1115,10 @@ class LandmarkingViewLogic(ScriptedLoadableModuleLogic):
     logging.info('Processing completed in {0:.2f} seconds'.format(stopTime-startTime))
 
 #
-# LandmarkingViewTest
+# SlicerMRUSLandmarkingTest
 #
 # todo write tests
-class LandmarkingViewTest(ScriptedLoadableModuleTest):
+class SlicerMRUSLandmarkingTest(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
   Uses ScriptedLoadableModuleTest base class, available at:
@@ -1134,9 +1134,9 @@ class LandmarkingViewTest(ScriptedLoadableModuleTest):
     """Run as few or as many tests as needed here.
     """
     self.setUp()
-    self.test_LandmarkingView1()
+    self.test_SlicerMRUSLandmarking1()
 
-  def test_LandmarkingView1(self):
+  def test_SlicerMRUSLandmarking1(self):
     """ Ideally you should have several levels of tests.  At the lowest level
     tests should exercise the functionality of the logic with different inputs
     (both valid and invalid).  At higher levels your tests should emulate the
@@ -1154,7 +1154,7 @@ class LandmarkingViewTest(ScriptedLoadableModuleTest):
 
     import SampleData
     registerSampleData()
-    inputVolume = SampleData.downloadSample('LandmarkingView1')
+    inputVolume = SampleData.downloadSample('SlicerMRUSLandmarking1')
     self.delayDisplay('Loaded test data set')
 
     inputScalarRange = inputVolume.GetImageData().GetScalarRange()
@@ -1166,7 +1166,7 @@ class LandmarkingViewTest(ScriptedLoadableModuleTest):
 
     # Test the module logic
 
-    logic = LandmarkingViewLogic()
+    logic = SlicerMRUSLandmarkingLogic()
 
     # Test algorithm with non-inverted threshold
     logic.process(inputVolume, outputVolume, threshold, True)

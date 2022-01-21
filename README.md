@@ -1,4 +1,4 @@
-# mthesis-slicerAnnotationView
+# SlicerMRUSLandmarking
 Repository to create a module for slicer which improves the choosing of landmarks between MR and US volumes
 
 ### Instructions for installing the module
@@ -16,7 +16,7 @@ Repository to create a module for slicer which improves the choosing of landmark
 
 *A dummy dataset based on RESECT[1] can be found
 [here](https://www.dropbox.com/sh/gabm0rqdh8kttj6/AADJfwfJnduJG4GJ92tygPufa?dl=0)*
-1. Search for the module **'LandmarkingView'** and open it
+1. Search for the module **'MRUSLandmarking'** and open it
    1. (Ignore the 'Reload and Test' section)
 
 ![Extension screenshot](./misc/extension_screenshot.png)
