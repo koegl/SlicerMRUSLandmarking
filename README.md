@@ -19,7 +19,7 @@ Repository to create a module for slicer which improves the choosing of landmark
 1. Search for the module **'MRUSLandmarking'** and open it
    1. (Ignore the 'Reload and Test' section)
 
-![Extension screenshot](./misc/extension_screenshot.png)
+![Extension screenshot](./misc/GUIpreview.png)
 
 *Starting from the top:*
 
