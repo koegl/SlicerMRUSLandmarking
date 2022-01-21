@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-set(MODULE_NAME LandmarkingView)
+set(MODULE_NAME SlicerMRUSLandmarking)
 
 #-----------------------------------------------------------------------------
 set(MODULE_PYTHON_SCRIPTS
