@@ -1,4 +1,3 @@
-import os
 import unittest
 import logging
 import vtk, qt, ctk, slicer
@@ -19,13 +18,14 @@ class SlicerMRUSLandmarking(ScriptedLoadableModule):
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
     self.parent.title = "SlicerMRUSLandmarking"  # TODO: make this more human readable by adding spaces
-    self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
+    self.parent.categories = ["Informatics"]  # TODO: set categories (folders where the module shows up in the module selector)
     self.parent.dependencies = []  # TODO: add here list of module names that this module requires
-    self.parent.contributors = ["Fryderyk Koegl (BWH, TUM)"]
+    self.parent.contributors = ["Fryderyk Kögl (TUM, BWH), Harneet Cheema (BWH, UOttawa), Tina Kapur (BWH)"]
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
-    This is an example of scripted loadable module bundled in an extension.
-    See more information in <a href="https://github.com/organization/projectname#SlicerMRUSLandmarking">module documentation</a>.
+    Module that gather useful Slicer funcionality for settign landmarks in MR and US images. To start choose the volumes
+    that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an overlapping
+    area and the customise your view. Use the shortcuts listed at the bottom to increase the efficiency of the workflow.
     """
     # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
@@ -37,7 +37,7 @@ class SlicerMRUSLandmarking(ScriptedLoadableModule):
 #
 # SlicerMRUSLandmarkingWidget
 #
-# todo document all functions
+#
 class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -205,7 +205,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     self.setParameterNode(self.logic.getParameterNode())
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
-    # todo figure out a way to make this InputVolumeX stuff not hardcoded
     input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3", "InputVolume4"]
     us_volumes = ["3D AX T2 SPACE Pre-op Thin-cut",
                   "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control",
@@ -315,7 +314,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
       if selector.currentNode():
         self.volumes_ids.append(selector.currentNode().GetID())
 
-  # todo get next combination should check if 1,2 or 2,1 is in the list to make it more robust
   def get_next_combination(self, current_volume_ids=None, direction="forward"):
     """
     Used for the shortcut to loop through the volumes. The idea is that always two consecutive images are overlayed. If
@@ -631,7 +629,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     """
 
     # for now we only consider top row
-    # todo change the code so that all the logic below applies only to the view where the fiducial is being placed
 
     # get background and foreground IDs
     layoutManager = slicer.app.layoutManager()
@@ -713,7 +710,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     """
     Resets to the standard view when the reset button is clicked
     """
-    # todo it should disable the buttons like its normal in the normal view
     try:
       # decide on slices to be updated depending on the view chosen
       current_views = self.get_current_views()
@@ -898,8 +894,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
 
       layoutManager = slicer.app.layoutManager()
 
-      # TODO linked views should have same zoom level and in plane shift
-
       for i in range(3):
         view_logic_normal = layoutManager.sliceWidget(self.views_normal[i]).sliceLogic()
         compositeNode_normal = view_logic_normal.GetSliceCompositeNode()
@@ -1023,6 +1017,9 @@ class SlicerMRUSLandmarkingLogic(ScriptedLoadableModuleLogic):
     Creates the intersection of the us volumes and displays it as an outline
     """
 
+    if volumes is None and current_views is None:
+      return
+
     if current_views is None:
       current_views = ["Red", "Green", "Yellow"]
 
@@ -1117,7 +1114,7 @@ class SlicerMRUSLandmarkingLogic(ScriptedLoadableModuleLogic):
 #
 # SlicerMRUSLandmarkingTest
 #
-# todo write tests
+#
 class SlicerMRUSLandmarkingTest(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
@@ -1150,34 +1147,9 @@ class SlicerMRUSLandmarkingTest(ScriptedLoadableModuleTest):
 
     self.delayDisplay("Starting the test")
 
-    # Get/create input data
-
-    import SampleData
-    registerSampleData()
-    inputVolume = SampleData.downloadSample('SlicerMRUSLandmarking1')
-    self.delayDisplay('Loaded test data set')
-
-    inputScalarRange = inputVolume.GetImageData().GetScalarRange()
-    self.assertEqual(inputScalarRange[0], 0)
-    self.assertEqual(inputScalarRange[1], 695)
-
-    outputVolume = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLScalarVolumeNode")
-    threshold = 100
-
-    # Test the module logic
-
     logic = SlicerMRUSLandmarkingLogic()
 
-    # Test algorithm with non-inverted threshold
-    logic.process(inputVolume, outputVolume, threshold, True)
-    outputScalarRange = outputVolume.GetImageData().GetScalarRange()
-    self.assertEqual(outputScalarRange[0], inputScalarRange[0])
-    self.assertEqual(outputScalarRange[1], threshold)
-
-    # Test algorithm with inverted threshold
-    logic.process(inputVolume, outputVolume, threshold, False)
-    outputScalarRange = outputVolume.GetImageData().GetScalarRange()
-    self.assertEqual(outputScalarRange[0], inputScalarRange[0])
-    self.assertEqual(outputScalarRange[1], inputScalarRange[1])
+    logic.process(None, None)
 
     self.delayDisplay('Test passed')
+
