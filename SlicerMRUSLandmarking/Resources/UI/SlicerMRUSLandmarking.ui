@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>LandmarkingView</class>
- <widget class="qMRMLWidget" name="LandmarkingView">
+ <class>SlicerMRUSLandmarking</class>
+ <widget class="qMRMLWidget" name="SlicerMRUSLandmarking">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -339,7 +339,7 @@
  <resources/>
  <connections>
   <connection>
-   <sender>LandmarkingView</sender>
+   <sender>SlicerMRUSLandmarking</sender>
    <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
    <receiver>inputSelector0</receiver>
    <slot>setMRMLScene(vtkMRMLScene*)</slot>
@@ -355,7 +355,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>LandmarkingView</sender>
+   <sender>SlicerMRUSLandmarking</sender>
    <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
    <receiver>inputSelector1</receiver>
    <slot>setMRMLScene(vtkMRMLScene*)</slot>
@@ -371,7 +371,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>LandmarkingView</sender>
+   <sender>SlicerMRUSLandmarking</sender>
    <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
    <receiver>inputSelector2</receiver>
    <slot>setMRMLScene(vtkMRMLScene*)</slot>
@@ -387,7 +387,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>LandmarkingView</sender>
+   <sender>SlicerMRUSLandmarking</sender>
    <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
    <receiver>inputSelector3</receiver>
    <slot>setMRMLScene(vtkMRMLScene*)</slot>
@@ -403,7 +403,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>LandmarkingView</sender>
+   <sender>SlicerMRUSLandmarking</sender>
    <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
    <receiver>inputSelector4</receiver>
    <slot>setMRMLScene(vtkMRMLScene*)</slot>
