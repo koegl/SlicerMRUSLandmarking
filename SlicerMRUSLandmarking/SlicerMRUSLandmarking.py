@@ -701,12 +701,16 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     selectionNode = slicer.app.applicationLogic().GetSelectionNode()
     selectionNode.SetReferenceActivePlaceNodeClassName("vtkMRMLMarkupsFiducialNode")
 
-    if foreground_opacity > 0:  # then activate the foreground fiducial node, else the background
+    if foreground_opacity > 0 and foreground_id:  # then activate the foreground fiducial node, else the background
       pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[foreground_id])
-    else:
+    elif background_id:
       pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[background_id])
+    else:
+      pointListNode = None
 
-    selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
+
+    if pointListNode:
+      selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
 
   def __markup_curve_adjustment(self, curve_node_id):
     # get color table
@@ -736,7 +740,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     slicer.modules.markups.logic().StartPlaceMode(0)
 
     if self.automatic_assignment == True:
-      print("automaitc true")
       self.__create_all_fiducial_nodes()
       self.__activate_fiducial_node()
 
