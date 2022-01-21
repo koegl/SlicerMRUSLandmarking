@@ -344,6 +344,7 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
       return None
 
     forward_combinations = []
+    backward_combinations = []
     next_index = None
 
     # create list of possible forward pairs
@@ -356,9 +357,17 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
         index2 = i + 1
 
       forward_combinations.append([self.volumes_ids[index1], self.volumes_ids[index2]])
+      backward_combinations.append([self.volumes_ids[index2], self.volumes_ids[index1]])
 
     try:
-      current_index = forward_combinations.index(current_volume_ids)
+      if current_volume_ids in forward_combinations:
+        current_index = forward_combinations.index(current_volume_ids)
+      elif current_volume_ids in backward_combinations:
+        current_index = backward_combinations.index(current_volume_ids)
+      else:
+        slicer.util.errorDisplay("Reset views to a valid order for volume switching.")
+        return
+
     except Exception as e:
       slicer.util.errorDisplay("Reset views to a valid order for volume switching. " + str(e))
       return current_volume_ids
