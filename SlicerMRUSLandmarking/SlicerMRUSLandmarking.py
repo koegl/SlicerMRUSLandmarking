@@ -37,7 +37,7 @@ class SlicerMRUSLandmarking(ScriptedLoadableModule):
 #
 # SlicerMRUSLandmarkingWidget
 #
-# todo document all functions
+#
 class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
   """Uses ScriptedLoadableModuleWidget base class, available at:
   https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
@@ -205,7 +205,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     self.setParameterNode(self.logic.getParameterNode())
 
     # Select default input nodes if nothing is selected yet to save a few clicks for the user
-    # todo figure out a way to make this InputVolumeX stuff not hardcoded
     input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3", "InputVolume4"]
     us_volumes = ["3D AX T2 SPACE Pre-op Thin-cut",
                   "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control",
@@ -315,7 +314,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
       if selector.currentNode():
         self.volumes_ids.append(selector.currentNode().GetID())
 
-  # todo get next combination should check if 1,2 or 2,1 is in the list to make it more robust
   def get_next_combination(self, current_volume_ids=None, direction="forward"):
     """
     Used for the shortcut to loop through the volumes. The idea is that always two consecutive images are overlayed. If
@@ -631,7 +629,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     """
 
     # for now we only consider top row
-    # todo change the code so that all the logic below applies only to the view where the fiducial is being placed
 
     # get background and foreground IDs
     layoutManager = slicer.app.layoutManager()
@@ -713,7 +710,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     """
     Resets to the standard view when the reset button is clicked
     """
-    # todo it should disable the buttons like its normal in the normal view
     try:
       # decide on slices to be updated depending on the view chosen
       current_views = self.get_current_views()
@@ -897,8 +893,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     if self.view == '3on3':  # if it is 3on3, we want it to update all slices
 
       layoutManager = slicer.app.layoutManager()
-
-      # TODO linked views should have same zoom level and in plane shift
 
       for i in range(3):
         view_logic_normal = layoutManager.sliceWidget(self.views_normal[i]).sliceLogic()
@@ -1120,7 +1114,7 @@ class SlicerMRUSLandmarkingLogic(ScriptedLoadableModuleLogic):
 #
 # SlicerMRUSLandmarkingTest
 #
-# todo write tests
+#
 class SlicerMRUSLandmarkingTest(ScriptedLoadableModuleTest):
   """
   This is the test case for your scripted module.
