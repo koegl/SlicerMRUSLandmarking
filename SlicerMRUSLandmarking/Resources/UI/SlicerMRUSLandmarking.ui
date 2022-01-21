@@ -225,6 +225,38 @@
      </layout>
     </widget>
    </item>
+      <item>
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton">
+     <property name="text">
+      <string>Landmarks</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="formLayout_3">
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="automaticLandmarks">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Automatically assign landmarks</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QPushButton" name="updateFlow">
+        <property name="text">
+         <string>Update landmark curves</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
    <item>
     <widget class="ctkCollapsibleButton" name="inputsCollapsibleButton2">
      <property name="text">
