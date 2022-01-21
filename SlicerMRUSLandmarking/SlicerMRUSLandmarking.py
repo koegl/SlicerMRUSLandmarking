@@ -688,46 +688,6 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
 
     selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
 
-  def __update_fiducial_flow(self):
-    """
-    Everytime a new fiducial is placed, add it to the 3D view flow. Corresponding landmarks are connected with a line
-    that should show the deformation over time (from volume to volume). The flow should be 'sensible'
-    """
-
-    # delete old curve nodes
-    try:
-      for curve_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsCurveNode"):
-        slicer.mrmlScene.RemoveNode(curve_node)
-      self.curve_nodes = {}
-      self.landmarks = {}
-    except Exception as e:
-      print(e)
-
-    # create curve nodes again
-    self.__create_all_curve_nodes()
-
-    # loop through all fiducial nodes
-    for key, value in self.fiducial_nodes.items():
-      # for each node, add all points to the control curve
-      pointListNode = slicer.mrmlScene.GetNodeByID(value)
-      numControlPoints = pointListNode.GetNumberOfControlPoints()
-      positions = []
-      for i in range(1, numControlPoints+1):  # we start at 1 because that's how slicer numbers landmarks
-        vector = pointListNode.GetNthControlPointPositionVector(i-1)
-
-        # create entry in landmark dict
-        if i not in self.landmarks:
-          self.landmarks[i] = []
-        self.landmarks[i].append([vector.GetX(), vector.GetY(), vector.GetZ()])
-        # positions.append([vector.GetX(), vector.GetY(), vector.GetZ()])
-
-    for index, curve_node_id in self.curve_nodes.items():
-      positions = np.asarray(self.landmarks[index])
-
-      slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, positions)
-
-      self.__markup_curve_adjustment(curve_node_id)
-
   def __markup_curve_adjustment(self, curve_node_id):
     # get color table
     iron = slicer.util.getFirstNodeByName("Iron")
@@ -1024,6 +984,45 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
       self.topRowActive = True
       self.bottomRowActive = True
       self.activeRowsUpdate()
+
+  def onUpdateFlow(self):
+    """
+    Everytime a new fiducial is placed, add it to the 3D view flow. Corresponding landmarks are connected with a line
+    that should show the deformation over time (from volume to volume). The flow should be 'sensible'
+    """
+    # delete old curve nodes
+    try:
+      for curve_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsCurveNode"):
+        slicer.mrmlScene.RemoveNode(curve_node)
+      self.curve_nodes = {}
+      self.landmarks = {}
+    except Exception as e:
+      print(e)
+
+    # create curve nodes again
+    self.__create_all_curve_nodes()
+
+    # loop through all fiducial nodes
+    for key, value in self.fiducial_nodes.items():
+      # for each node, add all points to the control curve
+      pointListNode = slicer.mrmlScene.GetNodeByID(value)
+      numControlPoints = pointListNode.GetNumberOfControlPoints()
+      positions = []
+      for i in range(1, numControlPoints + 1):  # we start at 1 because that's how slicer numbers landmarks
+        vector = pointListNode.GetNthControlPointPositionVector(i - 1)
+
+        # create entry in landmark dict
+        if i not in self.landmarks:
+          self.landmarks[i] = []
+        self.landmarks[i].append([vector.GetX(), vector.GetY(), vector.GetZ()])
+        # positions.append([vector.GetX(), vector.GetY(), vector.GetZ()])
+
+    for index, curve_node_id in self.curve_nodes.items():
+      positions = np.asarray(self.landmarks[index])
+
+      slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, positions)
+
+      self.__markup_curve_adjustment(curve_node_id)
 
   def activeRowsUpdate(self):
     """
