@@ -66,6 +66,8 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     self.views_normal = ["Red", "Green", "Yellow"]
     self.views_plus = ["Red+", "Green+", "Yellow+"]
 
+    self.automatic_assignment = False
+
     self.switch = False
 
     self.fiducial_nodes = {}  # a dict that will contain all fiducial node ids and their corresponding volume ids
@@ -150,11 +152,19 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     self.ui.switchOrderButton.connect('clicked(bool)', self.onSwitchOrderButton)
     # sync all views
     self.ui.syncViewsButton.connect('clicked(bool)', self.onSyncViewsButton)
+    # update landmark flow
+    self.ui.updateFlow.connect('clicked(bool)', self.onUpdateFlow)
+    self.ui.updateFlow.enabled = False
+    self.ui.updateFlow.toolTip = "Automatic landmark assignment needs to be checked (the flow will work only on the new" \
+                                 "automatically assigned set of landmarks (because of the naming scheem))"
 
     # Check boxes
-    # Activate top row
+    # Activate rows
     self.ui.topRowCheck.connect('clicked(bool)', self.onTopRowCheck)
     self.ui.bottomRowCheck.connect('clicked(bool)', self.onBottomRowCheck)
+
+    # automatic landmark assignment
+    self.ui.automaticLandmarks.connect('clicked(bool)', self.onAutomaticLandmarks)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -232,6 +242,7 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
 
     self.ui.topRowCheck.toolTip = "Switch to 3-over-3 view to disable top row"
     self.ui.bottomRowCheck.toolTip = "Switch to 3-over-3 view to enable bottom row"
+    self.ui.automaticLandmarks.toolTip = "Automatically assign landmarks to lists based on the current volume"
 
   def setParameterNode(self, inputParameterNode):
     """
@@ -714,10 +725,11 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     Entire fiducial logic - create list, activate appropriate list and set the placement widget
     """
     slicer.modules.markups.logic().StartPlaceMode(0)
-    interactionNode.SetCurrentInteractionMode(interactionNode.Place)
 
-    self.__create_all_fiducial_nodes()
-    self.__activate_fiducial_node()
+    if self.automatic_assignment == True:
+      print("automaitc true")
+      self.__create_all_fiducial_nodes()
+      self.__activate_fiducial_node()
 
     # set control point visibility off in 3D
     for fiducial_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode"):
@@ -1069,6 +1081,11 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     self.bottomRowActive = activate
     self.activeRowsUpdate()
 
+  def onAutomaticLandmarks(self, activate=False):
+    self.automatic_assignment = activate
+
+    if activate:
+      self.ui.updateFlow.enabled = True
 
 #
 # SlicerMRUSLandmarkingLogic
