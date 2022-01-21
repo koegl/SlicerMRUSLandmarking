@@ -739,6 +739,10 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
         sliceNodes[4].SetOrientationToCoronal()
         sliceNodes[5].SetOrientationToSagittal()
 
+      # switch which button is enabled
+      self.ui.view3o3Button.enabled = True
+      self.ui.viewStandardButton.enabled = False
+
     except Exception as e:
       slicer.util.errorDisplay("Could not reset views - try manually. " + str(e))
 
