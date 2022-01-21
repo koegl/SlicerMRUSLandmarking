@@ -1,4 +1,3 @@
-import os
 import unittest
 import logging
 import vtk, qt, ctk, slicer
@@ -19,13 +18,14 @@ class SlicerMRUSLandmarking(ScriptedLoadableModule):
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
     self.parent.title = "SlicerMRUSLandmarking"  # TODO: make this more human readable by adding spaces
-    self.parent.categories = ["Examples"]  # TODO: set categories (folders where the module shows up in the module selector)
+    self.parent.categories = ["Informatics"]  # TODO: set categories (folders where the module shows up in the module selector)
     self.parent.dependencies = []  # TODO: add here list of module names that this module requires
-    self.parent.contributors = ["Fryderyk Koegl (BWH, TUM)"]
+    self.parent.contributors = ["Fryderyk Kögl (TUM, BWH), Harneet Cheema (BWH, UOttawa), Tina Kapur (BWH)"]
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
-    This is an example of scripted loadable module bundled in an extension.
-    See more information in <a href="https://github.com/organization/projectname#SlicerMRUSLandmarking">module documentation</a>.
+    Module that gather useful Slicer funcionality for settign landmarks in MR and US images. To start choose the volumes
+    that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an overlapping
+    area and the customise your view. Use the shortcuts listed at the bottom to increase the efficiency of the workflow.
     """
     # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
