@@ -21,7 +21,7 @@
    <item>
     <widget class="ctkCollapsibleButton" name="inputsCollapsibleButton">
      <property name="text">
-      <string>Common field of view (choose at least 2 volumes for an intersection)</string>
+      <string>Volumes (choose at least 2 volumes for an intersection)</string>
      </property>
      <property name="collapsed">
       <bool>false</bool>
