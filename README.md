@@ -26,7 +26,9 @@ SlicerMRUSLandmarking is a Slicer extension that provides a user interface focus
    3. Click on 'Switch order of displayed volumes' if you want the order in which the volumes are displayed switched
    4. CLick on 'Sync all views' to sync the top and bottom row so that they show the same view
 
-3. **'Keyblard shortcuts'**
+The idea behind having the 3-over-3 view and the linking/unlinking of the rows is that in the bottom row you can keep
+e.g. a snapshot of one volume with a structure of interest while you search for the same structure in the top row.
+3. **'Keyboard shortcuts'**
    1. **d** - set a new fiducial
    2. **a** - move forwards through the selected volumes (two volumes are displayed at all times, e.g. 2&3 and upon
    moving forward 3&4 are displayed, then 4&1 and finally 1&2)
@@ -39,7 +41,10 @@ SlicerMRUSLandmarking is a Slicer extension that provides a user interface focus
    8. **3** - set foreground opacity to 1.0
    9. **q** - increase foreground opacity by 0.02
    10. **2** - decrease foreground opacity by 0.02
-      
+
+
+### License
+- [Slicer License](https://github.com/Slicer/Slicer/blob/master/License.txt)
 
 [1] Xiao, Yiming, et al. "RE troSpective Evaluation of Cerebral Tumors (RESECT): A clinical database of pre‐operative
 MRI and intra‐operative ultrasound in low‐grade glioma surgeries." Medical physics 44.7 (2017): 3875-3882.
