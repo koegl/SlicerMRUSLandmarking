@@ -713,7 +713,7 @@ class SlicerMRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMi
     """
     Entire fiducial logic - create list, activate appropriate list and set the placement widget
     """
-    interactionNode = slicer.app.applicationLogic().GetInteractionNode()
+    slicer.modules.markups.logic().StartPlaceMode(0)
     interactionNode.SetCurrentInteractionMode(interactionNode.Place)
 
     self.__create_all_fiducial_nodes()
