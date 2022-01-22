@@ -21,7 +21,7 @@
    <item>
     <widget class="ctkCollapsibleButton" name="inputsCollapsibleButton">
      <property name="text">
-      <string>Common field of view (choose at least 2 volumes for an intersection)</string>
+      <string>Volumes (choose at least 2 volumes for an intersection)</string>
      </property>
      <property name="collapsed">
       <bool>false</bool>
@@ -219,6 +219,38 @@
         </property>
         <property name="text">
          <string>Sync all views</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+      <item>
+    <widget class="ctkCollapsibleButton" name="CollapsibleButton">
+     <property name="text">
+      <string>Landmarks</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+     <layout class="QGridLayout" name="formLayout_3">
+      <item row="1" column="0">
+       <widget class="QCheckBox" name="automaticLandmarks">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Automatically assign landmarks</string>
+        </property>
+        <property name="checked">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QPushButton" name="updateFlow">
+        <property name="text">
+         <string>Update landmark curves</string>
         </property>
        </widget>
       </item>
