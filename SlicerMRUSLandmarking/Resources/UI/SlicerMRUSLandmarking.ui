@@ -225,13 +225,13 @@
      </layout>
     </widget>
    </item>
-      <item>
+   <item>
     <widget class="ctkCollapsibleButton" name="CollapsibleButton">
      <property name="text">
       <string>Landmarks</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
       <item row="1" column="0">
@@ -253,6 +253,9 @@
          <string>Update landmark curves</string>
         </property>
        </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget"/>
       </item>
      </layout>
     </widget>
@@ -362,6 +365,17 @@
    <header>qMRMLWidget.h</header>
    <container>1</container>
   </customwidget>
+  <customwidget>
+   <class>qSlicerWidget</class>
+   <extends>QWidget</extends>
+   <header>qSlicerWidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>qSlicerSimpleMarkupsWidget</class>
+   <extends>qSlicerWidget</extends>
+   <header>qSlicerSimpleMarkupsWidget.h</header>
+  </customwidget>
  </customwidgets>
  <resources/>
  <connections>
@@ -433,6 +447,22 @@
    <sender>SlicerMRUSLandmarking</sender>
    <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
    <receiver>inputSelector4</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>122</x>
+     <y>132</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>248</x>
+     <y>61</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>SlicerMRUSLandmarking</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>SimpleMarkupsWidget</receiver>
    <slot>setMRMLScene(vtkMRMLScene*)</slot>
    <hints>
     <hint type="sourcelabel">
