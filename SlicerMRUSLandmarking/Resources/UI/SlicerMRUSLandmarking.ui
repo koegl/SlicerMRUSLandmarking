@@ -231,7 +231,7 @@
       <string>Landmarks</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
       <item row="1" column="0">
