@@ -2,15 +2,14 @@
 #include "Include/Util/readNii.h"
 #include "Include/cMatcher.h"
 #include <vector>
-
+// https://github.com/SCUT-CCNL/3DSIFT
 using namespace std;
 
 int main() {
 
-    const char *RefNiiPath = R"(../Example/Torus_Ref.nii.gz)";
-    const char *TarNiiPath = R"(../Example/Torus_Def.nii.gz)";
+    const char* RefNiiPath = R"(C:\Users\fryde\Desktop\temp\US1_small.nii.gz)";
+    const char* TarNiiPath = R"(C:\Users\fryde\Desktop\temp\US1 Pre-dura.nii.gz)";
 
-    
     //read reference image
     int nx = 0, ny = 0, nz = 0;
     float* refVolNii = nullptr;
@@ -21,9 +20,9 @@ int main() {
     auto SIFT_ref = CPUSIFT::CSIFT3DFactory::CreateCSIFT3D(refVolNii, nx, ny, nz);
     SIFT_ref->KpSiftAlgorithm();
     auto vRefKp = SIFT_ref->GetKeypoints();
-    
 
-    
+    cout << "extracted features" << endl;
+    /*
     //read target image
     int nxTar = 0, nyTar = 0, nzTar = 0;
     float* tarVolNii = nullptr;
@@ -33,7 +32,7 @@ int main() {
     auto SIFT_tar = CPUSIFT::CSIFT3DFactory::CreateCSIFT3D(tarVolNii, nxTar, nyTar, nzTar);
     SIFT_tar->KpSiftAlgorithm();
     auto vTarKp = SIFT_tar->GetKeypoints();
-    
+
 
     //match procedure
     CPUSIFT::muBruteMatcher matcher;
@@ -59,6 +58,6 @@ int main() {
     delete[] tarVolNii;
     delete SIFT_ref;
     delete SIFT_tar;
-
-	return 0;
+    */
+    return 0;
 }
