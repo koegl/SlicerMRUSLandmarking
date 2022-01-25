@@ -10,16 +10,18 @@ SlicerMRUSLandmarking is a Slicer extension that provides a user interface focus
 
 *Starting from the top:*
 
-1. **'Common field of view'**
-   1. choose the MR and US volumes
-   2. CLick on 'Set lower threshold to 1...' to set the lower threshld of the US volumes to 1
+###1. 'Common field of view'
+   1. Choose the MR and US volumes
+   2. Click on 'Set lower threshold to 1...' to set the lower threshld of the US volumes to 1
       1. thanks to this the black border surrounding the US volumes (which consists of 0s) will disappear in the overlay
    3. Click on 'Create intersection' - this will create the intersection of the three US images (intersection as the
    logical operator - the common field of view). At least two US volumes need to be chosen (US volumes are identified by
    the extension by containing any of the following strings in the filename: us1, us2, us3, us4, us5, us6)
    4. Wait for a few seconds for the intersection to be created and displayed
 
-2. **'View controls'**
+<br />
+
+###2. 'View controls'
    1. Choose between the standard view (Four-Up) and the 3-over-3 (Three over three) view
    2. When the 3-over-3 view is activated, choose which row(s) (top, bottom or both) should be active
       1. 'active' meaning which controls (e.g. switching between volumes) will act on them
@@ -28,7 +30,22 @@ SlicerMRUSLandmarking is a Slicer extension that provides a user interface focus
 
 The idea behind having the 3-over-3 view and the linking/unlinking of the rows is that in the bottom row you can keep
 e.g. a snapshot of one volume with a structure of interest while you search for the same structure in the top row.
-3. **'Keyboard shortcuts'**
+
+<br />
+
+###3. 'Landmarks'
+   1. The first part lets you choose a landmark list and the second lists all the landmarks in the chosen list (the same
+   functionality as in the markups module)
+   2. 'Automatically assign landmarks' - when this is checked landmarks are automatically assigned to lists according
+   to which volume is displayed (only the top row is considered; if the foreground is >0 the landmark gets assigned to
+   the foreground list, otherwise to the background list)
+   3. 'Update landmark curves' - pressing this button updates curves that join corresponding landmarks (by default only
+   visible in the 3D view). It assumes that the first landmark from one list corresponds to the first landmark of the
+   other lists etc.
+
+<br />
+
+###4. 'Keyboard shortcuts'
    1. **d** - set a new fiducial
    2. **a** - move forwards through the selected volumes (two volumes are displayed at all times, e.g. 2&3 and upon
    moving forward 3&4 are displayed, then 4&1 and finally 1&2)
@@ -46,5 +63,5 @@ e.g. a snapshot of one volume with a structure of interest while you search for 
 ### License
 - [Slicer License](https://github.com/Slicer/Slicer/blob/master/License.txt)
 
-[1] Xiao, Yiming, et al. "RE troSpective Evaluation of Cerebral Tumors (RESECT): A clinical database of pre‐operative
+[1] Xiao, Yiming, et al. "REtroSpective Evaluation of Cerebral Tumors (RESECT): A clinical database of pre‐operative
 MRI and intra‐operative ultrasound in low‐grade glioma surgeries." Medical physics 44.7 (2017): 3875-3882.
