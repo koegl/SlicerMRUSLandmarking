@@ -18,18 +18,21 @@ class SlicerMRUSLandmarking(ScriptedLoadableModule):
 
   def __init__(self, parent):
     ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "SlicerMRUSLandmarking"  # TODO: make this more human readable by adding spaces
-    self.parent.categories = ["Informatics"]  # TODO: set categories (folders where the module shows up in the module selector)
-    self.parent.dependencies = []  # TODO: add here list of module names that this module requires
+    self.parent.title = "SlicerMRUSLandmarking"
+    self.parent.categories = ["Informatics"]
+    self.parent.dependencies = ["Markups"]
     self.parent.contributors = ["Fryderyk Kögl (TUM, BWH), Harneet Cheema (BWH, UOttawa), Tina Kapur (BWH)"]
     # TODO: update with short description of the module and a link to online module documentation
     self.parent.helpText = """
-    Module that gather useful Slicer funcionality for settign landmarks in MR and US images. To start choose the volumes
-    that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an overlapping
-    area and the customise your view. Use the shortcuts listed at the bottom to increase the efficiency of the workflow.
+    Module that gather useful Slicer functionality for setting landmarks in MR and US images. To start choose the
+    volumes that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an
+    overlapping area and the customise your view. Use the shortcuts listed at the bottom to increase the efficiency of
+    the workflow.
+    https://github.com/koegl/SlicerMRUSLandmarking
     """
-    # TODO: replace with organization, grant and thanks
     self.parent.acknowledgementText = """
+    This extension was developed at the Brigham and Women's Hospital by Fryderyk Kögl, Harneet Cheema and Tina Kapur.
+    
     This file was originally developed by Jean-Christophe Fillion-Robin, Kitware Inc., Andras Lasso, PerkLab,
     and Steve Pieper, Isomics, Inc. and was partially funded by NIH grant 3P41RR013218-12S1.
     """
