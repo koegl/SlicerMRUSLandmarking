@@ -10,7 +10,7 @@ SlicerMRUSLandmarking is a Slicer extension that provides a user interface focus
 
 *Starting from the top:*
 
-###1. 'Common field of view'
+### 1. 'Common field of view'
    1. Choose the MR and US volumes
    2. Click on 'Set lower threshold to 1...' to set the lower threshld of the US volumes to 1
       1. thanks to this the black border surrounding the US volumes (which consists of 0s) will disappear in the overlay
@@ -21,7 +21,7 @@ SlicerMRUSLandmarking is a Slicer extension that provides a user interface focus
 
 <br />
 
-###2. 'View controls'
+### 2. 'View controls'
    1. Choose between the standard view (Four-Up) and the 3-over-3 (Three over three) view
    2. When the 3-over-3 view is activated, choose which row(s) (top, bottom or both) should be active
       1. 'active' meaning which controls (e.g. switching between volumes) will act on them
@@ -33,7 +33,7 @@ e.g. a snapshot of one volume with a structure of interest while you search for 
 
 <br />
 
-###3. 'Landmarks'
+### 3. 'Landmarks'
    1. The first part lets you choose a landmark list and the second lists all the landmarks in the chosen list (the same
    functionality as in the markups module)
    2. 'Automatically assign landmarks' - when this is checked landmarks are automatically assigned to lists according
@@ -45,7 +45,7 @@ e.g. a snapshot of one volume with a structure of interest while you search for 
 
 <br />
 
-###4. 'Keyboard shortcuts'
+### 4. 'Keyboard shortcuts'
    1. **d** - set a new fiducial
    2. **a** - move forwards through the selected volumes (two volumes are displayed at all times, e.g. 2&3 and upon
    moving forward 3&4 are displayed, then 4&1 and finally 1&2)
