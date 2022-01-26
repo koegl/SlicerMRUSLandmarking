@@ -4,7 +4,7 @@ SlicerMRUSLandmarking is a Slicer extension that provides a user interface focus
 ### Instructions for using the module
 
 *A dummy dataset based on RESECT[1] can be found
-[here](https://www.dropbox.com/sh/gabm0rqdh8kttj6/AADJfwfJnduJG4GJ92tygPufa?dl=0)*
+[here](https://github.com/koegl/SlicerMRUSLandmarking/releases/tag/SampleData)*
 1. Search for the module **'MRUSLandmarking'** and open it
 ![Extension screenshot](./misc/GUIpreview.png)
 
