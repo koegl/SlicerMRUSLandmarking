@@ -42,9 +42,5 @@ e.g. a snapshot of one volume with a structure of interest while you search for 
    9. **q** - increase foreground opacity by 0.02
    10. **2** - decrease foreground opacity by 0.02
 
-
-### License
-- [Slicer License](https://github.com/Slicer/Slicer/blob/master/License.txt)
-
 [1] Xiao, Yiming, et al. "RE troSpective Evaluation of Cerebral Tumors (RESECT): A clinical database of pre‐operative
 MRI and intra‐operative ultrasound in low‐grade glioma surgeries." Medical physics 44.7 (2017): 3875-3882.
