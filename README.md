@@ -1,10 +1,10 @@
-# SlicerMRUSLandmarking
-SlicerMRUSLandmarking is a Slicer extension that provides a user interface focused on landmarking MR and US images.
+# MRUSLandmarking
+MRUSLandmarking is a Slicer extension that provides a user interface focused on landmarking MR and US images.
 
 ### Instructions for using the module
 
 *A dummy dataset based on RESECT[1] can be found
-[here](https://github.com/koegl/SlicerMRUSLandmarking/releases/tag/SampleData)*
+[here](https://github.com/koegl/SlicerMRUSLandmarking/releases/download/SampleData/SampleData.zip)*
 1. Search for the module **'MRUSLandmarking'** and open it
 ![Extension screenshot](./misc/GUIpreview.png)
 

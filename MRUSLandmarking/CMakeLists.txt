@@ -1,5 +1,5 @@
 #-----------------------------------------------------------------------------
-set(MODULE_NAME SlicerMRUSLandmarking)
+set(MODULE_NAME MRUSLandmarking)
 
 #-----------------------------------------------------------------------------
 set(MODULE_PYTHON_SCRIPTS

@@ -6,5 +6,5 @@
 /dataSources.local.xml
 # Editor-based HTTP Client requests
 /httpRequests/
-/SlicerMRUSLandmarking/__pycache__/
 /__pycache__/
+MRUSLandmarking/__pycache__/
