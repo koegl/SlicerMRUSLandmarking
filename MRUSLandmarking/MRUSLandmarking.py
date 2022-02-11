@@ -633,11 +633,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     max_amount = 0
     try:
-      # loop through all fiducial nodes
-      for key, value in self.fiducial_nodes.items():
-        # for each node, add all points to the control curve
-        pointListNode = slicer.mrmlScene.GetNodeByID(value)
-        numControlPoints = pointListNode.GetNumberOfControlPoints()
+      for fiducial_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode"):
+        numControlPoints = fiducial_node.GetNumberOfControlPoints()
 
         if numControlPoints > max_amount:
           max_amount = numControlPoints
@@ -677,6 +674,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     max_points = self.__get_max_amount_of_fiducials()
 
+    # todo create a curve for all the fiducial nodes
     for i in range(len(self.curve_nodes), max_points):  # add the difference in points
       self.curve_nodes[i + 1] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
 
@@ -710,7 +708,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[background_id])
     else:
       pointListNode = None
-
 
     if pointListNode:
       selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
@@ -1025,19 +1022,16 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     except Exception as e:
       print(e)
 
+    # todo remove the small arrow at each control point
     # create curve nodes again
     self.__create_all_curve_nodes()
 
     # loop through all fiducial nodes
-    # todo don't loop the fiducial_nodes, loop through all fiducial lists (this should remove the dependence on the
-    # todo previously created landmarks list with automatic assignment
-    for key, value in self.fiducial_nodes.items():
-      # for each node, add all points to the control curve
-      pointListNode = slicer.mrmlScene.GetNodeByID(value)
-      numControlPoints = pointListNode.GetNumberOfControlPoints()
-      positions = []
+    for fiducial_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode"):
+      numControlPoints = fiducial_node.GetNumberOfControlPoints()
+
       for i in range(1, numControlPoints + 1):  # we start at 1 because that's how slicer numbers landmarks
-        vector = pointListNode.GetNthControlPointPositionVector(i - 1)
+        vector = fiducial_node.GetNthControlPointPositionVector(i - 1)
 
         # create entry in landmark dict
         if i not in self.landmarks:
@@ -1045,12 +1039,17 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.landmarks[i].append([vector.GetX(), vector.GetY(), vector.GetZ()])
         # positions.append([vector.GetX(), vector.GetY(), vector.GetZ()])
 
+    # loop through all curves
+    # todo loop through all curve nodes in slicer (combine with loop below)
     for index, curve_node_id in self.curve_nodes.items():
       positions = np.asarray(self.landmarks[index])
 
       slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, positions)
 
       self.__markup_curve_adjustment(curve_node_id)
+
+    for curve_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsCurveNode"):
+      self.__markup_curve_adjustment(curve_node)
 
   def activeRowsUpdate(self):
     """
