@@ -1029,6 +1029,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.__create_all_curve_nodes()
 
     # loop through all fiducial nodes
+    # todo don't loop the fiducial_nodes, loop through all fiducial lists (this should remove the dependence on the
+    # todo previously created landmarks list with automatic assignment
     for key, value in self.fiducial_nodes.items():
       # for each node, add all points to the control curve
       pointListNode = slicer.mrmlScene.GetNodeByID(value)
