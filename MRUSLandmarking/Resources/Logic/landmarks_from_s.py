@@ -2,9 +2,10 @@ import os
 import pickle
 import json
 
+
 class LandmarkIO:
-    def __init__(self):
-        pass
+    def __init__(self, markups_list_name="F"):
+        self.markups_list_name = markups_list_name
 
     def export_landmarks_to_numpy(self):
         """
@@ -17,8 +18,8 @@ class LandmarkIO:
         Export Slicer landmarks to json
         """
 
-        pointListNode = slicer.util.getNode.getNode("F")
-        outputFileName = "c:/tmp/test.json"
+        pointListNode = slicer.util.getNode.getNode(self.markups_list_name)
+        outputFileName = "/Users/fryderykkogl/Desktop/test.json"
 
         # Get markup positions
         data = []
