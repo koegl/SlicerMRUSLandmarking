@@ -231,11 +231,11 @@
       <string>Landmarks</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
       <item row="4" column="0">
-       <widget class="QPlainTextEdit" name="plainTextEdit">
+       <widget class="QPlainTextEdit" name="markupsNameText">
         <property name="plainText">
          <string>&lt;name of the markups list&gt;</string>
         </property>
@@ -265,7 +265,7 @@
        </widget>
       </item>
       <item row="5" column="0">
-       <widget class="QPushButton" name="pushButton">
+       <widget class="QPushButton" name="exportLandmarksButton">
         <property name="text">
          <string>Export landmarks</string>
         </property>
