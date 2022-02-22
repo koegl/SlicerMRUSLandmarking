@@ -8,3 +8,5 @@
 /httpRequests/
 /__pycache__/
 MRUSLandmarking/__pycache__/
+
+MRUSLandmarking/Resources/Logic/__pycache__/
