@@ -6,6 +6,9 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import SegmentEditorEffects
 import functools
+import os
+import pickle
+import json
 
 #
 # MRUSLandmarking
@@ -160,6 +163,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.updateFlow.enabled = False
     self.ui.updateFlow.toolTip = "Automatic landmark assignment needs to be checked (the flow will work only on the new" \
                                  "automatically assigned set of landmarks (because of the naming scheem))"
+    # export landmarks
+    self.ui.exportLandmarksButton.connect('clicked(bool)', self.onExportLandmarksButton)
+
 
     # Check boxes
     # Activate rows
@@ -1101,6 +1107,24 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     if activate:
       self.ui.updateFlow.enabled = True
+
+  def onExportLandmarksButton(self):
+    """
+    Export a specified markups list to numpy for S
+    """
+    # get markups list name
+    markups_list_name = self.ui.markupsNameText.toPlainText()
+
+    if not markups_list_name:  # if it's empty
+      slicer.util.errorDisplay("Input name of markups list to export")
+      return
+
+    landmarks_handler = LandmarkIO(markups_list_name)
+
+    landmarks_handler.export_landmarks_to_json()
+
+    print(markups_list_name)
+
 
 #
 # Landmarks to numpy logic
