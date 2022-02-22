@@ -237,7 +237,7 @@
       <item row="4" column="0">
        <widget class="QPlainTextEdit" name="markupsNameText">
         <property name="plainText">
-         <string>&lt;name of the markups list&gt;</string>
+         <string>AG2152</string>
         </property>
        </widget>
       </item>
