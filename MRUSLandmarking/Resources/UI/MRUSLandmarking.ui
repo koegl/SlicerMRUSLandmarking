@@ -234,6 +234,13 @@
       <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
+      <item row="4" column="0">
+       <widget class="QPlainTextEdit" name="plainTextEdit">
+        <property name="plainText">
+         <string>&lt;name of the markups list&gt;</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="0">
        <widget class="QCheckBox" name="automaticLandmarks">
         <property name="enabled">
@@ -247,15 +254,29 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="0">
+       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget"/>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Export markups list to numpy format for S.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QPushButton" name="pushButton">
+        <property name="text">
+         <string>Export landmarks</string>
+        </property>
+       </widget>
+      </item>
       <item row="2" column="0">
        <widget class="QPushButton" name="updateFlow">
         <property name="text">
          <string>Update landmark curves</string>
         </property>
        </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget"/>
       </item>
      </layout>
     </widget>
