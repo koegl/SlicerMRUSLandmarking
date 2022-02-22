@@ -1121,7 +1121,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     landmarks_handler = LandmarkIO(markups_list_name)
 
-    landmarks_handler.export_landmarks_to_json()
+    # landmarks_handler.export_landmarks_to_json()
+
+    landmarks_handler.export_landmarks_to_numpy()
 
     print(markups_list_name)
 
@@ -1136,17 +1138,29 @@ class LandmarkIO:
 
   def export_landmarks_to_numpy(self):
     """
-    Export Slicer landmarks to numpy landmarks (S)
+    Export Slicer landmarks to numpy landmarks (S). Format of the landmarks for two corresponding volumes:
+    n - amount of landmarks. we create a tuple of two volumes (for 5 volumes a tuple of 5)
+
+    landmarks = (ndarray: (n,3), ndarray(n,3))
     """
-    pointListNode = slicer.util.getNode(self.markups_list_name)
+    try:
+      pointListNode = slicer.util.getNode(self.markups_list_name)
+    except Exception as e:
+      slicer.util.errorDisplay("Wrong name of markups list. Try again.\n{}".format(e))
+      return
+
     outputFileName = "/Users/fryderykkogl/Desktop/test.json"
 
     # Get markup positions
-    data = []
-    for fidIndex in range(pointListNode.GetNumberOfControlPoints()):
-      coords = [0, 0, 0]
-      pointListNode.GetNthControlPointPosition(fidIndex, coords)
-      data.append({"label": pointListNode.GetNthControlPointLabel(), "position": coords})
+    data = ([], [], [], [], [])
+
+    for landmark_idx in range(int(pointListNode.GetNumberOfControlPoints() / 5)):
+      for volume_idx in range(5):
+        coords = [0, 0, 0]
+        pointListNode.GetNthControlPointPosition(landmark_idx * 10 + volume_idx, coords)
+        data[volume_idx].append(coords)
+
+    print(data)
 
   def export_landmarks_to_json(self):
     """
