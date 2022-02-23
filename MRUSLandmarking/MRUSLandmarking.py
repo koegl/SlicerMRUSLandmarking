@@ -1149,18 +1149,40 @@ class LandmarkIO:
       slicer.util.errorDisplay("Wrong name of markups list. Try again.\n{}".format(e))
       return
 
-    outputFileName = "/Users/fryderykkogl/Desktop/test.json"
+    outputFileName = f"/Users/fryderykkogl/Desktop/{self.markups_list_name}"
 
     # Get markup positions
     data = ([], [], [], [], [])
+    index = 0
 
-    for landmark_idx in range(int(pointListNode.GetNumberOfControlPoints() / 5)):
-      for volume_idx in range(5):
+    for i in range(int(pointListNode.GetNumberOfControlPoints() / 5)):
+      for j in range(5):
         coords = [0, 0, 0]
-        pointListNode.GetNthControlPointPosition(landmark_idx * 10 + volume_idx, coords)
+
+        pointListNode.GetNthControlPointPosition(index, coords)
+
+        if "pre-op" in pointListNode.GetNthControlPointLabel(index).lower():
+          volume_idx = 0
+        elif "us1" in pointListNode.GetNthControlPointLabel(index).lower():
+          volume_idx = 1
+        elif "us2" in pointListNode.GetNthControlPointLabel(index).lower():
+          volume_idx = 2
+        elif "us3" in pointListNode.GetNthControlPointLabel(index).lower():
+          volume_idx = 3
+        elif "intra-op" in pointListNode.GetNthControlPointLabel(index).lower():
+          volume_idx = 4
+        else:
+          slicer.util.errorDisplay("Wrong fiducial names. Exiting without exporting.")
+          return
+
         data[volume_idx].append(coords)
 
-    print(data)
+        index += 1
+
+    print('reoladed3')
+
+    with open(outputFileName, 'ab') as pickle_file:
+      pickle.dump(data, pickle_file)
 
   def export_landmarks_to_json(self):
     """
