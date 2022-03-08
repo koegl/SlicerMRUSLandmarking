@@ -1121,11 +1121,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     landmarks_handler = LandmarkIO(markups_list_name)
 
-    # landmarks_handler.export_landmarks_to_json()
-
     landmarks_handler.export_landmarks_to_numpy()
-
-    print(markups_list_name)
 
 
 #
@@ -1179,7 +1175,7 @@ class LandmarkIO:
 
         index += 1
 
-    print('reoladed3')
+    # convert to numpy arrays
 
     with open(outputFileName, 'ab') as pickle_file:
       pickle.dump(data, pickle_file)
