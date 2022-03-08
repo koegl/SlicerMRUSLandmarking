@@ -1176,9 +1176,14 @@ class LandmarkIO:
         index += 1
 
     # convert to numpy arrays
+    converted = (np.asarray(data[0]),
+                 np.asarray(data[1]),
+                 np.asarray(data[2]),
+                 np.asarray(data[3]),
+                 np.asarray(data[4]),)
 
     with open(outputFileName, 'ab') as pickle_file:
-      pickle.dump(data, pickle_file)
+      pickle.dump(converted, pickle_file)
 
   def export_landmarks_to_json(self):
     """
