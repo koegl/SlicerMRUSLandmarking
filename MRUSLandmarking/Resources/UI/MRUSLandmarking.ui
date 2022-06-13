@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>633</width>
-    <height>717</height>
+    <width>690</width>
+    <height>725</height>
    </rect>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
@@ -231,31 +231,86 @@
       <string>Landmarks</string>
      </property>
      <property name="collapsed">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
-      <item row="1" column="0">
-       <widget class="QCheckBox" name="automaticLandmarks">
-        <property name="enabled">
-         <bool>true</bool>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <italic>true</italic>
+         </font>
         </property>
         <property name="text">
-         <string>Automatically assign landmarks</string>
-        </property>
-        <property name="checked">
-         <bool>false</bool>
+         <string>1. The landmarks need to be named according to this scheme:</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item row="1" column="0">
        <widget class="QPushButton" name="updateFlow">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
         <property name="text">
          <string>Update landmark curves</string>
         </property>
        </widget>
       </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="labelVisCheck">
+        <property name="text">
+         <string>Label visibility</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
       <item row="0" column="0">
        <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget"/>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>For the landmark curves to work:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op </string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="label_5">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>2. The landmark list must be named 'F'</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -271,10 +326,16 @@
      <layout class="QFormLayout" name="formLayout_2">
       <item row="0" column="1">
        <widget class="QListWidget" name="listWidget1">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>120</height>
+         </size>
+        </property>
         <property name="font">
          <font>
           <family>Courier New</family>
-          <pointsize>8</pointsize>
+          <pointsize>13</pointsize>
          </font>
         </property>
         <item>
