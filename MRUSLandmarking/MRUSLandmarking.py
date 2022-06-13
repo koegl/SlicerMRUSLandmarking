@@ -69,13 +69,20 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.views_normal = ["Red", "Green", "Yellow"]
     self.views_plus = ["Red+", "Green+", "Yellow+"]
 
-    self.automatic_assignment = False
+    self.labelVisCheck = True
 
     self.switch = False
 
     self.fiducial_nodes = {}  # a dict that will contain all fiducial node ids and their corresponding volume ids
     self.curve_nodes = {}  # a dict that will contain all curve node ids and their corresponding fiducial index
-    self.landmarks = {}  # dict that stores all the landmarks (key is the index, value is the []x3 array of points
+
+    self.landmarks_names_vectors = {}
+    for i in range(1, 11):
+        self.landmarks_names_vectors[f"l{i} us1"] = None
+        self.landmarks_names_vectors[f"l{i} us2"] = None
+        self.landmarks_names_vectors[f"l{i} us3"] = None
+        self.landmarks_names_vectors[f"l{i} pre-op"] = None
+        self.landmarks_names_vectors[f"l{i} intra-op"] = None
 
     # used for updating the correct row when rows are linked
     # self.changing = "bottom"
@@ -157,17 +164,14 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.syncViewsButton.connect('clicked(bool)', self.onSyncViewsButton)
     # update landmark flow
     self.ui.updateFlow.connect('clicked(bool)', self.onUpdateFlow)
-    self.ui.updateFlow.enabled = False
-    self.ui.updateFlow.toolTip = "Automatic landmark assignment needs to be checked (the flow will work only on the new" \
-                                 "automatically assigned set of landmarks (because of the naming scheem))"
 
     # Check boxes
     # Activate rows
     self.ui.topRowCheck.connect('clicked(bool)', self.onTopRowCheck)
     self.ui.bottomRowCheck.connect('clicked(bool)', self.onBottomRowCheck)
 
-    # automatic landmark assignment
-    self.ui.automaticLandmarks.connect('clicked(bool)', self.onAutomaticLandmarks)
+    # label visibility
+    self.ui.labelVisCheck.connect('clicked(bool)', self.onLabelVisCheck)
 
     # Make sure parameter node is initialized (needed for module reload)
     self.initializeParameterNode()
@@ -245,7 +249,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     self.ui.topRowCheck.toolTip = "Switch to 3-over-3 view to disable top row"
     self.ui.bottomRowCheck.toolTip = "Switch to 3-over-3 view to enable bottom row"
-    self.ui.automaticLandmarks.toolTip = "Automatically assign landmarks to lists based on the current volume"
 
   def setParameterNode(self, inputParameterNode):
     """
@@ -633,11 +636,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     max_amount = 0
     try:
-      # loop through all fiducial nodes
-      for key, value in self.fiducial_nodes.items():
-        # for each node, add all points to the control curve
-        pointListNode = slicer.mrmlScene.GetNodeByID(value)
-        numControlPoints = pointListNode.GetNumberOfControlPoints()
+      for fiducial_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode"):
+        numControlPoints = fiducial_node.GetNumberOfControlPoints()
 
         if numControlPoints > max_amount:
           max_amount = numControlPoints
@@ -677,6 +677,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
     max_points = self.__get_max_amount_of_fiducials()
 
+    # todo create a curve for all the fiducial nodes
     for i in range(len(self.curve_nodes), max_points):  # add the difference in points
       self.curve_nodes[i + 1] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
 
@@ -711,7 +712,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     else:
       pointListNode = None
 
-
     if pointListNode:
       selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
 
@@ -741,10 +741,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     Entire fiducial logic - create list, activate appropriate list and set the placement widget
     """
     slicer.modules.markups.logic().StartPlaceMode(0)
-
-    if self.automatic_assignment == True:
-      self.__create_all_fiducial_nodes()
-      self.__activate_fiducial_node()
 
     # set control point visibility off in 3D
     for fiducial_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode"):
@@ -1012,41 +1008,51 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.activeRowsUpdate()
 
   def onUpdateFlow(self):
-    """
-    Everytime a new fiducial is placed, add it to the 3D view flow. Corresponding landmarks are connected with a line
-    that should show the deformation over time (from volume to volume). The flow should be 'sensible'
-    """
     # delete old curve nodes
     try:
       for curve_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsCurveNode"):
         slicer.mrmlScene.RemoveNode(curve_node)
       self.curve_nodes = {}
-      self.landmarks = {}
+      for i in range(1, 11):
+        self.landmarks_names_vectors[f"l{i} us1"] = None
+        self.landmarks_names_vectors[f"l{i} us2"] = None
+        self.landmarks_names_vectors[f"l{i} us3"] = None
+        self.landmarks_names_vectors[f"l{i} pre-op"] = None
+        self.landmarks_names_vectors[f"l{i} intra-op"] = None
     except Exception as e:
       print(e)
 
-    # create curve nodes again
-    self.__create_all_curve_nodes()
+    # get markups list F
+    fiducial_node = slicer.util.getNode('F')
 
-    # loop through all fiducial nodes
-    for key, value in self.fiducial_nodes.items():
-      # for each node, add all points to the control curve
-      pointListNode = slicer.mrmlScene.GetNodeByID(value)
-      numControlPoints = pointListNode.GetNumberOfControlPoints()
-      positions = []
-      for i in range(1, numControlPoints + 1):  # we start at 1 because that's how slicer numbers landmarks
-        vector = pointListNode.GetNthControlPointPositionVector(i - 1)
+    num_control_points = fiducial_node.GetNumberOfControlPoints()
 
-        # create entry in landmark dict
-        if i not in self.landmarks:
-          self.landmarks[i] = []
-        self.landmarks[i].append([vector.GetX(), vector.GetY(), vector.GetZ()])
-        # positions.append([vector.GetX(), vector.GetY(), vector.GetZ()])
+    # loop through all landmarks in the fiducial node
+    for i in range(num_control_points):
+      vector = fiducial_node.GetNthControlPointPositionVector(i)
+      label = fiducial_node.GetNthControlPointLabel(i)
 
+      # if the name was correct, add it to the dict
+      if label.lower() in self.landmarks_names_vectors:
+        self.landmarks_names_vectors[label.lower()] = [vector.GetX(), vector.GetY(), vector.GetZ()]
+      else:
+        slicer.util.errorDisplay(f"Incorrect landmark name: {label}")
+
+    # create 10 curve nodes
+    for i in range(10):  # add the difference in points
+      self.curve_nodes[i] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
+
+    # loop through all curve nodes
     for index, curve_node_id in self.curve_nodes.items():
-      positions = np.asarray(self.landmarks[index])
+      position_preop = self.landmarks_names_vectors[f"l{index + 1} pre-op"]
+      position_us1 = self.landmarks_names_vectors[f"l{index + 1} us1"]
+      position_us2 = self.landmarks_names_vectors[f"l{index + 1} us2"]
+      position_us3 = self.landmarks_names_vectors[f"l{index + 1} us3"]
+      position_intraop = self.landmarks_names_vectors[f"l{index + 1} intra-op"]
 
-      slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, positions)
+      all_points = np.asarray([position_preop, position_us1, position_us2, position_us3, position_intraop])
+
+      slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, all_points)
 
       self.__markup_curve_adjustment(curve_node_id)
 
@@ -1096,11 +1102,14 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.bottomRowActive = activate
     self.activeRowsUpdate()
 
-  def onAutomaticLandmarks(self, activate=False):
-    self.automatic_assignment = activate
+  def onLabelVisCheck(self, activate=True):
+    fiducial_node = slicer.util.getNode('F')
+    disp_node = fiducial_node.GetDisplayNode()
 
-    if activate:
-      self.ui.updateFlow.enabled = True
+    if activate is True:
+      disp_node.SetTextScale(3)
+    else:
+      disp_node.SetTextScale(0)
 
 #
 # MRUSLandmarkingLogic
