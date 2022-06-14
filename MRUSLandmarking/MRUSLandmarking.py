@@ -630,93 +630,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     crosshairNode.SetCrosshairRAS(pos)
     crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
-  def __get_max_amount_of_fiducials(self):
-    """
-    Get the maximum number of landmarks stored in all fiducial nodes (that's how many curves need to exist)
-    :return: The maximum
-    """
-
-    max_amount = 0
-    try:
-      for fiducial_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode"):
-        numControlPoints = fiducial_node.GetNumberOfControlPoints()
-
-        if numControlPoints > max_amount:
-          max_amount = numControlPoints
-
-      return max_amount
-
-    except:
-      return 0
-
-  def __create_all_fiducial_nodes(self):
-    """
-    Creates all fiducial nodes (one for each volume) (or updates the existing one)
-    """
-
-    # for volume_id in self.volumes_ids:
-    #   volume.GetName()
-
-    fiducial_names = ["M1__f", "U1__f", "U2__f", "U3__f", "M2__f"]
-
-    for name, volume in zip(fiducial_names, [self.ui.inputSelector0.currentNode(),
-                                              self.ui.inputSelector1.currentNode(),
-                                              self.ui.inputSelector2.currentNode(),
-                                              self.ui.inputSelector3.currentNode(),
-                                              self.ui.inputSelector4.currentNode()]):
-
-      if volume:  # we need to check if it is not none - nothing selected means the current node is none
-        fiducial_name = name
-
-        if not slicer.mrmlScene.GetFirstNodeByName(fiducial_name):  # if the fiducial node does not exist
-          # create it and append the voume id and the fiducial id
-          self.fiducial_nodes[volume.GetID()] = slicer.modules.markups.logic().AddNewFiducialNode(fiducial_name)
-          # self.curve_nodes[self.fiducial_nodes[volume.GetID()]] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
-
-  def __create_all_curve_nodes(self):
-    """
-    Creates as many curve nodes as there are fiducials in the longest list
-    """
-    max_points = self.__get_max_amount_of_fiducials()
-
-    # todo create a curve for all the fiducial nodes
-    for i in range(len(self.curve_nodes), max_points):  # add the difference in points
-      self.curve_nodes[i + 1] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
-
-  def __activate_fiducial_node(self):
-    """
-    Function to activate the correct fiducial node. If the foreground opacity is bigger than 0, set the fiducial to the
-    node corresponding to the foreground node, otherwise set it to the node corresponding to the background node
-    """
-
-    # for now we only consider top row
-
-    # get background and foreground IDs
-    layoutManager = slicer.app.layoutManager()
-    view_logic = layoutManager.sliceWidget("Red").sliceLogic()
-    compositeNode = view_logic.GetSliceCompositeNode()
-
-    background_id = compositeNode.GetBackgroundVolumeID()
-    foreground_id = compositeNode.GetForegroundVolumeID()
-
-    # get foreground opacity
-    foreground_opacity = compositeNode.GetForegroundOpacity()
-
-    # get appropriate fiducial node (or create if it does not exist)
-
-    selectionNode = slicer.app.applicationLogic().GetSelectionNode()
-    selectionNode.SetReferenceActivePlaceNodeClassName("vtkMRMLMarkupsFiducialNode")
-
-    if foreground_opacity > 0 and foreground_id:  # then activate the foreground fiducial node, else the background
-      pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[foreground_id])
-    elif background_id:
-      pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[background_id])
-    else:
-      pointListNode = None
-
-    if pointListNode:
-      selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
-
   def __markup_curve_adjustment(self, curve_node_id):
     # get color table
     iron = slicer.util.getFirstNodeByName("Iron")
@@ -1213,6 +1126,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       # dispNode.SetTextScale(0)
       dispNode.UpdateAssignedAttribute()
       dispNode.Modified()
+
+      if node.GetNumberOfControlPoints() == 0:
+        slicer.mrmlScene.RemoveNode(node)
 
 
 #
