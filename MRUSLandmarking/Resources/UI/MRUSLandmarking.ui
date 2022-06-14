@@ -234,55 +234,16 @@
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
-      <item row="4" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-          <italic>true</italic>
-         </font>
+      <item row="7" column="0">
+       <widget class="QPushButton" name="divideLandmarksByVolumeButton">
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>16777215</height>
+         </size>
         </property>
         <property name="text">
-         <string>1. The landmarks need to be named according to this scheme (max 10 points):</string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
-       <widget class="QPushButton" name="updateFlow">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Update landmark curves</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QCheckBox" name="labelVisCheck">
-        <property name="text">
-         <string>Label visibility</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget"/>
-      </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-          <italic>true</italic>
-         </font>
-        </property>
-        <property name="text">
-         <string>For the landmark curves to work:</string>
+         <string>Divide landmarks by volume</string>
         </property>
        </widget>
       </item>
@@ -299,6 +260,19 @@
         </property>
        </widget>
       </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>1. The landmarks need to be named according to this scheme (max 10 points):</string>
+        </property>
+       </widget>
+      </item>
       <item row="6" column="0">
        <widget class="QLabel" name="label_5">
         <property name="font">
@@ -309,6 +283,51 @@
         </property>
         <property name="text">
          <string>2. The landmark list must be named 'F'</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>For the landmark curves to work:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="updateFlow">
+        <property name="maximumSize">
+         <size>
+          <width>200</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Update landmark curves</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="labelVisCheck">
+        <property name="text">
+         <string>Label visibility</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
        </widget>
       </item>

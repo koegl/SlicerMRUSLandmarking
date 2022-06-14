@@ -164,6 +164,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.syncViewsButton.connect('clicked(bool)', self.onSyncViewsButton)
     # update landmark flow
     self.ui.updateFlow.connect('clicked(bool)', self.onUpdateFlow)
+    # divide landmarks by volume
+    self.ui.divideLandmarksByVolumeButton.connect('clicked(bool)', self.onDivideLandmarksByVolume)
 
     # Check boxes
     # Activate rows
@@ -628,93 +630,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     crosshairNode.SetCrosshairRAS(pos)
     crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
-  def __get_max_amount_of_fiducials(self):
-    """
-    Get the maximum number of landmarks stored in all fiducial nodes (that's how many curves need to exist)
-    :return: The maximum
-    """
-
-    max_amount = 0
-    try:
-      for fiducial_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode"):
-        numControlPoints = fiducial_node.GetNumberOfControlPoints()
-
-        if numControlPoints > max_amount:
-          max_amount = numControlPoints
-
-      return max_amount
-
-    except:
-      return 0
-
-  def __create_all_fiducial_nodes(self):
-    """
-    Creates all fiducial nodes (one for each volume) (or updates the existing one)
-    """
-
-    # for volume_id in self.volumes_ids:
-    #   volume.GetName()
-
-    fiducial_names = ["M1__f", "U1__f", "U2__f", "U3__f", "M2__f"]
-
-    for name, volume in zip(fiducial_names, [self.ui.inputSelector0.currentNode(),
-                                              self.ui.inputSelector1.currentNode(),
-                                              self.ui.inputSelector2.currentNode(),
-                                              self.ui.inputSelector3.currentNode(),
-                                              self.ui.inputSelector4.currentNode()]):
-
-      if volume:  # we need to check if it is not none - nothing selected means the current node is none
-        fiducial_name = name
-
-        if not slicer.mrmlScene.GetFirstNodeByName(fiducial_name):  # if the fiducial node does not exist
-          # create it and append the voume id and the fiducial id
-          self.fiducial_nodes[volume.GetID()] = slicer.modules.markups.logic().AddNewFiducialNode(fiducial_name)
-          # self.curve_nodes[self.fiducial_nodes[volume.GetID()]] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
-
-  def __create_all_curve_nodes(self):
-    """
-    Creates as many curve nodes as there are fiducials in the longest list
-    """
-    max_points = self.__get_max_amount_of_fiducials()
-
-    # todo create a curve for all the fiducial nodes
-    for i in range(len(self.curve_nodes), max_points):  # add the difference in points
-      self.curve_nodes[i + 1] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
-
-  def __activate_fiducial_node(self):
-    """
-    Function to activate the correct fiducial node. If the foreground opacity is bigger than 0, set the fiducial to the
-    node corresponding to the foreground node, otherwise set it to the node corresponding to the background node
-    """
-
-    # for now we only consider top row
-
-    # get background and foreground IDs
-    layoutManager = slicer.app.layoutManager()
-    view_logic = layoutManager.sliceWidget("Red").sliceLogic()
-    compositeNode = view_logic.GetSliceCompositeNode()
-
-    background_id = compositeNode.GetBackgroundVolumeID()
-    foreground_id = compositeNode.GetForegroundVolumeID()
-
-    # get foreground opacity
-    foreground_opacity = compositeNode.GetForegroundOpacity()
-
-    # get appropriate fiducial node (or create if it does not exist)
-
-    selectionNode = slicer.app.applicationLogic().GetSelectionNode()
-    selectionNode.SetReferenceActivePlaceNodeClassName("vtkMRMLMarkupsFiducialNode")
-
-    if foreground_opacity > 0 and foreground_id:  # then activate the foreground fiducial node, else the background
-      pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[foreground_id])
-    elif background_id:
-      pointListNode = slicer.mrmlScene.GetNodeByID(self.fiducial_nodes[background_id])
-    else:
-      pointListNode = None
-
-    if pointListNode:
-      selectionNode.SetActivePlaceNodeID(pointListNode.GetID())
-
   def __markup_curve_adjustment(self, curve_node_id):
     # get color table
     iron = slicer.util.getFirstNodeByName("Iron")
@@ -1007,54 +922,96 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.bottomRowActive = True
       self.activeRowsUpdate()
 
-  def onUpdateFlow(self):
-    # delete old curve nodes
-    try:
-      for curve_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsCurveNode"):
-        slicer.mrmlScene.RemoveNode(curve_node)
-      self.curve_nodes = {}
-      for i in range(1, 11):
-        self.landmarks_names_vectors[f"l{i} us1"] = None
-        self.landmarks_names_vectors[f"l{i} us2"] = None
-        self.landmarks_names_vectors[f"l{i} us3"] = None
-        self.landmarks_names_vectors[f"l{i} pre-op"] = None
-        self.landmarks_names_vectors[f"l{i} intra-op"] = None
-    except Exception as e:
-      print(e)
-
-    # get markups list F
+  def divideLandmarksByVolume(self):
     fiducial_node = slicer.util.getNode('F')
 
     num_control_points = fiducial_node.GetNumberOfControlPoints()
 
-    # loop through all landmarks in the fiducial node
+    preop = []
+    us1 = []
+    us2 = []
+    us3 = []
+    intraop = []
+
     for i in range(num_control_points):
-      vector = fiducial_node.GetNthControlPointPositionVector(i)
       label = fiducial_node.GetNthControlPointLabel(i)
+      vector = fiducial_node.GetNthControlPointPosition(i)
 
-      # if the name was correct, add it to the dict
-      if label.lower() in self.landmarks_names_vectors:
-        self.landmarks_names_vectors[label.lower()] = [vector.GetX(), vector.GetY(), vector.GetZ()]
-      else:
-        slicer.util.errorDisplay(f"Incorrect landmark name: {label}")
+      if "pre-op" in label.lower():
+        preop.append([vector, label])
+      elif "us1" in label.lower():
+        us1.append([vector, label])
+      elif "us2" in label.lower():
+        us2.append([vector, label])
+      elif "us3" in label.lower():
+        us3.append([vector, label])
+      elif "intra-op" in label.lower():
+        intraop.append([vector, label])
 
-    # create 10 curve nodes
-    for i in range(10):  # add the difference in points
-      self.curve_nodes[i] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
+    preop.sort(key=lambda y: y[1])
+    us1.sort(key=lambda y: y[1])
+    us2.sort(key=lambda y: y[1])
+    us3.sort(key=lambda y: y[1])
+    intraop.sort(key=lambda y: y[1])
 
-    # loop through all curve nodes
-    for index, curve_node_id in self.curve_nodes.items():
-      position_preop = self.landmarks_names_vectors[f"l{index + 1} pre-op"]
-      position_us1 = self.landmarks_names_vectors[f"l{index + 1} us1"]
-      position_us2 = self.landmarks_names_vectors[f"l{index + 1} us2"]
-      position_us3 = self.landmarks_names_vectors[f"l{index + 1} us3"]
-      position_intraop = self.landmarks_names_vectors[f"l{index + 1} intra-op"]
+    all_nodes = [preop, us1, us2, us3, intraop]
 
-      all_points = np.asarray([position_preop, position_us1, position_us2, position_us3, position_intraop])
+    max_len = max([len(i) for i in all_nodes])
 
-      slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, all_points)
+    assert len(preop) == max_len or len(preop) == 0, "All volumes must have the same amount of landmarks (or none)"
+    assert len(us1) == max_len or len(us1) == 0, "All volumes must have the same amount of landmarks (or none)"
+    assert len(us2) == max_len or len(us2) == 0, "All volumes must have the same amount of landmarks (or none)"
+    assert len(us3) == max_len or len(us3) == 0, "All volumes must have the same amount of landmarks (or none)"
+    assert len(intraop) == max_len or len(intraop) == 0, "All volumes must have the same amount of landmarks (or none)"
 
-      self.__markup_curve_adjustment(curve_node_id)
+    return all_nodes
+
+  def onUpdateFlow(self):
+
+    try:
+
+      # delete old curve nodes
+      for curve_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsCurveNode"):
+        slicer.mrmlScene.RemoveNode(curve_node)
+      self.curve_nodes = {}
+
+      fiducial_nodes = self.divideLandmarksByVolume()
+      max_len = max([len(i) for i in fiducial_nodes])
+
+      # create curve nodes
+      for i in range(max_len):
+        self.curve_nodes[i] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
+
+      # loop through all curve nodes and add points
+      for index, curve_node_id in self.curve_nodes.items():
+
+        all_points = []
+
+        if len(fiducial_nodes[0]) > 0:
+          all_points.append(fiducial_nodes[0][index][0])
+        if len(fiducial_nodes[1]) > 0:
+          all_points.append(fiducial_nodes[1][index][0])
+        if len(fiducial_nodes[2]) > 0:
+          all_points.append(fiducial_nodes[2][index][0])
+        if len(fiducial_nodes[3]) > 0:
+          all_points.append(fiducial_nodes[3][index][0])
+        if len(fiducial_nodes[4]) > 0:
+          all_points.append(fiducial_nodes[4][index][0])
+
+        all_points = np.asarray(all_points)
+
+        slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, all_points)
+
+        self.__markup_curve_adjustment(curve_node_id)
+
+      # change tool to pointer
+      interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
+      interactionNode.SwitchToViewTransformMode()
+      # also turn off place mode persistence if required
+      interactionNode.SetPlaceModePersistence(0)
+
+    except Exception as e:
+      print(e)
 
   def activeRowsUpdate(self):
     """
@@ -1110,6 +1067,69 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       disp_node.SetTextScale(3)
     else:
       disp_node.SetTextScale(0)
+
+  def onDivideLandmarksByVolume(self):
+    fiducial_node = slicer.util.getNode('F')
+
+    fiducial_node_preop = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
+    fiducial_node_us1 = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
+    fiducial_node_us2 = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
+    fiducial_node_us3 = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
+    fiducial_node_intraop = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
+    fi_nodes = [fiducial_node_preop, fiducial_node_us1, fiducial_node_us2, fiducial_node_us3, fiducial_node_intraop]
+
+    num_control_points = fiducial_node.GetNumberOfControlPoints()
+
+    preop_counter = 0
+    us1_counter = 0
+    us2_counter = 0
+    us3_counter = 0
+    intraop_counter = 0
+
+    for i in range(num_control_points):
+      vector = fiducial_node.GetNthControlPointPositionVector(i)
+      label = fiducial_node.GetNthControlPointLabel(i)
+
+      if "pre-op" in label.lower():
+        fiducial_node_preop.SetName('Pre-Op-landmarks')
+        fiducial_node_preop.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
+        fiducial_node_preop.SetNthControlPointLabel(preop_counter, f"L{preop_counter + 1} Pre-Op")
+        preop_counter += 1
+      elif "us1" in label.lower():
+        fiducial_node_us1.SetName('US1-landmarks')
+        fiducial_node_us1.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
+        fiducial_node_us1.SetNthControlPointLabel(us1_counter, f"L{us1_counter + 1} US1")
+        us1_counter += 1
+      elif "us2" in label.lower():
+        fiducial_node_us2.SetName('US2-landmarks')
+        fiducial_node_us2.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
+        fiducial_node_us2.SetNthControlPointLabel(us2_counter, f"L{us2_counter + 1} US2")
+        us2_counter += 1
+      elif "us3" in label.lower():
+        fiducial_node_us3.SetName('US3-landmarks')
+        fiducial_node_us3.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
+        fiducial_node_us3.SetNthControlPointLabel(us3_counter, f"L{us3_counter + 1} US3")
+        us3_counter += 1
+      elif "intra-op" in label.lower():
+        fiducial_node_intraop.SetName('Intra-Op-landmarks')
+        fiducial_node_intraop.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
+        fiducial_node_intraop.SetNthControlPointLabel(intraop_counter, f"L{intraop_counter + 1} Intra-Op")
+        intraop_counter += 1
+      else:
+        slicer.util.errorDisplay(f"Incorrect landmark name: {label}")
+
+    for node in fi_nodes:
+      dispNode = node.GetDisplayNode()
+      dispNode.Visibility2DOn()
+      dispNode.Visibility3DOn()
+      # dispNode.SetScalarVisibility(0)
+      # dispNode.SetTextScale(0)
+      dispNode.UpdateAssignedAttribute()
+      dispNode.Modified()
+
+      if node.GetNumberOfControlPoints() == 0:
+        slicer.mrmlScene.RemoveNode(node)
+
 
 #
 # MRUSLandmarkingLogic
