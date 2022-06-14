@@ -1009,60 +1009,96 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       self.bottomRowActive = True
       self.activeRowsUpdate()
 
-  def onUpdateFlow(self):
-    # delete old curve nodes
-    try:
-      for curve_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsCurveNode"):
-        slicer.mrmlScene.RemoveNode(curve_node)
-      self.curve_nodes = {}
-      for i in range(1, 11):
-        self.landmarks_names_vectors[f"l{i} us1"] = None
-        self.landmarks_names_vectors[f"l{i} us2"] = None
-        self.landmarks_names_vectors[f"l{i} us3"] = None
-        self.landmarks_names_vectors[f"l{i} pre-op"] = None
-        self.landmarks_names_vectors[f"l{i} intra-op"] = None
-    except Exception as e:
-      print(e)
-
-    # get markups list F
+  def divideLandmarksByVolume(self):
     fiducial_node = slicer.util.getNode('F')
 
     num_control_points = fiducial_node.GetNumberOfControlPoints()
 
-    # loop through all landmarks in the fiducial node
+    preop = []
+    us1 = []
+    us2 = []
+    us3 = []
+    intraop = []
+
     for i in range(num_control_points):
-      vector = fiducial_node.GetNthControlPointPositionVector(i)
       label = fiducial_node.GetNthControlPointLabel(i)
+      vector = fiducial_node.GetNthControlPointPosition(i)
 
-      # if the name was correct, add it to the dict
-      if label.lower() in self.landmarks_names_vectors:
-        self.landmarks_names_vectors[label.lower()] = [vector.GetX(), vector.GetY(), vector.GetZ()]
-      else:
-        slicer.util.errorDisplay(f"Incorrect landmark name: {label}")
+      if "pre-op" in label.lower():
+        preop.append([vector, label])
+      elif "us1" in label.lower():
+        us1.append([vector, label])
+      elif "us2" in label.lower():
+        us2.append([vector, label])
+      elif "us3" in label.lower():
+        us3.append([vector, label])
+      elif "intra-op" in label.lower():
+        intraop.append([vector, label])
 
-    # create 10 curve nodes
-    for i in range(10):  # add the difference in points
-      self.curve_nodes[i] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
+    preop.sort(key=lambda y: y[1])
+    us1.sort(key=lambda y: y[1])
+    us2.sort(key=lambda y: y[1])
+    us3.sort(key=lambda y: y[1])
+    intraop.sort(key=lambda y: y[1])
 
-    # loop through all curve nodes
-    for index, curve_node_id in self.curve_nodes.items():
-      position_preop = self.landmarks_names_vectors[f"l{index + 1} pre-op"]
-      position_us1 = self.landmarks_names_vectors[f"l{index + 1} us1"]
-      position_us2 = self.landmarks_names_vectors[f"l{index + 1} us2"]
-      position_us3 = self.landmarks_names_vectors[f"l{index + 1} us3"]
-      position_intraop = self.landmarks_names_vectors[f"l{index + 1} intra-op"]
+    all_nodes = [preop, us1, us2, us3, intraop]
 
-      all_points = np.asarray([position_preop, position_us1, position_us2, position_us3, position_intraop])
+    max_len = max([len(i) for i in all_nodes])
 
-      slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, all_points)
+    assert len(preop) == max_len or len(preop) == 0, "All volumes must have the same amount of landmarks (or none)"
+    assert len(us1) == max_len or len(us1) == 0, "All volumes must have the same amount of landmarks (or none)"
+    assert len(us2) == max_len or len(us2) == 0, "All volumes must have the same amount of landmarks (or none)"
+    assert len(us3) == max_len or len(us3) == 0, "All volumes must have the same amount of landmarks (or none)"
+    assert len(intraop) == max_len or len(intraop) == 0, "All volumes must have the same amount of landmarks (or none)"
 
-      self.__markup_curve_adjustment(curve_node_id)
+    return all_nodes
 
-    # change tool to pointer
-    interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
-    interactionNode.SwitchToViewTransformMode()
-    # also turn off place mode persistence if required
-    interactionNode.SetPlaceModePersistence(0)
+  def onUpdateFlow(self):
+
+    try:
+
+      # delete old curve nodes
+      for curve_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsCurveNode"):
+        slicer.mrmlScene.RemoveNode(curve_node)
+      self.curve_nodes = {}
+
+      fiducial_nodes = self.divideLandmarksByVolume()
+      max_len = max([len(i) for i in fiducial_nodes])
+
+      # create curve nodes
+      for i in range(max_len):
+        self.curve_nodes[i] = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsCurveNode")
+
+      # loop through all curve nodes and add points
+      for index, curve_node_id in self.curve_nodes.items():
+
+        all_points = []
+
+        if len(fiducial_nodes[0]) > 0:
+          all_points.append(fiducial_nodes[0][index][0])
+        if len(fiducial_nodes[1]) > 0:
+          all_points.append(fiducial_nodes[1][index][0])
+        if len(fiducial_nodes[2]) > 0:
+          all_points.append(fiducial_nodes[2][index][0])
+        if len(fiducial_nodes[3]) > 0:
+          all_points.append(fiducial_nodes[3][index][0])
+        if len(fiducial_nodes[4]) > 0:
+          all_points.append(fiducial_nodes[4][index][0])
+
+        all_points = np.asarray(all_points)
+
+        slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, all_points)
+
+        self.__markup_curve_adjustment(curve_node_id)
+
+      # change tool to pointer
+      interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
+      interactionNode.SwitchToViewTransformMode()
+      # also turn off place mode persistence if required
+      interactionNode.SetPlaceModePersistence(0)
+
+    except Exception as e:
+      print(e)
 
   def activeRowsUpdate(self):
     """
@@ -1142,39 +1178,39 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       label = fiducial_node.GetNthControlPointLabel(i)
 
       if "pre-op" in label.lower():
-        fiducial_node_preop.SetName('Pre-Op')
+        fiducial_node_preop.SetName('Pre-Op-landmarks')
         fiducial_node_preop.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
-        fiducial_node_preop.SetNthControlPointLabel(preop_counter, str(preop_counter))
+        fiducial_node_preop.SetNthControlPointLabel(preop_counter, f"L{preop_counter + 1} Pre-Op")
         preop_counter += 1
       elif "us1" in label.lower():
-        fiducial_node_us1.SetName('US1')
+        fiducial_node_us1.SetName('US1-landmarks')
         fiducial_node_us1.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
-        fiducial_node_us1.SetNthControlPointLabel(us1_counter, str(us1_counter))
+        fiducial_node_us1.SetNthControlPointLabel(us1_counter, f"L{us1_counter + 1} US1")
         us1_counter += 1
       elif "us2" in label.lower():
-        fiducial_node_us2.SetName('US2')
+        fiducial_node_us2.SetName('US2-landmarks')
         fiducial_node_us2.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
-        fiducial_node_us2.SetNthControlPointLabel(us2_counter, str(us2_counter))
+        fiducial_node_us2.SetNthControlPointLabel(us2_counter, f"L{us2_counter + 1} US2")
         us2_counter += 1
       elif "us3" in label.lower():
-        fiducial_node_us3.SetName('US3')
+        fiducial_node_us3.SetName('US3-landmarks')
         fiducial_node_us3.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
-        fiducial_node_us3.SetNthControlPointLabel(us3_counter, str(us3_counter))
+        fiducial_node_us3.SetNthControlPointLabel(us3_counter, f"L{us3_counter + 1} US3")
         us3_counter += 1
       elif "intra-op" in label.lower():
-        fiducial_node_intraop.SetName('Intra-Op')
+        fiducial_node_intraop.SetName('Intra-Op-landmarks')
         fiducial_node_intraop.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
-        fiducial_node_intraop.SetNthControlPointLabel(intraop_counter, str(intraop_counter))
+        fiducial_node_intraop.SetNthControlPointLabel(intraop_counter, f"L{intraop_counter + 1} Intra-Op")
         intraop_counter += 1
       else:
         slicer.util.errorDisplay(f"Incorrect landmark name: {label}")
 
     for node in fi_nodes:
       dispNode = node.GetDisplayNode()
-      dispNode.Visibility2DOff()
-      dispNode.Visibility3DOff()
-      dispNode.SetScalarVisibility(0)
-      dispNode.SetTextScale(0)
+      dispNode.Visibility2DOn()
+      dispNode.Visibility3DOn()
+      # dispNode.SetScalarVisibility(0)
+      # dispNode.SetTextScale(0)
       dispNode.UpdateAssignedAttribute()
       dispNode.Modified()
 
