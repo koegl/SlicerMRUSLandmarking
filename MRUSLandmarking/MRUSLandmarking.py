@@ -1168,7 +1168,8 @@ class LandmarkIO:
         elif "intra-op" in pointListNode.GetNthControlPointLabel(index).lower():
           volume_idx = 4
         else:
-          slicer.util.errorDisplay("Wrong fiducial names. Exiting without exporting.")
+          slicer.util.errorDisplay(f"Wrong fiducial name {pointListNode.GetNthControlPointLabel(index)}"
+                                   f". Exiting without exporting.")
           return
 
         data[volume_idx].append(coords)
