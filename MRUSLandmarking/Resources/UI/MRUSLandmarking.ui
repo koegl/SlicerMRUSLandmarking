@@ -234,21 +234,8 @@
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
-      <item row="7" column="0">
-       <widget class="QPushButton" name="divideLandmarksByVolumeButton">
-        <property name="maximumSize">
-         <size>
-          <width>200</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>Divide landmarks by volume</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_4">
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_2">
         <property name="font">
          <font>
           <pointsize>12</pointsize>
@@ -256,20 +243,20 @@
          </font>
         </property>
         <property name="text">
-         <string>L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op </string>
+         <string>For the landmark curves to work:</string>
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-          <italic>true</italic>
-         </font>
-        </property>
+      <item row="0" column="0">
+       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="labelVisCheck">
         <property name="text">
-         <string>1. The landmarks need to be named according to this scheme (max 10 points):</string>
+         <string>Label visibility</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -286,8 +273,8 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_2">
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_3">
         <property name="font">
          <font>
           <pointsize>12</pointsize>
@@ -295,7 +282,20 @@
          </font>
         </property>
         <property name="text">
-         <string>For the landmark curves to work:</string>
+         <string>1. The landmarks need to be named according to this scheme (max 10 points):</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op </string>
         </property>
        </widget>
       </item>
@@ -315,19 +315,6 @@
         </property>
         <property name="text">
          <string>Update landmark curves</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget"/>
-      </item>
-      <item row="2" column="0">
-       <widget class="QCheckBox" name="labelVisCheck">
-        <property name="text">
-         <string>Label visibility</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
         </property>
        </widget>
       </item>

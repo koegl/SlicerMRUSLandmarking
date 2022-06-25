@@ -164,8 +164,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     self.ui.syncViewsButton.connect('clicked(bool)', self.onSyncViewsButton)
     # update landmark flow
     self.ui.updateFlow.connect('clicked(bool)', self.onUpdateFlow)
-    # divide landmarks by volume
-    self.ui.divideLandmarksByVolumeButton.connect('clicked(bool)', self.onDivideLandmarksByVolume)
 
     # Check boxes
     # Activate rows
@@ -1067,68 +1065,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
       disp_node.SetTextScale(3)
     else:
       disp_node.SetTextScale(0)
-
-  def onDivideLandmarksByVolume(self):
-    fiducial_node = slicer.util.getNode('F')
-
-    fiducial_node_preop = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
-    fiducial_node_us1 = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
-    fiducial_node_us2 = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
-    fiducial_node_us3 = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
-    fiducial_node_intraop = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode")
-    fi_nodes = [fiducial_node_preop, fiducial_node_us1, fiducial_node_us2, fiducial_node_us3, fiducial_node_intraop]
-
-    num_control_points = fiducial_node.GetNumberOfControlPoints()
-
-    preop_counter = 0
-    us1_counter = 0
-    us2_counter = 0
-    us3_counter = 0
-    intraop_counter = 0
-
-    for i in range(num_control_points):
-      vector = fiducial_node.GetNthControlPointPositionVector(i)
-      label = fiducial_node.GetNthControlPointLabel(i)
-
-      if "pre-op" in label.lower():
-        fiducial_node_preop.SetName('Pre-Op-landmarks')
-        fiducial_node_preop.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
-        fiducial_node_preop.SetNthControlPointLabel(preop_counter, f"L{preop_counter + 1} Pre-Op")
-        preop_counter += 1
-      elif "us1" in label.lower():
-        fiducial_node_us1.SetName('US1-landmarks')
-        fiducial_node_us1.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
-        fiducial_node_us1.SetNthControlPointLabel(us1_counter, f"L{us1_counter + 1} US1")
-        us1_counter += 1
-      elif "us2" in label.lower():
-        fiducial_node_us2.SetName('US2-landmarks')
-        fiducial_node_us2.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
-        fiducial_node_us2.SetNthControlPointLabel(us2_counter, f"L{us2_counter + 1} US2")
-        us2_counter += 1
-      elif "us3" in label.lower():
-        fiducial_node_us3.SetName('US3-landmarks')
-        fiducial_node_us3.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
-        fiducial_node_us3.SetNthControlPointLabel(us3_counter, f"L{us3_counter + 1} US3")
-        us3_counter += 1
-      elif "intra-op" in label.lower():
-        fiducial_node_intraop.SetName('Intra-Op-landmarks')
-        fiducial_node_intraop.AddControlPoint(vector.GetX(), vector.GetY(), vector.GetZ())
-        fiducial_node_intraop.SetNthControlPointLabel(intraop_counter, f"L{intraop_counter + 1} Intra-Op")
-        intraop_counter += 1
-      else:
-        slicer.util.errorDisplay(f"Incorrect landmark name: {label}")
-
-    for node in fi_nodes:
-      dispNode = node.GetDisplayNode()
-      dispNode.Visibility2DOn()
-      dispNode.Visibility3DOn()
-      # dispNode.SetScalarVisibility(0)
-      # dispNode.SetTextScale(0)
-      dispNode.UpdateAssignedAttribute()
-      dispNode.Modified()
-
-      if node.GetNumberOfControlPoints() == 0:
-        slicer.mrmlScene.RemoveNode(node)
 
 
 #
