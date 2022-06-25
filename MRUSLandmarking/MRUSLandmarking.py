@@ -83,7 +83,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # for switching between markup control points
         self.current_control_point_idx = 0
 
-        self.current_landmarks_list = ""
+        self.landmark_dict = {}
 
     def setup(self):
         """
@@ -119,6 +119,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.inputSelector2.nodeTypes = ["vtkMRMLScalarVolumeNode"]
         self.ui.inputSelector3.nodeTypes = ["vtkMRMLScalarVolumeNode"]
         self.ui.inputSelector4.nodeTypes = ["vtkMRMLScalarVolumeNode"]
+        self.ui.landmarksSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
 
         # Connections
 
@@ -134,6 +135,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
         self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
         self.ui.inputSelector4.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+        self.ui.landmarksSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
         self.input_selectors = [self.ui.inputSelector4,
                                 self.ui.inputSelector3,
@@ -160,6 +162,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # update landmark flow
         self.ui.updateFlow.connect('clicked(bool)', self.onUpdateFlow)
 
+        # inspection results button
+        self.ui.printResultsButton.connect('clicked(bool)', self.onPrintResultsButton)
+
         # Check boxes
         # Activate rows
         self.ui.topRowCheck.connect('clicked(bool)', self.onTopRowCheck)
@@ -167,6 +172,10 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # label visibility
         self.ui.labelVisCheck.connect('clicked(bool)', self.onLabelVisCheck)
+
+        # landmark status
+        self.ui.accetpedLandmarkCheck.connect('clicked(bool)', self.onAcceptedLandmarkCheck)
+        self.current_landmarks_list = self.ui.landmarksSelector.currentNode()
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
@@ -212,8 +221,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def initializeParameterNode(self):
         """
-    Ensure parameter node exists and observed.
-    """
+        Ensure parameter node exists and observed.
+        """
         # Parameter node stores all user choices in parameter values, node selections, etc.
         # so that when the scene is saved and reloaded, these settings are restored.
 
@@ -247,9 +256,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def setParameterNode(self, inputParameterNode):
         """
-    Set and observe parameter node.
-    Observation is needed because when the parameter node is changed then the GUI must be updated immediately.
-    """
+        Set and observe parameter node.
+        Observation is needed because when the parameter node is changed then the GUI must be updated immediately.
+        """
 
         # Unobserve previously selected parameter node and add an observer to the newly selected.
         # Changes of parameter node are observed so that whenever parameters are changed by a script or any other module
@@ -265,9 +274,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def updateGUIFromParameterNode(self, caller=None, event=None):
         """
-    This method is called whenever parameter node is changed.
-    The module GUI is updated to show the current state of the parameter node.
-    """
+        This method is called whenever parameter node is changed.
+        The module GUI is updated to show the current state of the parameter node.
+        """
 
         if self._parameterNode is None or self._updatingGUIFromParameterNode:
             return
@@ -281,6 +290,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
         self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
         self.ui.inputSelector4.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume4"))
+
+        self.current_landmarks_list = self.ui.landmarksSelector.currentNode()
 
         # update button states and tooltips - only if volumes are chosen, enable buttons
         if self._parameterNode.GetNodeReference("InputVolume0") or \
@@ -305,9 +316,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def updateParameterNodeFromGUI(self, caller=None, event=None):
         """
-    This method is called when the user makes any change in the GUI.
-    The changes are saved into the parameter node (so that they are restored when the scene is saved and loaded).
-    """
+        This method is called when the user makes any change in the GUI.
+        The changes are saved into the parameter node (so that they are restored when the scene is saved and loaded).
+        """
 
         if self._parameterNode is None or self._updatingGUIFromParameterNode:
             return
@@ -320,6 +331,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._parameterNode.SetNodeReferenceID("InputVolume3", self.ui.inputSelector3.currentNodeID)
         self._parameterNode.SetNodeReferenceID("InputVolume4", self.ui.inputSelector4.currentNodeID)
 
+        self.current_landmarks_list = self.ui.landmarksSelector.currentNode()
+
         self._parameterNode.EndModify(wasModified)
 
         # update volumes
@@ -328,6 +341,10 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         for selector in self.input_selectors:
             if selector.currentNode():
                 self.volumes_ids.append(selector.currentNode().GetID())
+
+        if self.current_landmarks_list != self.ui.landmarksSelector.currentNode():
+            self.current_landmarks_list = self.ui.landmarksSelector.currentNode()
+            self.ui.landmarkNameLabel.setText(self.current_landmarks_list.GetNthControlPointLabel(0))
 
     def get_next_combination(self, current_volume_ids=None, direction="forward"):
         """
@@ -579,10 +596,10 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
         # get markup node
         try:
-            if self.current_landmarks_list == "":
+            if self.current_landmarks_list is None:
                 x = slicer.util.getNode("F")
             else:
-                x = slicer.util.getNode(self.current_landmarks_list)
+                x = self.current_landmarks_list
 
             # get amount of control points
             control_points_amount = x.GetNumberOfControlPoints()
@@ -622,11 +639,16 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             crosshairNode.SetCrosshairRAS(pos)
             crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
+            # update label
+            self.ui.landmarkNameLabel.setText(x.GetNthControlPointLabel(self.current_control_point_idx))
+
+            if self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx) == "Accepted":
+                self.ui.accetpedLandmarkCheck.checked = True
+            else:
+                self.ui.accetpedLandmarkCheck.checked = False
+
         except Exception as e:
-            pass
-            # slicer.util.errorDisplay(
-            #     "Create landmarks (control points) before trying to switch between them. The landmarks "
-            #     "list has to be named 'F'" + str(e))
+            print(e)
 
     def __markup_curve_adjustment(self, curve_node_id):
         # get color table
@@ -1072,6 +1094,21 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             disp_node.SetTextScale(3)
         else:
             disp_node.SetTextScale(0)
+
+    def onAcceptedLandmarkCheck(self, activate=True):
+        try:
+            if activate is True:
+                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "Accepted")
+            if activate is False:
+                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "")
+        except Exception as e:
+            print(e)
+
+    def onPrintResultsButton(self):
+
+        for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
+            status = "Accepted" if self.current_landmarks_list.GetNthControlPointDescription(i) == "Accepted" else "Rejected"
+            print(f"{self.current_landmarks_list.GetNthControlPointLabel(i).ljust(12)}: {status}")
 
 
 #
