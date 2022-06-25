@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>460</width>
+    <width>520</width>
     <height>725</height>
    </rect>
   </property>
@@ -198,7 +198,7 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
+      <item row="4" column="0" colspan="2">
        <widget class="QLabel" name="label">
         <property name="text">
          <string>Choose active row(s)</string>
@@ -240,13 +240,6 @@
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
-      <item row="6" column="1">
-       <widget class="qMRMLNodeComboBox" name="landmarksSelector">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
       <item row="2" column="0">
        <widget class="QCheckBox" name="labelVisCheck">
         <property name="text">
@@ -270,32 +263,17 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="0" colspan="2">
-       <widget class="QLabel" name="label_2">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>60</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-          <italic>true</italic>
-         </font>
-        </property>
-        <property name="text">
-         <string>For the landmark curves to work: 
-1. The landmarks need to be named according to this scheme (max 10 points): 
-L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op 
-2. The landmark list must be named 'F'</string>
-        </property>
-       </widget>
-      </item>
       <item row="6" column="0">
        <widget class="QLabel" name="label_6">
         <property name="text">
          <string>Choose a list of landmarks</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="4">
+       <widget class="QPushButton" name="sortLandmarksButton">
+        <property name="text">
+         <string>Sort landmarks</string>
         </property>
        </widget>
       </item>
@@ -318,7 +296,7 @@ L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op
         </property>
        </widget>
       </item>
-      <item row="0" column="0" colspan="2">
+      <item row="0" column="0" colspan="4">
        <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget">
         <property name="minimumSize">
          <size>
@@ -350,7 +328,71 @@ L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op
         </property>
        </spacer>
       </item>
-      <item row="7" column="0" colspan="2">
+      <item row="8" column="1">
+       <widget class="ctkCheckBox" name="acceptedLandmarkCheck">
+        <property name="text">
+         <string>Accept</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="2">
+       <widget class="ctkCheckBox" name="modifyLandmarkCheck">
+        <property name="text">
+         <string>Modify</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="3">
+       <widget class="ctkCheckBox" name="rejectedLandmarkCheck">
+        <property name="text">
+         <string>Reject</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0" colspan="4">
+       <widget class="QPushButton" name="printResultsButton">
+        <property name="text">
+         <string>Print inspection results</string>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="0" colspan="2">
+       <widget class="QPushButton" name="misc1Button">
+        <property name="text">
+         <string>misc1</string>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="2" colspan="2">
+       <widget class="QPushButton" name="misc2Button">
+        <property name="text">
+         <string>misc1</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="4">
+       <widget class="QLabel" name="label_2">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>60</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>For the landmark curves to work: 
+1. The landmarks need to be named according to this scheme (max 10 points): 
+L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op 
+2. The landmark list must be named 'F'</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0" colspan="4">
        <widget class="QLabel" name="label_4">
         <property name="font">
          <font>
@@ -365,21 +407,14 @@ L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op
       <item row="8" column="0">
        <widget class="QLabel" name="landmarkNameLabel">
         <property name="text">
-         <string>&lt;no landmark selected&gt;</string>
+         <string>&lt;none&gt;</string>
         </property>
        </widget>
       </item>
-      <item row="8" column="1">
-       <widget class="ctkCheckBox" name="accetpedLandmarkCheck">
-        <property name="text">
-         <string>Accepted</string>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="0" colspan="2">
-       <widget class="QPushButton" name="printResultsButton">
-        <property name="text">
-         <string>Print inspection results</string>
+      <item row="6" column="1" colspan="3">
+       <widget class="qMRMLNodeComboBox" name="landmarksSelector">
+        <property name="enabled">
+         <bool>true</bool>
         </property>
        </widget>
       </item>

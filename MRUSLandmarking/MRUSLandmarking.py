@@ -161,6 +161,11 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.syncViewsButton.connect('clicked(bool)', self.onSyncViewsButton)
         # update landmark flow
         self.ui.updateFlow.connect('clicked(bool)', self.onUpdateFlow)
+        # sort landmartks
+        self.ui.sortLandmarksButton.connect('clicked(bool)', self.onSortLandmarksButton)
+
+        self.ui.misc1Button.connect('clicked(bool)', self.onMisc1Button)
+        self.ui.misc2Button.connect('clicked(bool)', self.onMisc2Button)
 
         # inspection results button
         self.ui.printResultsButton.connect('clicked(bool)', self.onPrintResultsButton)
@@ -174,7 +179,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.labelVisCheck.connect('clicked(bool)', self.onLabelVisCheck)
 
         # landmark status
-        self.ui.accetpedLandmarkCheck.connect('clicked(bool)', self.onAcceptedLandmarkCheck)
+        self.ui.acceptedLandmarkCheck.connect('clicked(bool)', self.onAcceptedLandmarkCheck)
+        self.ui.modifyLandmarkCheck.connect('clicked(bool)', self.onModifyLandmarkCheck)
+        self.ui.rejectedLandmarkCheck.connect('clicked(bool)', self.onRejectedLandmarkCheck)
         self.current_landmarks_list = self.ui.landmarksSelector.currentNode()
 
         # Make sure parameter node is initialized (needed for module reload)
@@ -643,9 +650,19 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.ui.landmarkNameLabel.setText(x.GetNthControlPointLabel(self.current_control_point_idx))
 
             if self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx) == "Accepted":
-                self.ui.accetpedLandmarkCheck.checked = True
+                self.ui.acceptedLandmarkCheck.checked = True
             else:
-                self.ui.accetpedLandmarkCheck.checked = False
+                self.ui.acceptedLandmarkCheck.checked = False
+
+            if self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx) == "Modify":
+                self.ui.modifyLandmarkCheck.checked = True
+            else:
+                self.ui.modifyLandmarkCheck.checked = False
+
+            if self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx) == "Rejected":
+                self.ui.rejectedLandmarkCheck.checked = True
+            else:
+                self.ui.rejectedLandmarkCheck.checked = False
 
         except Exception as e:
             print(e)
@@ -1099,6 +1116,30 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             if activate is True:
                 self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "Accepted")
+                self.ui.modifyLandmarkCheck.checked = False
+                self.ui.rejectedLandmarkCheck.checked = False
+            if activate is False:
+                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "")
+        except Exception as e:
+            print(e)
+
+    def onModifyLandmarkCheck(self, activate=True):
+        try:
+            if activate is True:
+                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "Modify")
+                self.ui.acceptedLandmarkCheck.checked = False
+                self.ui.rejectedLandmarkCheck.checked = False
+            if activate is False:
+                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "")
+        except Exception as e:
+            print(e)
+
+    def onRejectedLandmarkCheck(self, activate=True):
+        try:
+            if activate is True:
+                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "Rejected")
+                self.ui.modifyLandmarkCheck.checked = False
+                self.ui.acceptedLandmarkCheck.checked = False
             if activate is False:
                 self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "")
         except Exception as e:
@@ -1107,9 +1148,80 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onPrintResultsButton(self):
 
         for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
-            status = "Accepted" if self.current_landmarks_list.GetNthControlPointDescription(i) == "Accepted" else "Rejected"
+
+            if self.current_landmarks_list.GetNthControlPointDescription(i) == "Accepted":
+                status = "Accepted"
+            elif self.current_landmarks_list.GetNthControlPointDescription(i) == "Modify":
+                status = "Modify"
+            elif self.current_landmarks_list.GetNthControlPointDescription(i) == "Rejected":
+                status = "Rejected"
+            else:
+                status = "Not checked"
+
             print(f"{self.current_landmarks_list.GetNthControlPointLabel(i).ljust(12)}: {status}")
 
+    # todo make all landmarks invisibile that are not current
+
+    def onSortLandmarksButton(self):
+        try:
+            # create a list to sort
+            sort_list = []
+
+            for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
+                sort_list.append([self.current_landmarks_list.GetNthControlPointLabel(i),
+                                  self.current_landmarks_list.GetNthControlPointID(i), -1])
+
+            sort_list = sorted(sort_list, key=lambda x: x[0][0].split(' ')[0][1:])
+
+            # create sublists for each landmark
+            sublists = {}
+            for packet in sort_list:
+                prefix = packet[0].split(' ')[0]
+                if prefix in sublists:
+                    sublists[prefix].append(packet)
+                else:
+                    sublists[prefix] = [packet]
+
+            sublists = list(sublists.items())
+
+            # move intra to the last position of each sublist and sort each sublist
+            for i in range(len(sublists)):
+                sub = sublists[i][1]
+                new_list = sorted(sub, key=lambda x: x[0].split(' ')[1])
+
+                if "intra" in new_list[0][0].lower():
+                    temp = new_list.pop(0)
+                    new_list.append(temp)
+
+                sublists[i] = (sublists[i][0], new_list)
+
+            # create final sorted list
+            final_list = []
+            for _, packet in sublists:
+                for sub in packet:
+                    final_list.append(sub)
+
+            # create new markups list
+            sorted_markups = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", self.current_landmarks_list.GetName() + "_sorted")
+
+            for idx, landmark in enumerate(final_list):
+                index = self.current_landmarks_list.GetNthControlPointIndexByID(landmark[1])
+
+                sorted_markups.AddControlPoint(self.current_landmarks_list.GetNthControlPointPosition(index),
+                                               self.current_landmarks_list.GetNthControlPointLabel(index))
+
+                sorted_markups.SetNthControlPointDescription(idx, self.current_landmarks_list.GetNthControlPointDescription(index))
+
+            print(5)
+
+        except Exception as e:
+            print(e)
+
+    def onMisc1Button(self):
+        self.__jump_to_next_landmark(direction="forward")
+
+    def onMisc2Button(self):
+        self.__jump_to_next_landmark(direction="backward")
 
 #
 # MRUSLandmarkingLogic
