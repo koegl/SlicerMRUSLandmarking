@@ -23,7 +23,6 @@ class MRUSLandmarking(ScriptedLoadableModule):
         self.parent.categories = ["Informatics"]
         self.parent.dependencies = ["Markups"]
         self.parent.contributors = ["Fryderyk Kögl (TUM, BWH), Harneet Cheema (BWH, UOttawa), Tina Kapur (BWH)"]
-        # TODO: update with short description of the module and a link to online module documentation
         self.parent.helpText = """
     Module that gather useful Slicer functionality for setting landmarks in MR and US images. To start choose the
     volumes that you want to use, create an intersection of the US FOV to make sure your landmarks are all in an
@@ -81,6 +80,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # self.changing = "bottom"
 
         # for switching between markup control points
+        self.current_landmarks_list = None
         self.current_control_point_idx = 0
 
         self.landmark_dict = {}
@@ -119,7 +119,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.inputSelector2.nodeTypes = ["vtkMRMLScalarVolumeNode"]
         self.ui.inputSelector3.nodeTypes = ["vtkMRMLScalarVolumeNode"]
         self.ui.inputSelector4.nodeTypes = ["vtkMRMLScalarVolumeNode"]
-        self.ui.landmarksSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
+        # self.ui.landmarksSelector.nodeTypes = ["vtkMRMLMarkupsFiducialNode"]
 
         # Connections
 
@@ -135,7 +135,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
         self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
         self.ui.inputSelector4.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-        self.ui.landmarksSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+        self.ui.SimpleMarkupsWidget.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+        # self.ui.landmarksSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
 
         self.input_selectors = [self.ui.inputSelector4,
                                 self.ui.inputSelector3,
@@ -182,7 +183,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.acceptedLandmarkCheck.connect('clicked(bool)', self.onAcceptedLandmarkCheck)
         self.ui.modifyLandmarkCheck.connect('clicked(bool)', self.onModifyLandmarkCheck)
         self.ui.rejectedLandmarkCheck.connect('clicked(bool)', self.onRejectedLandmarkCheck)
-        self.current_landmarks_list = self.ui.landmarksSelector.currentNode()
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
@@ -190,6 +190,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # shortcuts
         self.__initialiseShortcuts()  # those that depend on the volumes - they have to be defined in this class,
         # as they need the updated ui stuff to work
+
+        # self.ui.SimpleMarkupsWidget.AddObserver(vtk.vtkCommand.ModifiedEvent, self.onLandmarksModified)
 
     def cleanup(self):
         """
@@ -251,6 +253,10 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                     if volumeNode:
                         self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
+        if not self._parameterNode.GetNodeReference("Landmarks"):
+            if self.ui.SimpleMarkupsWidget.currentNode() is not None:
+                self._parameterNode.SetNodeReferenceID("Landmarks", self.ui.SimpleMarkupsWidget.currentNode().GetID())
+
         # update chosen volumes
         self.volumes_ids = []
 
@@ -297,8 +303,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
         self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
         self.ui.inputSelector4.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume4"))
-
-        self.current_landmarks_list = self.ui.landmarksSelector.currentNode()
+        self.ui.SimpleMarkupsWidget.setCurrentNode(self._parameterNode.GetNodeReference("Landmarks"))
 
         # update button states and tooltips - only if volumes are chosen, enable buttons
         if self._parameterNode.GetNodeReference("InputVolume0") or \
@@ -338,7 +343,10 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._parameterNode.SetNodeReferenceID("InputVolume3", self.ui.inputSelector3.currentNodeID)
         self._parameterNode.SetNodeReferenceID("InputVolume4", self.ui.inputSelector4.currentNodeID)
 
-        self.current_landmarks_list = self.ui.landmarksSelector.currentNode()
+        if self.ui.SimpleMarkupsWidget.currentNode():
+            self._parameterNode.SetNodeReferenceID("Landmarks", self.ui.SimpleMarkupsWidget.currentNode().GetID())
+
+        self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
 
         self._parameterNode.EndModify(wasModified)
 
@@ -349,8 +357,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             if selector.currentNode():
                 self.volumes_ids.append(selector.currentNode().GetID())
 
-        if self.current_landmarks_list != self.ui.landmarksSelector.currentNode():
-            self.current_landmarks_list = self.ui.landmarksSelector.currentNode()
+        if self.current_landmarks_list != self.ui.SimpleMarkupsWidget.currentNode():
+            self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
             self.ui.landmarkNameLabel.setText(self.current_landmarks_list.GetNthControlPointLabel(0))
 
     def get_next_combination(self, current_volume_ids=None, direction="forward"):
@@ -603,13 +611,10 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
         # get markup node
         try:
-            if self.current_landmarks_list is None:
-                x = slicer.util.getNode("F")
-            else:
-                x = self.current_landmarks_list
+            self.checkIfLandmarksAreSelected()
 
             # get amount of control points
-            control_points_amount = x.GetNumberOfControlPoints()
+            control_points_amount = self.current_landmarks_list.GetNumberOfControlPoints()
 
             # if there are 0 control points
             if control_points_amount == 0:
@@ -636,7 +641,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 return
 
             # get n-th control point vector
-            pos = x.GetNthControlPointPositionVector(self.current_control_point_idx)
+            pos = self.current_landmarks_list.GetNthControlPointPositionVector(self.current_control_point_idx)
 
             # center views on current control point
             slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], False, 0)
@@ -647,7 +652,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
 
             # update label
-            self.ui.landmarkNameLabel.setText(x.GetNthControlPointLabel(self.current_control_point_idx))
+            self.ui.landmarkNameLabel.setText(self.current_landmarks_list.GetNthControlPointLabel(self.current_control_point_idx))
 
             if self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx) == "Accepted":
                 self.ui.acceptedLandmarkCheck.checked = True
@@ -663,6 +668,16 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.ui.rejectedLandmarkCheck.checked = True
             else:
                 self.ui.rejectedLandmarkCheck.checked = False
+
+            # make all other fiducials not visible
+            for i in range(control_points_amount):
+                if i != self.current_control_point_idx:
+                    self.current_landmarks_list.SetNthControlPointVisibility(i, False)
+                else:
+                    self.current_landmarks_list.SetNthControlPointVisibility(i, True)
+
+            # uncheck label vis
+            self.ui.labelVisCheck.checked = False
 
         except Exception as e:
             print(e)
@@ -966,49 +981,58 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.activeRowsUpdate()
 
     def divideLandmarksByVolume(self):
-        fiducial_node = slicer.util.getNode('F')
 
-        num_control_points = fiducial_node.GetNumberOfControlPoints()
+        try:
+            if self.current_landmarks_list is None:
+                fiducial_node = slicer.util.getNode('F')
+            else:
+                fiducial_node = self.current_landmarks_list
 
-        preop = []
-        us1 = []
-        us2 = []
-        us3 = []
-        intraop = []
+            num_control_points = fiducial_node.GetNumberOfControlPoints()
 
-        for i in range(num_control_points):
-            label = fiducial_node.GetNthControlPointLabel(i)
-            vector = fiducial_node.GetNthControlPointPosition(i)
+            preop = []
+            us1 = []
+            us2 = []
+            us3 = []
+            intraop = []
 
-            if "pre-op" in label.lower():
-                preop.append([vector, label])
-            elif "us1" in label.lower():
-                us1.append([vector, label])
-            elif "us2" in label.lower():
-                us2.append([vector, label])
-            elif "us3" in label.lower():
-                us3.append([vector, label])
-            elif "intra-op" in label.lower():
-                intraop.append([vector, label])
+            for i in range(num_control_points):
+                label = fiducial_node.GetNthControlPointLabel(i)
+                vector = fiducial_node.GetNthControlPointPosition(i)
 
-        preop.sort(key=lambda y: y[1])
-        us1.sort(key=lambda y: y[1])
-        us2.sort(key=lambda y: y[1])
-        us3.sort(key=lambda y: y[1])
-        intraop.sort(key=lambda y: y[1])
+                if "pre-op" in label.lower():
+                    preop.append([vector, label])
+                elif "us1" in label.lower():
+                    us1.append([vector, label])
+                elif "us2" in label.lower():
+                    us2.append([vector, label])
+                elif "us3" in label.lower():
+                    us3.append([vector, label])
+                elif "intra-op" in label.lower():
+                    intraop.append([vector, label])
 
-        all_nodes = [preop, us1, us2, us3, intraop]
+            preop.sort(key=lambda y: y[1])
+            us1.sort(key=lambda y: y[1])
+            us2.sort(key=lambda y: y[1])
+            us3.sort(key=lambda y: y[1])
+            intraop.sort(key=lambda y: y[1])
 
-        max_len = max([len(i) for i in all_nodes])
+            all_nodes = [preop, us1, us2, us3, intraop]
 
-        assert len(preop) == max_len or len(preop) == 0, "All volumes must have the same amount of landmarks (or none)"
-        assert len(us1) == max_len or len(us1) == 0, "All volumes must have the same amount of landmarks (or none)"
-        assert len(us2) == max_len or len(us2) == 0, "All volumes must have the same amount of landmarks (or none)"
-        assert len(us3) == max_len or len(us3) == 0, "All volumes must have the same amount of landmarks (or none)"
-        assert len(intraop) == max_len or len(
-            intraop) == 0, "All volumes must have the same amount of landmarks (or none)"
+            max_len = max([len(i) for i in all_nodes])
 
-        return all_nodes
+            assert len(preop) == max_len or len(preop) == 0, "All volumes must have the same amount of landmarks (or none)"
+            assert len(us1) == max_len or len(us1) == 0, "All volumes must have the same amount of landmarks (or none)"
+            assert len(us2) == max_len or len(us2) == 0, "All volumes must have the same amount of landmarks (or none)"
+            assert len(us3) == max_len or len(us3) == 0, "All volumes must have the same amount of landmarks (or none)"
+            assert len(intraop) == max_len or len(
+                intraop) == 0, "All volumes must have the same amount of landmarks (or none)"
+
+            return all_nodes
+
+        except Exception as e:
+            slicer.util.errorDisplay("Failed to divide landmarks by volume.\n" + str(e))
+            return None
 
     def onUpdateFlow(self):
 
@@ -1104,16 +1128,22 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.activeRowsUpdate()
 
     def onLabelVisCheck(self, activate=True):
-        fiducial_node = slicer.util.getNode('F')
-        disp_node = fiducial_node.GetDisplayNode()
 
-        if activate is True:
-            disp_node.SetTextScale(3)
-        else:
-            disp_node.SetTextScale(0)
+        try:
+            previous_state = not self.ui.labelVisCheck.checked
+            self.checkIfLandmarksAreSelected()
+
+            for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
+                self.current_landmarks_list.SetNthControlPointVisibility(i, activate)
+
+        except Exception as e:
+            self.ui.labelVisCheck.checked = previous_state  # assign previous checked state
+            slicer.util.errorDisplay("Could not change label visibility.\n" + str(e))
 
     def onAcceptedLandmarkCheck(self, activate=True):
         try:
+            self.checkIfLandmarksAreSelected()
+
             if activate is True:
                 self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "Accepted")
                 self.ui.modifyLandmarkCheck.checked = False
@@ -1121,10 +1151,12 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             if activate is False:
                 self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "")
         except Exception as e:
-            print(e)
+            slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
 
     def onModifyLandmarkCheck(self, activate=True):
         try:
+            self.checkIfLandmarksAreSelected()
+
             if activate is True:
                 self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "Modify")
                 self.ui.acceptedLandmarkCheck.checked = False
@@ -1132,10 +1164,13 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             if activate is False:
                 self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "")
         except Exception as e:
-            print(e)
+            slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
 
     def onRejectedLandmarkCheck(self, activate=True):
         try:
+
+            self.checkIfLandmarksAreSelected()
+
             if activate is True:
                 self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "Rejected")
                 self.ui.modifyLandmarkCheck.checked = False
@@ -1143,27 +1178,33 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             if activate is False:
                 self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "")
         except Exception as e:
-            print(e)
+            slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
 
     def onPrintResultsButton(self):
+        try:
 
-        for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
+            self.checkIfLandmarksAreSelected()
 
-            if self.current_landmarks_list.GetNthControlPointDescription(i) == "Accepted":
-                status = "Accepted"
-            elif self.current_landmarks_list.GetNthControlPointDescription(i) == "Modify":
-                status = "Modify"
-            elif self.current_landmarks_list.GetNthControlPointDescription(i) == "Rejected":
-                status = "Rejected"
-            else:
-                status = "Not checked"
+            for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
 
-            print(f"{self.current_landmarks_list.GetNthControlPointLabel(i).ljust(12)}: {status}")
+                if self.current_landmarks_list.GetNthControlPointDescription(i) == "Accepted":
+                    status = "Accepted"
+                elif self.current_landmarks_list.GetNthControlPointDescription(i) == "Modify":
+                    status = "Modify"
+                elif self.current_landmarks_list.GetNthControlPointDescription(i) == "Rejected":
+                    status = "Rejected"
+                else:
+                    status = "Not checked"
 
-    # todo make all landmarks invisibile that are not current
+                print(f"{self.current_landmarks_list.GetNthControlPointLabel(i).ljust(12)}: {status}")
+
+        except Exception as e:
+            slicer.util.errorDisplay("Could not print results.\n" + str(e))
 
     def onSortLandmarksButton(self):
         try:
+            self.checkIfLandmarksAreSelected()
+
             # create a list to sort
             sort_list = []
 
@@ -1212,16 +1253,36 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
                 sorted_markups.SetNthControlPointDescription(idx, self.current_landmarks_list.GetNthControlPointDescription(index))
 
-            print(5)
-
         except Exception as e:
-            print(e)
+            slicer.util.errorDisplay("Could not sort landmarks.\n" + str(e))
+
+    def checkIfLandmarksAreSelected(self):
+
+        self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
+
+        if self.current_landmarks_list is None:
+            raise ValueError("Please select a landmark list.")
+
+    def onLandmarksModified(self, caller, event):
+        if event == "ModifiedEvent":
+            self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
+            print("assigned updated landmarks")
 
     def onMisc1Button(self):
-        self.__jump_to_next_landmark(direction="forward")
+        try:
+            self.checkIfLandmarksAreSelected()
+
+            self.__jump_to_next_landmark(direction="forward")
+        except Exception as e:
+            slicer.util.errorDisplay("Could not misc1.\n" + str(e))
 
     def onMisc2Button(self):
-        self.__jump_to_next_landmark(direction="backward")
+        try:
+            self.checkIfLandmarksAreSelected()
+
+            self.__jump_to_next_landmark(direction="backward")
+        except Exception as e:
+            slicer.util.errorDisplay("Could not misc2.\n" + str(e))
 
 #
 # MRUSLandmarkingLogic
