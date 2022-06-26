@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>690</width>
+    <width>520</width>
     <height>725</height>
    </rect>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>520</width>
+    <height>16777215</height>
+   </size>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -24,7 +30,7 @@
       <string>Volumes (choose at least 2 volumes for an intersection)</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <layout class="QFormLayout" name="formLayout_2">
       <item row="1" column="0">
@@ -192,7 +198,7 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
+      <item row="4" column="0" colspan="2">
        <widget class="QLabel" name="label">
         <property name="text">
          <string>Choose active row(s)</string>
@@ -234,23 +240,26 @@
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
-      <item row="3" column="0">
-       <widget class="QLabel" name="label_2">
+      <item row="9" column="1">
+       <widget class="ctkCheckBox" name="acceptedLandmarkCheck">
+        <property name="text">
+         <string>Accept</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0" colspan="4">
+       <widget class="QLabel" name="label_4">
         <property name="font">
          <font>
-          <pointsize>12</pointsize>
           <italic>true</italic>
          </font>
         </property>
         <property name="text">
-         <string>For the landmark curves to work:</string>
+         <string>Use 'x' and 'z' to jump between landmarks</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget"/>
-      </item>
-      <item row="2" column="0">
+      <item row="5" column="0">
        <widget class="QCheckBox" name="labelVisCheck">
         <property name="text">
          <string>Label visibility</string>
@@ -260,46 +269,14 @@
         </property>
        </widget>
       </item>
-      <item row="6" column="0">
-       <widget class="QLabel" name="label_5">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-          <italic>true</italic>
-         </font>
-        </property>
+      <item row="9" column="2">
+       <widget class="ctkCheckBox" name="modifyLandmarkCheck">
         <property name="text">
-         <string>2. The landmark list must be named 'F'</string>
+         <string>Modify</string>
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-          <italic>true</italic>
-         </font>
-        </property>
-        <property name="text">
-         <string>1. The landmarks need to be named according to this scheme (max 10 points):</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_4">
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-          <italic>true</italic>
-         </font>
-        </property>
-        <property name="text">
-         <string>L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op </string>
-        </property>
-       </widget>
-      </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QPushButton" name="updateFlow">
         <property name="maximumSize">
          <size>
@@ -309,12 +286,106 @@
         </property>
         <property name="font">
          <font>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Update landmark curves</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="4">
+       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>200</height>
+         </size>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="3">
+       <widget class="ctkCheckBox" name="rejectedLandmarkCheck">
+        <property name="text">
+         <string>Reject</string>
+        </property>
+       </widget>
+      </item>
+      <item row="10" column="0" colspan="4">
+       <widget class="QPushButton" name="printResultsButton">
+        <property name="text">
+         <string>Print inspection results</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="font">
+         <font>
           <weight>75</weight>
           <bold>true</bold>
          </font>
         </property>
         <property name="text">
-         <string>Update landmark curves</string>
+         <string>Landmark inspection</string>
+        </property>
+       </widget>
+      </item>
+      <item row="9" column="0">
+       <widget class="QLabel" name="landmarkNameLabel">
+        <property name="text">
+         <string>&lt;no landmark selected&gt;</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0" colspan="2">
+       <spacer name="verticalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>50</width>
+          <height>10</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="sortLandmarksButton">
+        <property name="text">
+         <string>Sort landmarks</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="4">
+       <widget class="QLabel" name="label_2">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>60</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>12</pointsize>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>For the landmark curves to work: 
+1. The landmarks need to be named according to this scheme (max 10 points): 
+L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op</string>
         </property>
        </widget>
       </item>
@@ -335,7 +406,7 @@
         <property name="minimumSize">
          <size>
           <width>0</width>
-          <height>120</height>
+          <height>160</height>
          </size>
         </property>
         <property name="font">
@@ -361,7 +432,7 @@
         </item>
         <item>
          <property name="text">
-          <string>y: move forwards through landmarks (create landmarks first)</string>
+          <string>z: move forwards through landmarks (create landmarks first)</string>
          </property>
         </item>
         <item>
@@ -415,6 +486,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>ctkCheckBox</class>
+   <extends>QCheckBox</extends>
+   <header>ctkCheckBox.h</header>
+  </customwidget>
   <customwidget>
    <class>ctkCollapsibleButton</class>
    <extends>QWidget</extends>
