@@ -165,8 +165,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # sort landmartks
         self.ui.sortLandmarksButton.connect('clicked(bool)', self.onSortLandmarksButton)
 
-        self.ui.misc1Button.connect('clicked(bool)', self.onMisc1Button)
-        self.ui.misc2Button.connect('clicked(bool)', self.onMisc2Button)
+        # self.ui.misc1Button.connect('clicked(bool)', self.onMisc1Button)
+        # self.ui.misc2Button.connect('clicked(bool)', self.onMisc2Button)
 
         # inspection results button
         self.ui.printResultsButton.connect('clicked(bool)', self.onPrintResultsButton)
