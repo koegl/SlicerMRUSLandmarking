@@ -679,8 +679,19 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # uncheck label vis
             self.ui.labelVisCheck.checked = False
 
+            # update volumes according to the current control point label
+            current_label = self.current_landmarks_list.GetNthControlPointLabel(self.current_control_point_idx)
+            for i in range(5):  # because we have 5 possible volumes
+                self.__change_view(direction='forward')
+
+                current_id = self.compositeNode.GetBackgroundVolumeID()
+                current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
+
+                if current_label.split(' ')[1].lower() in current_name.lower():
+                    break
+
         except Exception as e:
-            print(e)
+            slicer.util.errorDisplay("Could not jump to next landmark.\n" + str(e))
 
     def __markup_curve_adjustment(self, curve_node_id):
         # get color table
