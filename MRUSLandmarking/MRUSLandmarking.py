@@ -653,18 +653,20 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             # update label
             self.ui.landmarkNameLabel.setText(self.current_landmarks_list.GetNthControlPointLabel(self.current_control_point_idx))
+            current_description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
+            current_description = current_description.split(';')[0]
 
-            if self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx) == "Accepted":
+            if current_description == "Accepted":
                 self.ui.acceptedLandmarkCheck.checked = True
             else:
                 self.ui.acceptedLandmarkCheck.checked = False
 
-            if self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx) == "Modify":
+            if current_description == "Modify":
                 self.ui.modifyLandmarkCheck.checked = True
             else:
                 self.ui.modifyLandmarkCheck.checked = False
 
-            if self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx) == "Rejected":
+            if current_description == "Rejected":
                 self.ui.rejectedLandmarkCheck.checked = True
             else:
                 self.ui.rejectedLandmarkCheck.checked = False
@@ -1153,41 +1155,63 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onAcceptedLandmarkCheck(self, activate=True):
         try:
-            self.checkIfLandmarksAreSelected()
-
             if activate is True:
-                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "Accepted")
+                self.setLandmarkStatus("Accepted")
                 self.ui.modifyLandmarkCheck.checked = False
                 self.ui.rejectedLandmarkCheck.checked = False
+
             if activate is False:
-                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "")
+                self.setLandmarkStatus("")
+
         except Exception as e:
             slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
 
     def onModifyLandmarkCheck(self, activate=True):
         try:
-            self.checkIfLandmarksAreSelected()
-
             if activate is True:
-                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "Modify")
+                self.setLandmarkStatus("Modify")
                 self.ui.acceptedLandmarkCheck.checked = False
                 self.ui.rejectedLandmarkCheck.checked = False
+
             if activate is False:
-                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "")
+                self.setLandmarkStatus("")
+
         except Exception as e:
             slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
 
     def onRejectedLandmarkCheck(self, activate=True):
         try:
-
-            self.checkIfLandmarksAreSelected()
-
             if activate is True:
-                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "Rejected")
+                self.setLandmarkStatus("Rejected")
                 self.ui.modifyLandmarkCheck.checked = False
                 self.ui.acceptedLandmarkCheck.checked = False
+
             if activate is False:
-                self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, "")
+                self.setLandmarkStatus("")
+
+        except Exception as e:
+            slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
+
+    def setLandmarkStatus(self, new_status):
+        try:
+            self.checkIfLandmarksAreSelected()
+
+            # get old description
+            description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
+            description = description.split(";")
+
+            # ignore old status
+            if len(description) == 2:
+                comment = description[1]
+            else:
+                comment = ""
+
+            # create new description with new status and old comment
+            new_description = new_status + ';' + comment
+
+            # update the values
+            self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, new_description)
+
         except Exception as e:
             slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
 
