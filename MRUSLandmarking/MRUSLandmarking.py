@@ -611,6 +611,15 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     """
         # get markup node
         try:
+
+            # set new landmark comment (if it is not empty)
+            # set landmark comments
+            new_comment = self.ui.markupsCommentText.toPlainText()
+            if new_comment == "x":  # this means delete the comment
+                self.removeLandmarkComment()
+            elif new_comment != "":
+                self.setLandmarkComment(new_comment=new_comment)
+
             self.checkIfLandmarksAreSelected()
 
             # get amount of control points
@@ -671,6 +680,15 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             else:
                 self.ui.rejectedLandmarkCheck.checked = False
 
+            # display comment
+            description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx).split(';')
+            if len(description) == 1:  # this means there is only a status
+                comment = ''
+            else:
+                comment = description[1][1:]
+
+            self.ui.markupsCommentText.setPlainText(comment)
+
             # make all other fiducials not visible
             for i in range(control_points_amount):
                 if i != self.current_control_point_idx:
@@ -691,6 +709,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
                 if current_label.split(' ')[1].lower() in current_name.lower():
                     break
+
+            self.turnOffPlacementMode()
 
         except Exception as e:
             slicer.util.errorDisplay("Could not jump to next landmark.\n" + str(e))
@@ -996,10 +1016,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def divideLandmarksByVolume(self):
 
         try:
-            if self.current_landmarks_list is None:
-                fiducial_node = slicer.util.getNode('F')
-            else:
-                fiducial_node = self.current_landmarks_list
+            self.checkIfLandmarksAreSelected()
+
+            fiducial_node = self.current_landmarks_list
 
             num_control_points = fiducial_node.GetNumberOfControlPoints()
 
@@ -1200,16 +1219,52 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
             description = description.split(";")
 
-            # ignore old status
+            # get old comment
             if len(description) == 2:
-                comment = description[1]
+                old_comment = description[1]  # it's the second part of the description
+                new_description = new_status + ";" + old_comment
+
+            else:  # if len is 1 this means that there is only a status
+                new_description = new_status
+
+            self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, new_description)
+
+        except Exception as e:
+            slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
+
+    def setLandmarkComment(self, new_comment):
+        try:
+            self.checkIfLandmarksAreSelected()
+
+            # get old description
+            description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
+            description = description.split(";")
+
+            if description == ['']:  # meaning there was no description
+                new_description = "; " + new_comment
+            elif description[0] != '':
+                new_description = description[0] + "; " + new_comment
             else:
-                comment = ""
+                new_description = "; " + new_comment
 
-            # create new description with new status and old comment
-            new_description = new_status + ';' + comment
+            self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, new_description)
 
-            # update the values
+        except Exception as e:
+            slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
+
+    def removeLandmarkComment(self):
+        try:
+            self.checkIfLandmarksAreSelected()
+
+            # get old description
+            description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
+            description = description.split(";")
+
+            if description[0] != '':
+                new_description = description[0]
+            else:
+                new_description = ''
+
             self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, new_description)
 
         except Exception as e:
@@ -1302,6 +1357,11 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if event == "ModifiedEvent":
             self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
             print("assigned updated landmarks")
+
+    def turnOffPlacementMode(self):
+        interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
+        interactionNode.SwitchToViewTransformMode()
+        interactionNode.SetPlaceModePersistence(0)
 
     def onMisc1Button(self):
         try:
