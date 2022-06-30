@@ -239,17 +239,23 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Select default input nodes if nothing is selected yet to save a few clicks for the user
         input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3", "InputVolume4"]
-        us_volumes = ["3D AX T2 SPACE Pre-op Thin-cut",
-                      "US1 Pre-dura", "US2 Post-dura", "US3 Resection Control",
-                      "3D SAG T2 SPC FLAIR Intra-op Thin-cut"]
+        us_volumes = ["pre-op", "us1", "us2", "us3", "intra-op"]
 
         # only select default nodes when nothing is selected (otherwise changing modules back and forth triggers this)
         chosen_nodes = [selector.currentNode() for selector in self.input_selectors]
+
         # nothing is selected means that we have only None in the list
+        volumeNode = None
         if not any(chosen_nodes):
             for input_volume, volume_name in zip(input_volumes, us_volumes):
                 if not self._parameterNode.GetNodeReference(input_volume):
-                    volumeNode = slicer.mrmlScene.GetFirstNodeByName(volume_name)
+
+                    # try to get a volume node that contains one of the names
+                    for node in slicer.util.getNodesByClass("vtkMRMLScalarVolumeNode"):
+                        if volume_name in node.GetName().lower():
+                            volumeNode = node
+                            break
+
                     if volumeNode:
                         self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
