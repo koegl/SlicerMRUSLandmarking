@@ -708,7 +708,14 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # update volumes according to the current control point label
             current_label = self.current_landmarks_list.GetNthControlPointLabel(self.current_control_point_idx)
             for i in range(5):  # because we have 5 possible volumes
-                self.__change_view(direction='forward')
+
+                # we need this reversal because jumping landmarks and volumes are reversed
+                if direction == "forward":
+                    new_direction = "backward"
+                else:
+                    new_direction = "forward"
+
+                self.__change_view(direction=new_direction)
 
                 current_id = self.compositeNode.GetBackgroundVolumeID()
                 current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
