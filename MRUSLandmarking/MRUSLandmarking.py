@@ -1290,14 +1290,13 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
             for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
 
-                if self.current_landmarks_list.GetNthControlPointDescription(i) == "Accepted":
-                    status = "Accepted"
-                elif self.current_landmarks_list.GetNthControlPointDescription(i) == "Modify":
-                    status = "Modify"
-                elif self.current_landmarks_list.GetNthControlPointDescription(i) == "Rejected":
-                    status = "Rejected"
-                else:
+                status = self.current_landmarks_list.GetNthControlPointDescription(i)
+
+                if status == '':
                     status = "Not checked"
+
+                if status[0] == ';':
+                    status = status[2:]
 
                 print(f"{self.current_landmarks_list.GetNthControlPointLabel(i).ljust(12)}: {status}")
 
