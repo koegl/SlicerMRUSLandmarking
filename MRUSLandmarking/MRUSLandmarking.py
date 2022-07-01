@@ -67,7 +67,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._parameterNode = None
         self._updatingGUIFromParameterNode = False
 
-        self.__linkViews()
+        Resources.utils_views.link_views()
 
         self.compositeNode = None
         self.volumes_ids = None
@@ -94,6 +94,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.current_control_point_idx = 0
 
         self.landmark_dict = {}
+
+        self.__initialiseShortcuts()
 
     def setup(self):
         """
@@ -145,8 +147,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
         self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
         self.ui.inputSelector4.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-        self.ui.SimpleMarkupsWidget.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-        # self.ui.landmarksSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+        self.ui.SimpleMarkupsWidget.connect("markupsFiducialNodeChanged()", self.update_landmark_list_from_gui)
 
         self.input_selectors = [self.ui.inputSelector4,
                                 self.ui.inputSelector3,
@@ -198,10 +199,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.initializeParameterNode()
 
         # shortcuts
-        self.__initialiseShortcuts()  # those that depend on the volumes - they have to be defined in this class,
+        # self.__initialiseShortcuts()  # those that depend on the volumes - they have to be defined in this class,
         # as they need the updated ui stuff to work
-
-        # self.ui.SimpleMarkupsWidget.AddObserver(vtk.vtkCommand.ModifiedEvent, self.onLandmarksModified)
 
     def cleanup(self):
         """
@@ -269,9 +268,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                     if volumeNode:
                         self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
-        if not self._parameterNode.GetNodeReference("Landmarks"):
-            if self.ui.SimpleMarkupsWidget.currentNode() is not None:
-                self._parameterNode.SetNodeReferenceID("Landmarks", self.ui.SimpleMarkupsWidget.currentNode().GetID())
+        # if not self._parameterNode.GetNodeReference("Landmarks"):
+        #     if self.ui.SimpleMarkupsWidget.currentNode() is not None:
+        #         self._parameterNode.SetNodeReferenceID("Landmarks", self.ui.SimpleMarkupsWidget.currentNode().GetID())
 
         # update chosen volumes
         self.volumes_ids = []
@@ -319,7 +318,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
         self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
         self.ui.inputSelector4.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume4"))
-        self.ui.SimpleMarkupsWidget.setCurrentNode(self._parameterNode.GetNodeReference("Landmarks"))
+        # self.ui.SimpleMarkupsWidget.setCurrentNode(self._parameterNode.GetNodeReference("Landmarks"))
 
         # update button states and tooltips - only if volumes are chosen, enable buttons
         if self._parameterNode.GetNodeReference("InputVolume0") or \
@@ -359,10 +358,10 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._parameterNode.SetNodeReferenceID("InputVolume3", self.ui.inputSelector3.currentNodeID)
         self._parameterNode.SetNodeReferenceID("InputVolume4", self.ui.inputSelector4.currentNodeID)
 
-        if self.ui.SimpleMarkupsWidget.currentNode():
-            self._parameterNode.SetNodeReferenceID("Landmarks", self.ui.SimpleMarkupsWidget.currentNode().GetID())
+        # if self.ui.SimpleMarkupsWidget.currentNode():
+        #     self._parameterNode.SetNodeReferenceID("Landmarks", self.ui.SimpleMarkupsWidget.currentNode().GetID())
 
-        self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
+        # self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
 
         self._parameterNode.EndModify(wasModified)
 
@@ -373,30 +372,33 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             if selector.currentNode():
                 self.volumes_ids.append(selector.currentNode().GetID())
 
-        if self.current_landmarks_list != self.ui.SimpleMarkupsWidget.currentNode():
-            self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
-            self.ui.landmarkNameLabel.setText(self.current_landmarks_list.GetNthControlPointLabel(0))
+        # if self.current_landmarks_list != self.ui.SimpleMarkupsWidget.currentNode():
+        #     self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
+        #     self.ui.landmarkNameLabel.setText(self.current_landmarks_list.GetNthControlPointLabel(0))
+
+    def update_landmark_list_from_gui(self):
+        self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
 
     def __create_shortcuts(self):
         """
         Function to create all shortcuts
         """
 
-        self.shortcuts = [('d', lambda: Resources.shortcuts.stc_activate_fiducial_placement()),  # fiducial placement
-                          ('a', functools.partial(Resources.shortcuts.stc_change_view, self, "backward")),
-                          ('s', functools.partial(Resources.shortcuts.stc_change_view, self, "forward")),
-                          ('1', functools.partial(Resources.shortcuts.stc_change_foreground_opacity_discrete, self, 0.0)),
+        self.shortcuts = [('d', lambda: Resources.utils_landmarks.activate_fiducial_placement()),  # fiducial placement
+                          ('a', functools.partial(Resources.utils_views.change_view, self, "backward")),
+                          ('s', functools.partial(Resources.utils_views.change_view, self, "forward")),
+                          ('1', functools.partial(Resources.utils_views.change_foreground_opacity_discrete, self, 0.0)),
                           # change opacity to 0.0
-                          ('2', functools.partial(Resources.shortcuts.stc_change_foreground_opacity_discrete, self, 0.5)),
+                          ('2', functools.partial(Resources.utils_views.change_foreground_opacity_discrete, self, 0.5)),
                           # change opacity to 0.5
-                          ('3', functools.partial(Resources.shortcuts.stc_change_foreground_opacity_discrete, self, 1.0)),
+                          ('3', functools.partial(Resources.utils_views.change_foreground_opacity_discrete, self, 1.0)),
                           # change opacity to 1.0
-                          ('q', functools.partial(Resources.shortcuts.stc_change_foreground_opacity_continuous, self, 0.02)),
+                          ('q', functools.partial(Resources.utils_views.change_foreground_opacity_continuous, self, 0.02)),
                           # incr. op. by .01
-                          ('w', functools.partial(Resources.shortcuts.stc_change_foreground_opacity_continuous, self, -0.02)),
+                          ('w', functools.partial(Resources.utils_views.change_foreground_opacity_continuous, self, -0.02)),
                           # decr. op. by .01
-                          ('z', functools.partial(Resources.shortcuts.stc_jump_to_next_landmark, self, "backward")),
-                          ('x', functools.partial(Resources.shortcuts.stc_jump_to_next_landmark, self, "forward"))]
+                          ('z', functools.partial(Resources.utils_landmarks.jump_to_next_landmark, self, "backward")),
+                          ('x', functools.partial(Resources.utils_landmarks.jump_to_next_landmark, self, "forward"))]
 
     def __initialiseShortcuts(self):
         """
@@ -409,22 +411,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             shortcut = qt.QShortcut(slicer.util.mainWindow())
             shortcut.setKey(qt.QKeySequence(shortcutKey))
             shortcut.connect('activated()', callback)
-
-    def __linkViews(self):
-        """
-    Set linked slice views in all existing slice composite nodes and in the default node
-    """
-
-        sliceCompositeNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
-        defaultSliceCompositeNode = slicer.mrmlScene.GetDefaultNodeByClass("vtkMRMLSliceCompositeNode")
-        if not defaultSliceCompositeNode:
-            defaultSliceCompositeNode = slicer.mrmlScene.CreateNodeByClass("vtkMRMLSliceCompositeNode")
-            defaultSliceCompositeNode.UnRegister(
-                None)  # CreateNodeByClass is factory method, need to unregister the result to prevent memory leaks
-            slicer.mrmlScene.AddDefaultNode(defaultSliceCompositeNode)
-        sliceCompositeNodes.append(defaultSliceCompositeNode)
-        for sliceCompositeNode in sliceCompositeNodes:
-            sliceCompositeNode.SetLinkedControl(True)
 
     def onResetViewsButton(self):
         """
@@ -776,7 +762,10 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
-            Resources.shortcuts.stc_jump_to_next_landmark(self, direction="forward")
+            Resources.utils_landmarks.jump_to_next_landmark(self, direction="forward")
+
+            Resources.utils_landmarks.turn_off_placement_mode()
+
         except Exception as e:
             slicer.util.errorDisplay("Could not misc1.\n" + str(e))
 
@@ -784,7 +773,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
-            Resources.shortcuts.stc_jump_to_next_landmark(self, direction="backward")
+            Resources.utils_landmarks.jump_to_next_landmark(self, direction="backward")
+
+            Resources.utils_landmarks.turn_off_placement_mode()
         except Exception as e:
             slicer.util.errorDisplay("Could not misc2.\n" + str(e))
 

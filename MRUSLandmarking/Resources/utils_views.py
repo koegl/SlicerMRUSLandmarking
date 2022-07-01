@@ -1,6 +1,75 @@
 import slicer
 
 
+def change_view(widget, direction='forward'):
+    """
+    (This function is used as a shortcut)
+    Change the view forward or backward (take the list of possible volumes and for the two displayed volumes increase
+    their index by one) using the get_current_views() function
+    :param direction: The direction in which the volumes are switched
+    """
+
+    try:
+        if widget.ui.inputSelector0.currentNode() is None and \
+           widget.ui.inputSelector1.currentNode() is None and \
+           widget.ui.inputSelector2.currentNode() is None and \
+           widget.ui.inputSelector3.currentNode() is None and \
+           widget.ui.inputSelector4.currentNode() is None:
+            slicer.util.errorDisplay(
+                "Not enough volumes given for the volume switching shortcut")
+            return
+
+        if direction not in ['forward', 'backward']:
+            slicer.util.errorDisplay(
+                "Not enough volumes given for the volume switching shortcut")
+            return
+
+        initialise_views(widget)
+
+        current_views = get_current_views(widget)
+
+        for view in current_views:
+            layoutManager = slicer.app.layoutManager()
+            view_logic = layoutManager.sliceWidget(view)
+            view_logic = view_logic.sliceLogic()
+            widget.compositeNode = view_logic.GetSliceCompositeNode()
+
+            # get current foreground and background volumes
+            current_foreground_id = widget.compositeNode.GetForegroundVolumeID()
+            current_background_id = widget.compositeNode.GetBackgroundVolumeID()
+
+            # switch backgrounds
+            if direction == 'forward':
+                next_combination = get_next_combination(widget, [current_foreground_id,
+                                                                                       current_background_id],
+                                                                              "forward")
+
+            else:
+                next_combination = get_next_combination(widget, [current_foreground_id,
+                                                                                       current_background_id],
+                                                                              "backward")
+
+            volume_foreground = slicer.mrmlScene.GetNodeByID(next_combination[0])
+            volume_background = slicer.mrmlScene.GetNodeByID(next_combination[1])
+
+            # update volumes (if they both exist)
+            if volume_foreground and volume_background:
+                if direction == 'backward' or direction == 'forward':
+                    widget.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
+                    widget.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
+
+                else:
+                    slicer.util.errorDisplay("wrong direction")
+            else:
+                slicer.util.errorDisplay("No volumes to set for foreground and background")
+
+            # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
+            # slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
+
+    except Exception as e:
+        slicer.util.errorDisplay("Could not chnage view.\n" + str(e))
+
+
 def active_rows_update(widget):
     if widget.topRowActive and not widget.bottomRowActive:
         group_normal = 0
@@ -168,3 +237,66 @@ gets the current volume IDs and the switching direction as inputs and returns th
             next_index = current_index - 1
 
     return combinations[next_index]
+
+
+def change_foreground_opacity_discrete(widget, new_opacity=0.5):
+    """
+    (This function is used as a shortcut)
+    Changes the foreground opacity to a given value.
+    :param new_opacity: The new foreground opacity
+    """
+    try:
+        layoutManager = slicer.app.layoutManager()
+
+        current_views = get_current_views(widget)
+
+        # iterate through all views and set opacity to
+        for sliceViewName in current_views:
+            view = layoutManager.sliceWidget(sliceViewName).sliceView()
+            sliceNode = view.mrmlSliceNode()
+            sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+            compositeNode = sliceLogic.GetSliceCompositeNode()
+            compositeNode.SetForegroundOpacity(new_opacity)
+
+    except Exception as e:
+        slicer.util.errorDisplay("Could not change foreground opacity discretely.\n" + str(e))
+
+
+def change_foreground_opacity_continuous(widget, opacity_change=0.01):
+    """
+    (This function is used as a shortcut)
+    Increases or decreases the foreground opacity by a given value
+    :param opacity_change: The change in foreground opacity
+    """
+    try:
+        layoutManager = slicer.app.layoutManager()
+
+        current_views = get_current_views(widget)
+
+        # iterate through all views and set opacity to
+        for sliceViewName in current_views:
+            view = layoutManager.sliceWidget(sliceViewName).sliceView()
+            sliceNode = view.mrmlSliceNode()
+            sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
+            compositeNode = sliceLogic.GetSliceCompositeNode()
+            compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
+
+    except Exception as e:
+        slicer.util.errorDisplay("Could not change foreground opacity continuously.\n" + str(e))
+
+
+def link_views():
+    """
+    Set linked slice views in all existing slice composite nodes and in the default node
+    """
+
+    sliceCompositeNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
+    defaultSliceCompositeNode = slicer.mrmlScene.GetDefaultNodeByClass("vtkMRMLSliceCompositeNode")
+    if not defaultSliceCompositeNode:
+        defaultSliceCompositeNode = slicer.mrmlScene.CreateNodeByClass("vtkMRMLSliceCompositeNode")
+        defaultSliceCompositeNode.UnRegister(
+            None)  # CreateNodeByClass is factory method, need to unregister the result to prevent memory leaks
+        slicer.mrmlScene.AddDefaultNode(defaultSliceCompositeNode)
+    sliceCompositeNodes.append(defaultSliceCompositeNode)
+    for sliceCompositeNode in sliceCompositeNodes:
+        sliceCompositeNode.SetLinkedControl(True)
