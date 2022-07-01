@@ -6,6 +6,10 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import SegmentEditorEffects
 import functools
+import importlib
+
+import Resources.utils
+importlib.reload(Resources.utils)
 
 
 #
@@ -723,7 +727,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 if current_label.split(' ')[1].lower() in current_name.lower():
                     break
 
-            self.turnOffPlacementMode()
+            Resources.utils.turn_off_placement_mode()
 
         except Exception as e:
             slicer.util.errorDisplay("Could not jump to next landmark.\n" + str(e))
@@ -1369,11 +1373,6 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         if event == "ModifiedEvent":
             self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
             print("assigned updated landmarks")
-
-    def turnOffPlacementMode(self):
-        interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
-        interactionNode.SwitchToViewTransformMode()
-        interactionNode.SetPlaceModePersistence(0)
 
     def onMisc1Button(self):
         try:
