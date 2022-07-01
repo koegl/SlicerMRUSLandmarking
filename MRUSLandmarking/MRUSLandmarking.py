@@ -8,8 +8,10 @@ import SegmentEditorEffects
 import functools
 import importlib
 
+import Resources.utils_landmarks
 import Resources.utils
 importlib.reload(Resources.utils)
+importlib.reload(Resources.utils_landmarks)
 
 
 #
@@ -169,8 +171,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # sort landmartks
         self.ui.sortLandmarksButton.connect('clicked(bool)', self.onSortLandmarksButton)
 
-        # self.ui.misc1Button.connect('clicked(bool)', self.onMisc1Button)
-        # self.ui.misc2Button.connect('clicked(bool)', self.onMisc2Button)
+        self.ui.misc1Button.connect('clicked(bool)', self.onMisc1Button)
+        self.ui.misc2Button.connect('clicked(bool)', self.onMisc2Button)
 
         # inspection results button
         self.ui.printResultsButton.connect('clicked(bool)', self.onPrintResultsButton)
@@ -630,7 +632,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             elif new_comment != "":
                 self.setLandmarkComment(new_comment=new_comment)
 
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
             # get amount of control points
             control_points_amount = self.current_landmarks_list.GetNumberOfControlPoints()
@@ -727,7 +729,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 if current_label.split(' ')[1].lower() in current_name.lower():
                     break
 
-            Resources.utils.turn_off_placement_mode()
+            Resources.utils_landmarks.turn_off_placement_mode()
 
         except Exception as e:
             slicer.util.errorDisplay("Could not jump to next landmark.\n" + str(e))
@@ -1033,7 +1035,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def divideLandmarksByVolume(self):
 
         try:
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
             fiducial_node = self.current_landmarks_list
 
@@ -1180,7 +1182,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         try:
             previous_state = not self.ui.labelVisCheck.checked
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
             for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
                 self.current_landmarks_list.SetNthControlPointVisibility(i, activate)
@@ -1230,7 +1232,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def setLandmarkStatus(self, new_status):
         try:
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
             # get old description
             description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
@@ -1251,7 +1253,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def setLandmarkComment(self, new_comment):
         try:
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
             # get old description
             description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
@@ -1271,7 +1273,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def removeLandmarkComment(self):
         try:
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
             # get old description
             description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
@@ -1289,81 +1291,21 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onPrintResultsButton(self):
         try:
-            Resources.utils.print_results(self)
+            Resources.utils_landmarks.print_landmark_inspection_results(self)
 
         except Exception as e:
             slicer.util.errorDisplay("Could not print results.\n" + str(e))
 
     def onSortLandmarksButton(self):
         try:
-            self.checkIfLandmarksAreSelected()
-
-            # create a list to sort
-            sort_list = []
-
-            for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
-                sort_list.append([self.current_landmarks_list.GetNthControlPointLabel(i),
-                                  self.current_landmarks_list.GetNthControlPointID(i), -1])
-
-            sort_list = sorted(sort_list, key=lambda x: x[0][0].split(' ')[0][1:])
-
-            # create sublists for each landmark
-            sublists = {}
-            for packet in sort_list:
-                prefix = packet[0].split(' ')[0]
-                if prefix in sublists:
-                    sublists[prefix].append(packet)
-                else:
-                    sublists[prefix] = [packet]
-
-            sublists = list(sublists.items())
-
-            # move intra to the last position of each sublist and sort each sublist
-            for i in range(len(sublists)):
-                sub = sublists[i][1]
-                new_list = sorted(sub, key=lambda x: x[0].split(' ')[1])
-
-                if "intra" in new_list[0][0].lower():
-                    temp = new_list.pop(0)
-                    new_list.append(temp)
-
-                sublists[i] = (sublists[i][0], new_list)
-
-            # create final sorted list
-            final_list = []
-            for _, packet in sublists:
-                for sub in packet:
-                    final_list.append(sub)
-
-            # create new markups list
-            sorted_markups = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", self.current_landmarks_list.GetName() + "_sorted")
-
-            for idx, landmark in enumerate(final_list):
-                index = self.current_landmarks_list.GetNthControlPointIndexByID(landmark[1])
-
-                sorted_markups.AddControlPoint(self.current_landmarks_list.GetNthControlPointPosition(index),
-                                               self.current_landmarks_list.GetNthControlPointLabel(index))
-
-                sorted_markups.SetNthControlPointDescription(idx, self.current_landmarks_list.GetNthControlPointDescription(index))
+            Resources.utils_landmarks.sort_landmarks(self)
 
         except Exception as e:
             slicer.util.errorDisplay("Could not sort landmarks.\n" + str(e))
 
-    def checkIfLandmarksAreSelected(self):
-
-        self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
-
-        if self.current_landmarks_list is None:
-            raise ValueError("Please select a landmark list.")
-
-    def onLandmarksModified(self, caller, event):
-        if event == "ModifiedEvent":
-            self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
-            print("assigned updated landmarks")
-
     def onMisc1Button(self):
         try:
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
             self.__jump_to_next_landmark(direction="forward")
         except Exception as e:
@@ -1371,7 +1313,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onMisc2Button(self):
         try:
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
             self.__jump_to_next_landmark(direction="backward")
         except Exception as e:
