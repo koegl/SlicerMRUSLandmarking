@@ -11,11 +11,9 @@ import importlib
 import Resources.utils
 import Resources.utils_landmarks
 import Resources.utils_views
-import Resources.shortcuts
 importlib.reload(Resources.utils)
 importlib.reload(Resources.utils_landmarks)
 importlib.reload(Resources.utils_views)
-importlib.reload(Resources.shortcuts)
 
 
 #
@@ -96,6 +94,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.landmark_dict = {}
 
         self.__initialiseShortcuts()
+
+        self.nodes_circle = None
+        self.old_volume_ids = []
 
     def setup(self):
         """
@@ -366,15 +367,22 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._parameterNode.EndModify(wasModified)
 
         # update volumes
+        self.old_volume_ids = self.volumes_ids
         self.volumes_ids = []
 
         for selector in self.input_selectors:
             if selector.currentNode():
                 self.volumes_ids.append(selector.currentNode().GetID())
 
-        # if self.current_landmarks_list != self.ui.SimpleMarkupsWidget.currentNode():
-        #     self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
-        #     self.ui.landmarkNameLabel.setText(self.current_landmarks_list.GetNthControlPointLabel(0))
+        # if the newly selected volume ids are different from the old, the update the circular data structure used for
+        # changing views
+        if self.old_volume_ids != self.volumes_ids:
+
+            self.nodes_circle = Resources.utils.VolumeCircle(max_length=len(self.volumes_ids))
+
+            for volume_id in self.volumes_ids:
+                new_node = Resources.utils.VolumeNode(volume_id)
+                self.nodes_circle.add_volume_node(new_node)
 
     def update_landmark_list_from_gui(self):
         self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
@@ -414,9 +422,15 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onResetViewsButton(self):
         """
-    Resets to the standard view when the reset button is clicked
-    """
+        Resets to the standard view when the reset button is clicked
+        """
         try:
+
+            # try to select nodes from selectors
+            for selector in self.input_selectors:
+                if selector.currentNode():
+                    self.volumes_ids.append(selector.currentNode().GetID())
+
             # decide on slices to be updated depending on the view chosen
             current_views = Resources.utils_views.get_current_views(self)
 
@@ -760,22 +774,15 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onMisc1Button(self):
         try:
-            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
-
-            Resources.utils_landmarks.jump_to_next_landmark(self, direction="forward")
-
-            Resources.utils_landmarks.turn_off_placement_mode()
+            Resources.utils_views.change_view(self, "forward")
 
         except Exception as e:
             slicer.util.errorDisplay("Could not misc1.\n" + str(e))
 
     def onMisc2Button(self):
         try:
-            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
+            Resources.utils_views.change_view(self, "backward")
 
-            Resources.utils_landmarks.jump_to_next_landmark(self, direction="backward")
-
-            Resources.utils_landmarks.turn_off_placement_mode()
         except Exception as e:
             slicer.util.errorDisplay("Could not misc2.\n" + str(e))
 

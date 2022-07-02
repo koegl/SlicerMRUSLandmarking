@@ -1,73 +1,53 @@
 import slicer
+import Resources.utils
 
 
 def change_view(widget, direction='forward'):
     """
     (This function is used as a shortcut)
-    Change the view forward or backward (take the list of possible volumes and for the two displayed volumes increase
-    their index by one) using the get_current_views() function
+    Change the view forward or backward. If 'forward', then foreground becomes the old background; if 'backward', then
+    baclground becomes the old foreground
     :param direction: The direction in which the volumes are switched
     """
 
     try:
-        if widget.ui.inputSelector0.currentNode() is None and \
-           widget.ui.inputSelector1.currentNode() is None and \
-           widget.ui.inputSelector2.currentNode() is None and \
-           widget.ui.inputSelector3.currentNode() is None and \
-           widget.ui.inputSelector4.currentNode() is None:
-            slicer.util.errorDisplay(
-                "Not enough volumes given for the volume switching shortcut")
-            return
+        if len(widget.volumes_ids) < 2:
+            raise Exception("Not enough volumes for volume switching")
 
-        if direction not in ['forward', 'backward']:
-            slicer.util.errorDisplay(
-                "Not enough volumes given for the volume switching shortcut")
-            return
-
+        # initialise views with volumes in case none are shown
         initialise_views(widget)
 
+        # get the current views (it it's normal or 3on3)
         current_views = get_current_views(widget)
 
+        # get the next volumes
+        if direction == 'forward':
+            update_circle_node(widget, "forward")  # updates current node to background
+
+            volume_foreground = slicer.mrmlScene.GetNodeByID(widget.nodes_circle.get_current_node())
+            volume_background = slicer.mrmlScene.GetNodeByID(widget.nodes_circle.get_next_node())
+        else:
+            update_circle_node(widget, "backward")  # updates current node to foreground
+
+            volume_background = slicer.mrmlScene.GetNodeByID(widget.nodes_circle.get_current_node())
+            volume_foreground = slicer.mrmlScene.GetNodeByID(widget.nodes_circle.get_previous_node())
+
+        # set the next volumes in all the views
         for view in current_views:
             layoutManager = slicer.app.layoutManager()
             view_logic = layoutManager.sliceWidget(view)
             view_logic = view_logic.sliceLogic()
             widget.compositeNode = view_logic.GetSliceCompositeNode()
 
-            # get current foreground and background volumes
-            current_foreground_id = widget.compositeNode.GetForegroundVolumeID()
-            current_background_id = widget.compositeNode.GetBackgroundVolumeID()
-
-            # switch backgrounds
-            if direction == 'forward':
-                next_combination = get_next_combination(widget, [current_foreground_id,
-                                                                                       current_background_id],
-                                                                              "forward")
-
-            else:
-                next_combination = get_next_combination(widget, [current_foreground_id,
-                                                                                       current_background_id],
-                                                                              "backward")
-
-            volume_foreground = slicer.mrmlScene.GetNodeByID(next_combination[0])
-            volume_background = slicer.mrmlScene.GetNodeByID(next_combination[1])
-
             # update volumes (if they both exist)
             if volume_foreground and volume_background:
-                if direction == 'backward' or direction == 'forward':
-                    widget.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
-                    widget.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
-
-                else:
-                    slicer.util.errorDisplay("wrong direction")
+                widget.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
+                widget.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
             else:
-                slicer.util.errorDisplay("No volumes to set for foreground and background")
-
-            # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
-            # slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
+                raise Exception("No volumes to set for foreground and background")
 
     except Exception as e:
-        slicer.util.errorDisplay("Could not chnage view.\n" + str(e))
+        slicer.util.errorDisplay("Could not change view.\n" + str(e))
 
 
 def active_rows_update(widget):
@@ -120,123 +100,41 @@ def get_current_views(widget):
 
 def initialise_views(widget):
     """
-Initialise views with volumes. It only changes volumes if the currently displayed volumes are not in the list of
-chosen volumes.
-:return the composite node that can be used by the __change_view() function
-"""
+    Initialise views with volumes. It only changes volumes if the currently displayed volumes are not in the list of
+    chosen volumes.
+    """
     # decide on slices to be updated depending on the view chosen
     current_views = get_current_views(widget)
 
     update = False
 
+    layout_manager = slicer.app.layoutManager()
+
     for view in current_views:
 
-        layoutManager = slicer.app.layoutManager()
-        view_logic = layoutManager.sliceWidget(view).sliceLogic()
+        view_logic = layout_manager.sliceWidget(view).sliceLogic()
         widget.compositeNode = view_logic.GetSliceCompositeNode()
 
         current_background_id = widget.compositeNode.GetBackgroundVolumeID()
         current_foreground_id = widget.compositeNode.GetForegroundVolumeID()
 
-        # check if there is a background
-        if current_background_id is not None:
-
-            # if it's not the correct volume, set the background and foreground
-            if current_background_id not in widget.volumes_ids:
-                # update volumes
-                update = True
-
-        else:  # there is no background
-            # update volumes
+        if current_background_id not in widget.volumes_ids and current_foreground_id not in widget.volumes_ids:
             update = True
 
-        if update:
+        if update is True:
             widget.compositeNode.SetBackgroundVolumeID(widget.volumes_ids[1])
             widget.compositeNode.SetForegroundVolumeID(widget.volumes_ids[0])
-            update = False
-
-        # check if there is a foreground
-        if current_foreground_id is not None:
-
-            # if it's not the correct volume, set the background and foreground
-            if current_foreground_id not in widget.volumes_ids:
-                # update volumes
-                update = True
-
-        else:  # there is no foreground
-            # update volumes
-            update = True
-
-        if update:
-            widget.compositeNode.SetBackgroundVolumeID(widget.volumes_ids[1])
-            widget.compositeNode.SetForegroundVolumeID(widget.volumes_ids[0])
-            update = False
 
 
-def get_next_combination(widget, current_volume_ids=None, direction="forward"):
-    """
-Used for the shortcut to loop through the volumes. The idea is that always two consecutive images are overlayed. If
-we have images [A,B,C,D] then if we start with images [A,B] the next combination will b [B,C] etc. This function
-gets the current volume IDs and the switching direction as inputs and returns the next volume IDs.
-:param current_volume_ids: Two currently displayed volumes
-:param direction: The direction in which the switching will occur
-:return: The next two IDs which should be displayed
-"""
-
-    if not widget.volumes_ids or not current_volume_ids:
-        return None
-    if direction not in ["forward", "backward"]:
-        return None
-
-    forward_combinations = []
-    backward_combinations = []
-    next_index = None
-
-    # create list of possible forward pairs
-    for i in range(len(widget.volumes_ids)):
-        if i == len(widget.volumes_ids) - 1:
-            index1 = len(widget.volumes_ids) - 1
-            index2 = 0
-        else:
-            index1 = i
-            index2 = i + 1
-
-        forward_combinations.append([widget.volumes_ids[index1], widget.volumes_ids[index2]])
-        backward_combinations.append([widget.volumes_ids[index2], widget.volumes_ids[index1]])
-
-    try:
-        if current_volume_ids in forward_combinations:
-            current_index = forward_combinations.index(current_volume_ids)
-        elif current_volume_ids in backward_combinations:
-            current_index = backward_combinations.index(current_volume_ids)
-        else:
-            slicer.util.errorDisplay("Reset views to a valid order for volume switching.")
-            return
-
-    except Exception as e:
-        slicer.util.errorDisplay("Reset views to a valid order for volume switching. " + str(e))
-        return current_volume_ids
-
-    combinations = forward_combinations
-
-    if widget.switch and direction == "forward":
-        direction = "backward"
-    elif widget.switch and direction == "backward":
-        direction = "forward"
+def update_circle_node(widget, direction):
 
     if direction == "forward":
-        if current_index == len(widget.volumes_ids) - 1:
-            next_index = 0
-        else:
-            next_index = current_index + 1
+        while widget.nodes_circle.current_volume_node.volume_id != widget.compositeNode.GetBackgroundVolumeID():
+            widget.nodes_circle.get_next_node()
 
     elif direction == "backward":
-        if current_index == 0:
-            next_index = len(widget.volumes_ids) - 1
-        else:
-            next_index = current_index - 1
-
-    return combinations[next_index]
+        while widget.nodes_circle.current_volume_node.volume_id != widget.compositeNode.GetForegroundVolumeID():
+            widget.nodes_circle.get_next_node()
 
 
 def change_foreground_opacity_discrete(widget, new_opacity=0.5):
