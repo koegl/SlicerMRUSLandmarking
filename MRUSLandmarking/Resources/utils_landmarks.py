@@ -208,6 +208,7 @@ def jump_to_next_landmark(widget, direction="forward"):
     :param direction: The direction in which the landmarks are switched
     """
     try:
+
         # get markup node
 
         # set new landmark comment (if it is not empty)
@@ -247,17 +248,6 @@ def jump_to_next_landmark(widget, direction="forward"):
             slicer.util.errorDisplay("Wrong switching direction (error in code).")
             return
 
-        # get n-th control point vector
-        pos = widget.current_landmarks_list.GetNthControlPointPositionVector(widget.current_control_point_idx)
-
-        # center views on current control point
-        slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], False, 0)
-
-        # center crosshair on current control point
-        crosshairNode = slicer.util.getNode("Crosshair")
-        crosshairNode.SetCrosshairRAS(pos)
-        crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
-
         # update label
         widget.ui.landmarkNameLabel.setText(
             widget.current_landmarks_list.GetNthControlPointLabel(widget.current_control_point_idx))
@@ -290,33 +280,126 @@ def jump_to_next_landmark(widget, direction="forward"):
 
         widget.ui.markupsCommentText.setPlainText(comment)
 
-        # make all other fiducials not visible
-        # for i in range(control_points_amount):
-        #     if i != widget.current_control_point_idx:
-        #         widget.current_landmarks_list.SetNthControlPointVisibility(i, False)
-        #     else:
-        #         widget.current_landmarks_list.SetNthControlPointVisibility(i, True)
-
         # uncheck label vis
         widget.ui.labelVisCheck.checked = False
 
         # update volumes according to the current control point label
-        current_label = widget.current_landmarks_list.GetNthControlPointLabel(widget.current_control_point_idx)
-        for i in range(5):  # because we have 5 possible volumes
+        if widget.view == "normal":
+            current_label = widget.current_landmarks_list.GetNthControlPointLabel(widget.current_control_point_idx)
+            for i in range(5):  # because we have 5 possible volumes
 
-            # we need this reversal because jumping landmarks and volumes are reversed
-            if direction == "forward":
-                new_direction = "backward"
-            else:
-                new_direction = "forward"
+                # we need this reversal because jumping landmarks and volumes are reversed
+                if direction == "forward":
+                    new_direction = "backward"
+                else:
+                    new_direction = "forward"
 
-            Resources.utils_views.change_view(widget, direction=new_direction)
+                Resources.utils_views.change_view(widget, direction=new_direction)
 
-            current_id = widget.compositeNode.GetBackgroundVolumeID()
-            current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
+                current_id = widget.compositeNode.GetBackgroundVolumeID()
+                current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
 
-            if current_label.split(' ')[1].lower() in current_name.lower():
-                break
+                if current_label.split(' ')[1].lower() in current_name.lower():
+                    break
+
+            # make all other fiducials not visible
+            for i in range(control_points_amount):
+                if i != widget.current_control_point_idx:
+                    widget.current_landmarks_list.SetNthControlPointVisibility(i, False)
+                else:
+                    widget.current_landmarks_list.SetNthControlPointVisibility(i, True)
+
+        else:
+
+            second_control_point_idx = widget.current_control_point_idx + 1
+            if second_control_point_idx == control_points_amount:
+                second_control_point_idx = 0
+
+            label_bottom = widget.current_landmarks_list.GetNthControlPointLabel(widget.current_control_point_idx)
+
+            # change view groups of the normal views to 0
+            for i in range(3):
+                slicer.app.layoutManager().sliceWidget(widget.views_normal[i]).mrmlSliceNode().SetViewGroup(
+                    0)
+                slicer.app.layoutManager().sliceWidget(widget.views_plus[i]).mrmlSliceNode().SetViewGroup(1)
+
+            storage_top_row = widget.topRowActive
+            storage_bottom_row = widget.bottomRowActive
+            widget.topRowActive = False
+            widget.bottomRowActive = True
+
+            for i in range(5):  # because we have 5 possible volumes
+
+                # we need this reversal because jumping landmarks and volumes are reversed
+                if direction == "forward":
+                    new_direction = "backward"
+                else:
+                    new_direction = "forward"
+
+                Resources.utils_views.change_view(widget, direction=new_direction)
+
+                current_id = widget.compositeNode.GetBackgroundVolumeID()
+                current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
+
+                if label_bottom.split(' ')[1].lower() in current_name.lower():
+                    break
+
+            # get n-th control point vector
+            pos = widget.current_landmarks_list.GetNthControlPointPositionVector(
+                widget.current_control_point_idx)
+
+            # center views on current control point
+            slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], False, 1)
+
+            # center crosshair on current control point
+            crosshairNode = slicer.util.getNode("Crosshair")
+            crosshairNode.SetCrosshairRAS(pos)
+            crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
+
+            label_top = widget.current_landmarks_list.GetNthControlPointLabel(second_control_point_idx)
+
+            widget.topRowActive = True
+            widget.bottomRowActive = False
+
+            for i in range(5):  # because we have 5 possible volumes
+
+                # we need this reversal because jumping landmarks and volumes are reversed
+                if direction == "forward":
+                    new_direction = "backward"
+                else:
+                    new_direction = "forward"
+
+                Resources.utils_views.change_view(widget, direction=new_direction)
+
+                current_id = widget.compositeNode.GetBackgroundVolumeID()
+                current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
+
+                if label_top.split(' ')[1].lower() in current_name.lower():
+                    break
+
+            # get n-th control point vector
+            pos = widget.current_landmarks_list.GetNthControlPointPositionVector(second_control_point_idx)
+
+            # center views on current control point
+            slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], False, 0)
+
+            # # center crosshair on current control point
+            # crosshairNode = slicer.util.getNode("Crosshair")
+            # crosshairNode.SetCrosshairRAS(pos)
+            # crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
+
+            widget.topRowActive = storage_top_row
+            widget.bottomRowActive = storage_bottom_row
+
+            Resources.utils_views.active_rows_update(widget)
+
+            # make all other fiducials not visible
+
+            for i in range(control_points_amount):
+                if i == widget.current_control_point_idx or i == second_control_point_idx:
+                    widget.current_landmarks_list.SetNthControlPointVisibility(i, True)
+                else:
+                    widget.current_landmarks_list.SetNthControlPointVisibility(i, False)
 
         turn_off_placement_mode()
 

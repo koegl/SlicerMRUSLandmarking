@@ -95,6 +95,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         self.__initialiseShortcuts()
 
+        self.nodes_circle_normal = None
+        self.nodes_circle_plus = None
         self.nodes_circle = None
         self.old_volume_ids = []
 
@@ -378,10 +380,14 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # changing views
         if self.old_volume_ids != self.volumes_ids:
 
+            self.nodes_circle_normal = Resources.utils.VolumeCircle(max_length=len(self.volumes_ids))
+            self.nodes_circle_plus = Resources.utils.VolumeCircle(max_length=len(self.volumes_ids))
             self.nodes_circle = Resources.utils.VolumeCircle(max_length=len(self.volumes_ids))
 
             for volume_id in self.volumes_ids:
                 new_node = Resources.utils.VolumeNode(volume_id)
+                self.nodes_circle_normal.add_volume_node(new_node)
+                self.nodes_circle_plus.add_volume_node(new_node)
                 self.nodes_circle.add_volume_node(new_node)
 
     def update_landmark_list_from_gui(self):
@@ -774,14 +780,14 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onMisc1Button(self):
         try:
-            Resources.utils_views.change_view(self, "forward")
+            Resources.utils_landmarks.jump_to_next_landmark(self, "forward")
 
         except Exception as e:
             slicer.util.errorDisplay("Could not misc1.\n" + str(e))
 
     def onMisc2Button(self):
         try:
-            Resources.utils_views.change_view(self, "backward")
+            Resources.utils_landmarks.jump_to_next_landmark(self, "backward")
 
         except Exception as e:
             slicer.util.errorDisplay("Could not misc2.\n" + str(e))
