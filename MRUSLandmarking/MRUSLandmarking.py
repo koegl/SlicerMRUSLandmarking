@@ -6,6 +6,14 @@ from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import SegmentEditorEffects
 import functools
+import importlib
+
+import Resources.utils
+import Resources.utils_landmarks
+import Resources.utils_views
+importlib.reload(Resources.utils)
+importlib.reload(Resources.utils_landmarks)
+importlib.reload(Resources.utils_views)
 
 
 #
@@ -57,7 +65,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._parameterNode = None
         self._updatingGUIFromParameterNode = False
 
-        self.__linkViews()
+        Resources.utils_views.link_views()
 
         self.compositeNode = None
         self.volumes_ids = None
@@ -84,6 +92,13 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.current_control_point_idx = 0
 
         self.landmark_dict = {}
+
+        self.__initialiseShortcuts()
+
+        self.nodes_circle_normal = None
+        self.nodes_circle_plus = None
+        self.nodes_circle = None
+        self.old_volume_ids = []
 
     def setup(self):
         """
@@ -135,8 +150,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.inputSelector2.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
         self.ui.inputSelector3.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
         self.ui.inputSelector4.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-        self.ui.SimpleMarkupsWidget.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
-        # self.ui.landmarksSelector.connect("currentNodeChanged(vtkMRMLNode*)", self.updateParameterNodeFromGUI)
+        self.ui.SimpleMarkupsWidget.connect("markupsFiducialNodeChanged()", self.update_landmark_list_from_gui)
 
         self.input_selectors = [self.ui.inputSelector4,
                                 self.ui.inputSelector3,
@@ -165,8 +179,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # sort landmartks
         self.ui.sortLandmarksButton.connect('clicked(bool)', self.onSortLandmarksButton)
 
-        # self.ui.misc1Button.connect('clicked(bool)', self.onMisc1Button)
-        # self.ui.misc2Button.connect('clicked(bool)', self.onMisc2Button)
+        self.ui.misc1Button.connect('clicked(bool)', self.onMisc1Button)
+        self.ui.misc2Button.connect('clicked(bool)', self.onMisc2Button)
 
         # inspection results button
         self.ui.printResultsButton.connect('clicked(bool)', self.onPrintResultsButton)
@@ -188,10 +202,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.initializeParameterNode()
 
         # shortcuts
-        self.__initialiseShortcuts()  # those that depend on the volumes - they have to be defined in this class,
+        # self.__initialiseShortcuts()  # those that depend on the volumes - they have to be defined in this class,
         # as they need the updated ui stuff to work
-
-        # self.ui.SimpleMarkupsWidget.AddObserver(vtk.vtkCommand.ModifiedEvent, self.onLandmarksModified)
 
     def cleanup(self):
         """
@@ -259,9 +271,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                     if volumeNode:
                         self._parameterNode.SetNodeReferenceID(input_volume, volumeNode.GetID())
 
-        if not self._parameterNode.GetNodeReference("Landmarks"):
-            if self.ui.SimpleMarkupsWidget.currentNode() is not None:
-                self._parameterNode.SetNodeReferenceID("Landmarks", self.ui.SimpleMarkupsWidget.currentNode().GetID())
+        # if not self._parameterNode.GetNodeReference("Landmarks"):
+        #     if self.ui.SimpleMarkupsWidget.currentNode() is not None:
+        #         self._parameterNode.SetNodeReferenceID("Landmarks", self.ui.SimpleMarkupsWidget.currentNode().GetID())
 
         # update chosen volumes
         self.volumes_ids = []
@@ -309,7 +321,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.inputSelector2.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume2"))
         self.ui.inputSelector3.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume3"))
         self.ui.inputSelector4.setCurrentNode(self._parameterNode.GetNodeReference("InputVolume4"))
-        self.ui.SimpleMarkupsWidget.setCurrentNode(self._parameterNode.GetNodeReference("Landmarks"))
+        # self.ui.SimpleMarkupsWidget.setCurrentNode(self._parameterNode.GetNodeReference("Landmarks"))
 
         # update button states and tooltips - only if volumes are chosen, enable buttons
         if self._parameterNode.GetNodeReference("InputVolume0") or \
@@ -349,437 +361,58 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._parameterNode.SetNodeReferenceID("InputVolume3", self.ui.inputSelector3.currentNodeID)
         self._parameterNode.SetNodeReferenceID("InputVolume4", self.ui.inputSelector4.currentNodeID)
 
-        if self.ui.SimpleMarkupsWidget.currentNode():
-            self._parameterNode.SetNodeReferenceID("Landmarks", self.ui.SimpleMarkupsWidget.currentNode().GetID())
+        # if self.ui.SimpleMarkupsWidget.currentNode():
+        #     self._parameterNode.SetNodeReferenceID("Landmarks", self.ui.SimpleMarkupsWidget.currentNode().GetID())
 
-        self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
+        # self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
 
         self._parameterNode.EndModify(wasModified)
 
         # update volumes
+        self.old_volume_ids = self.volumes_ids
         self.volumes_ids = []
 
         for selector in self.input_selectors:
             if selector.currentNode():
                 self.volumes_ids.append(selector.currentNode().GetID())
 
-        if self.current_landmarks_list != self.ui.SimpleMarkupsWidget.currentNode():
-            self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
-            self.ui.landmarkNameLabel.setText(self.current_landmarks_list.GetNthControlPointLabel(0))
-
-    def get_next_combination(self, current_volume_ids=None, direction="forward"):
-        """
-    Used for the shortcut to loop through the volumes. The idea is that always two consecutive images are overlayed. If
-    we have images [A,B,C,D] then if we start with images [A,B] the next combination will b [B,C] etc. This function
-    gets the current volume IDs and the switching direction as inputs and returns the next volume IDs.
-    :param current_volume_ids: Two currently displayed volumes
-    :param direction: The direction in which the switching will occur
-    :return: The next two IDs which should be displayed
-    """
-
-        if not self.volumes_ids or not current_volume_ids:
-            return None
-        if direction not in ["forward", "backward"]:
-            return None
-
-        forward_combinations = []
-        backward_combinations = []
-        next_index = None
-
-        # create list of possible forward pairs
-        for i in range(len(self.volumes_ids)):
-            if i == len(self.volumes_ids) - 1:
-                index1 = len(self.volumes_ids) - 1
-                index2 = 0
-            else:
-                index1 = i
-                index2 = i + 1
-
-            forward_combinations.append([self.volumes_ids[index1], self.volumes_ids[index2]])
-            backward_combinations.append([self.volumes_ids[index2], self.volumes_ids[index1]])
-
-        try:
-            if current_volume_ids in forward_combinations:
-                current_index = forward_combinations.index(current_volume_ids)
-            elif current_volume_ids in backward_combinations:
-                current_index = backward_combinations.index(current_volume_ids)
-            else:
-                slicer.util.errorDisplay("Reset views to a valid order for volume switching.")
-                return
-
-        except Exception as e:
-            slicer.util.errorDisplay("Reset views to a valid order for volume switching. " + str(e))
-            return current_volume_ids
-
-        combinations = forward_combinations
-
-        if self.switch and direction == "forward":
-            direction = "backward"
-        elif self.switch and direction == "backward":
-            direction = "forward"
-
-        if direction == "forward":
-            if current_index == len(self.volumes_ids) - 1:
-                next_index = 0
-            else:
-                next_index = current_index + 1
-
-        elif direction == "backward":
-            if current_index == 0:
-                next_index = len(self.volumes_ids) - 1
-            else:
-                next_index = current_index - 1
-
-        return combinations[next_index]
-
-    def get_current_views(self):
-        """
-    Function to determine currently active views (slices) ('active' means the ones for which all the functionality
-    applies)
-    return: An array of current views
-    """
-        # both rows or no rows active in 3o3
-        if self.topRowActive and self.bottomRowActive and self.view == '3on3':
-            current_views = self.views_normal + self.views_plus
-
-        elif (not self.topRowActive) and (not self.bottomRowActive) and self.view == '3on3':
-            current_views = self.views_normal + self.views_plus
-
-        # bottom row active in 3o3
-        elif not self.topRowActive and self.bottomRowActive and self.view == '3on3':
-            current_views = self.views_plus
-
-        # all other times we only care about the top row (views_normal)
-        else:
-            current_views = self.views_normal
-
-        return current_views
-
-    def __initialise_views(self):
-        """
-    Initialise views with volumes. It only changes volumes if the currently displayed volumes are not in the list of
-    chosen volumes.
-    :return the composite node that can be used by the __change_view() function
-    """
-        # decide on slices to be updated depending on the view chosen
-        current_views = self.get_current_views()
-
-        update = False
-
-        for view in current_views:
-
-            layoutManager = slicer.app.layoutManager()
-            view_logic = layoutManager.sliceWidget(view).sliceLogic()
-            self.compositeNode = view_logic.GetSliceCompositeNode()
-
-            current_background_id = self.compositeNode.GetBackgroundVolumeID()
-            current_foreground_id = self.compositeNode.GetForegroundVolumeID()
-
-            # check if there is a background
-            if current_background_id is not None:
-
-                # if it's not the correct volume, set the background and foreground
-                if current_background_id not in self.volumes_ids:
-                    # update volumes
-                    update = True
-
-            else:  # there is no background
-                # update volumes
-                update = True
-
-            if update:
-                self.compositeNode.SetBackgroundVolumeID(self.volumes_ids[1])
-                self.compositeNode.SetForegroundVolumeID(self.volumes_ids[0])
-                update = False
-
-            # check if there is a foreground
-            if current_foreground_id is not None:
-
-                # if it's not the correct volume, set the background and foreground
-                if current_foreground_id not in self.volumes_ids:
-                    # update volumes
-                    update = True
-
-            else:  # there is no foreground
-                # update volumes
-                update = True
-
-            if update:
-                self.compositeNode.SetBackgroundVolumeID(self.volumes_ids[1])
-                self.compositeNode.SetForegroundVolumeID(self.volumes_ids[0])
-                update = False
-
-    def __change_view(self, direction='forward'):
-        """
-    (This function is used as a shortcut)
-    Change the view forward or backward (take the list of possible volumes and for the two displayed volumes increase
-    their index by one) using the get_current_views() function
-    :param direction: The direction in which the volumes are switched
-    """
-
-        if self.ui.inputSelector0.currentNode() is None and \
-            self.ui.inputSelector1.currentNode() is None and \
-            self.ui.inputSelector2.currentNode() is None and \
-            self.ui.inputSelector3.currentNode() is None and \
-            self.ui.inputSelector4.currentNode() is None:
-            slicer.util.errorDisplay(
-                "Not enough volumes given for the volume switching shortcut (choose all in the 'Common "
-                "field of view'")
-            return
-
-        if direction not in ['forward', 'backward']:
-            slicer.util.errorDisplay(
-                "Not enough volumes given for the volume switching shortcut (choose all in the 'Common "
-                "field of view'")
-            return
-
-        self.__initialise_views()
-
-        current_views = self.get_current_views()
-
-        for view in current_views:
-            layoutManager = slicer.app.layoutManager()
-            view_logic = layoutManager.sliceWidget(view)
-            view_logic = view_logic.sliceLogic()
-            self.compositeNode = view_logic.GetSliceCompositeNode()
-
-            # get current foreground and background volumes
-            current_foreground_id = self.compositeNode.GetForegroundVolumeID()
-            current_background_id = self.compositeNode.GetBackgroundVolumeID()
-
-            # switch backgrounds
-            if direction == 'forward':
-                next_combination = self.get_next_combination([current_foreground_id, current_background_id], "forward")
-
-            else:
-                next_combination = self.get_next_combination([current_foreground_id, current_background_id], "backward")
-
-            volume_foreground = slicer.mrmlScene.GetNodeByID(next_combination[0])
-            volume_background = slicer.mrmlScene.GetNodeByID(next_combination[1])
-
-            # update volumes (if they both exist)
-            if volume_foreground and volume_background:
-                if direction == 'backward' or direction == 'forward':
-                    self.compositeNode.SetBackgroundVolumeID(volume_background.GetID())
-                    self.compositeNode.SetForegroundVolumeID(volume_foreground.GetID())
-
-                else:
-                    slicer.util.errorDisplay("wrong direction")
-            else:
-                slicer.util.errorDisplay("No volumes to set for foreground and background")
-
-            # rotate slices to lowest volume (otherwise the volumes can be missaligned a bit
-            # slicer.app.layoutManager().sliceWidget(view).sliceController().rotateSliceToLowestVolumeAxes()
-
-    def __change_foreground_opacity_discrete(self, new_opacity=0.5):
-        """
-    (This function is used as a shortcut)
-    Changes the foreground opacity to a given value.
-    :param new_opacity: The new foreground opacity
-
-    """
-        layoutManager = slicer.app.layoutManager()
-
-        current_views = self.get_current_views()
-
-        # iterate through all views and set opacity to
-        for sliceViewName in current_views:
-            view = layoutManager.sliceWidget(sliceViewName).sliceView()
-            sliceNode = view.mrmlSliceNode()
-            sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
-            compositeNode = sliceLogic.GetSliceCompositeNode()
-            compositeNode.SetForegroundOpacity(new_opacity)
-
-    def __change_foreground_opacity_continuous(self, opacity_change=0.01):
-        """
-    (This function is used as a shortcut)
-    Increases or decreases the foreground opacity by a given value
-    :param opacity_change: The change in foreground opacity
-    """
-
-        layoutManager = slicer.app.layoutManager()
-
-        current_views = self.get_current_views()
-
-        # iterate through all views and set opacity to
-        for sliceViewName in current_views:
-            view = layoutManager.sliceWidget(sliceViewName).sliceView()
-            sliceNode = view.mrmlSliceNode()
-            sliceLogic = slicer.app.applicationLogic().GetSliceLogic(sliceNode)
-            compositeNode = sliceLogic.GetSliceCompositeNode()
-            compositeNode.SetForegroundOpacity(compositeNode.GetForegroundOpacity() + opacity_change)
-
-    def __jump_to_next_landmark(self, direction="forward"):
-        """
-    (This function is used as a shortcut)
-    Jumps through all set landmarks.
-    :param direction: The direction in which the landmarks are switched
-    """
-        # get markup node
-        try:
-
-            # set new landmark comment (if it is not empty)
-            # set landmark comments
-            new_comment = self.ui.markupsCommentText.toPlainText()
-            if new_comment == "x":  # this means delete the comment
-                self.removeLandmarkComment()
-            elif new_comment != "":
-                self.setLandmarkComment(new_comment=new_comment)
-
-            self.checkIfLandmarksAreSelected()
-
-            # get amount of control points
-            control_points_amount = self.current_landmarks_list.GetNumberOfControlPoints()
-
-            # if there are 0 control points
-            if control_points_amount == 0:
-                slicer.util.errorDisplay("Create landmarks (control points) before trying to switch between them")
-                return
-
-            # increase or decrease index according to direction
-            if direction == "forward":
-                self.current_control_point_idx += 1
-
-                # if it's too big, circle back to 0-th index
-                if self.current_control_point_idx >= control_points_amount:
-                    self.current_control_point_idx = 0
-
-            elif direction == "backward":
-                self.current_control_point_idx -= 1
-
-                # if it's too small start ath the last index again
-                if self.current_control_point_idx < 0:
-                    self.current_control_point_idx = control_points_amount - 1
-
-            else:  # wrong direction
-                slicer.util.errorDisplay("Wrong switching direction (error in code).")
-                return
-
-            # get n-th control point vector
-            pos = self.current_landmarks_list.GetNthControlPointPositionVector(self.current_control_point_idx)
-
-            # center views on current control point
-            slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], False, 0)
-
-            # center crosshair on current control point
-            crosshairNode = slicer.util.getNode("Crosshair")
-            crosshairNode.SetCrosshairRAS(pos)
-            crosshairNode.SetCrosshairMode(slicer.vtkMRMLCrosshairNode.ShowBasic)  # make it visible
-
-            # update label
-            self.ui.landmarkNameLabel.setText(self.current_landmarks_list.GetNthControlPointLabel(self.current_control_point_idx))
-            current_description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
-            current_description = current_description.split(';')[0]
-
-            if current_description == "Accepted":
-                self.ui.acceptedLandmarkCheck.checked = True
-            else:
-                self.ui.acceptedLandmarkCheck.checked = False
-
-            if current_description == "Modify":
-                self.ui.modifyLandmarkCheck.checked = True
-            else:
-                self.ui.modifyLandmarkCheck.checked = False
-
-            if current_description == "Rejected":
-                self.ui.rejectedLandmarkCheck.checked = True
-            else:
-                self.ui.rejectedLandmarkCheck.checked = False
-
-            # display comment
-            description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx).split(';')
-            if len(description) == 1:  # this means there is only a status
-                comment = ''
-            else:
-                comment = description[1][1:]
-
-            self.ui.markupsCommentText.setPlainText(comment)
-
-            # make all other fiducials not visible
-            for i in range(control_points_amount):
-                if i != self.current_control_point_idx:
-                    self.current_landmarks_list.SetNthControlPointVisibility(i, False)
-                else:
-                    self.current_landmarks_list.SetNthControlPointVisibility(i, True)
-
-            # uncheck label vis
-            self.ui.labelVisCheck.checked = False
-
-            # update volumes according to the current control point label
-            current_label = self.current_landmarks_list.GetNthControlPointLabel(self.current_control_point_idx)
-            for i in range(5):  # because we have 5 possible volumes
-
-                # we need this reversal because jumping landmarks and volumes are reversed
-                if direction == "forward":
-                    new_direction = "backward"
-                else:
-                    new_direction = "forward"
-
-                self.__change_view(direction=new_direction)
-
-                current_id = self.compositeNode.GetBackgroundVolumeID()
-                current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
-
-                if current_label.split(' ')[1].lower() in current_name.lower():
-                    break
-
-            self.turnOffPlacementMode()
-
-        except Exception as e:
-            slicer.util.errorDisplay("Could not jump to next landmark.\n" + str(e))
-
-    def __markup_curve_adjustment(self, curve_node_id):
-        # get color table
-        iron = slicer.util.getFirstNodeByName("Iron")
-
-        # set visibility to only 3D
-        curveNode = slicer.mrmlScene.GetNodeByID(curve_node_id.GetID())
-        dispNode = curveNode.GetDisplayNode()
-        dispNode.Visibility2DOff()
-
-        # change curve to gradient
-        dispNode.SetActiveScalarName("PedigreeIDs")
-        dispNode.SetAndObserveColorNodeID(iron.GetID())
-
-        # other parameters
-        dispNode.SetScalarVisibility(1)
-        dispNode.SetLineThickness(0.6)
-        dispNode.SetTextScale(0)
-
-        dispNode.UpdateAssignedAttribute()
-        dispNode.Modified()
-
-    def __fiducials(self):
-        """
-    Entire fiducial logic - create list, activate appropriate list and set the placement widget
-    """
-        slicer.modules.markups.logic().StartPlaceMode(0)
-
-        # set control point visibility off in 3D
-        for fiducial_node in slicer.mrmlScene.GetNodesByClass("vtkMRMLMarkupsFiducialNode"):
-            d = fiducial_node.GetDisplayNode()
-            d.Visibility3DOff()
+        # if the newly selected volume ids are different from the old, the update the circular data structure used for
+        # changing views
+        if self.old_volume_ids != self.volumes_ids:
+
+            self.nodes_circle_normal = Resources.utils.VolumeCircle(max_length=len(self.volumes_ids))
+            self.nodes_circle_plus = Resources.utils.VolumeCircle(max_length=len(self.volumes_ids))
+            self.nodes_circle = Resources.utils.VolumeCircle(max_length=len(self.volumes_ids))
+
+            for volume_id in self.volumes_ids:
+                new_node = Resources.utils.VolumeNode(volume_id)
+                self.nodes_circle_normal.add_volume_node(new_node)
+                self.nodes_circle_plus.add_volume_node(new_node)
+                self.nodes_circle.add_volume_node(new_node)
+
+    def update_landmark_list_from_gui(self):
+        self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
 
     def __create_shortcuts(self):
         """
-    Function to create all shortcuts
-    """
+        Function to create all shortcuts
+        """
 
-        self.shortcuts = [('d', lambda: self.__fiducials()),  # fiducial placement
-                          ('a', functools.partial(self.__change_view, "backward")),  # volume switching dir1
-                          ('s', functools.partial(self.__change_view, "forward")),  # volume switching dir2
-                          ('1', functools.partial(self.__change_foreground_opacity_discrete, 0.0)),
+        self.shortcuts = [('d', lambda: Resources.utils_landmarks.activate_fiducial_placement()),  # fiducial placement
+                          ('a', functools.partial(Resources.utils_views.change_view, self, "backward")),
+                          ('s', functools.partial(Resources.utils_views.change_view, self, "forward")),
+                          ('1', functools.partial(Resources.utils_views.change_foreground_opacity_discrete, self, 0.0)),
                           # change opacity to 0.0
-                          ('2', functools.partial(self.__change_foreground_opacity_discrete, 0.5)),
+                          ('2', functools.partial(Resources.utils_views.change_foreground_opacity_discrete, self, 0.5)),
                           # change opacity to 0.5
-                          ('3', functools.partial(self.__change_foreground_opacity_discrete, 1.0)),
+                          ('3', functools.partial(Resources.utils_views.change_foreground_opacity_discrete, self, 1.0)),
                           # change opacity to 1.0
-                          ('q', functools.partial(self.__change_foreground_opacity_continuous, 0.02)),
+                          ('q', functools.partial(Resources.utils_views.change_foreground_opacity_continuous, self, 0.02)),
                           # incr. op. by .01
-                          ('w', functools.partial(self.__change_foreground_opacity_continuous, -0.02)),
+                          ('w', functools.partial(Resources.utils_views.change_foreground_opacity_continuous, self, -0.02)),
                           # decr. op. by .01
-                          ('z', functools.partial(self.__jump_to_next_landmark, "backward")),
-                          ('x', functools.partial(self.__jump_to_next_landmark, "forward"))]
+                          ('z', functools.partial(Resources.utils_landmarks.jump_to_next_landmark, self, "backward")),
+                          ('x', functools.partial(Resources.utils_landmarks.jump_to_next_landmark, self, "forward"))]
 
     def __initialiseShortcuts(self):
         """
@@ -793,29 +426,19 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             shortcut.setKey(qt.QKeySequence(shortcutKey))
             shortcut.connect('activated()', callback)
 
-    def __linkViews(self):
-        """
-    Set linked slice views in all existing slice composite nodes and in the default node
-    """
-
-        sliceCompositeNodes = slicer.util.getNodesByClass("vtkMRMLSliceCompositeNode")
-        defaultSliceCompositeNode = slicer.mrmlScene.GetDefaultNodeByClass("vtkMRMLSliceCompositeNode")
-        if not defaultSliceCompositeNode:
-            defaultSliceCompositeNode = slicer.mrmlScene.CreateNodeByClass("vtkMRMLSliceCompositeNode")
-            defaultSliceCompositeNode.UnRegister(
-                None)  # CreateNodeByClass is factory method, need to unregister the result to prevent memory leaks
-            slicer.mrmlScene.AddDefaultNode(defaultSliceCompositeNode)
-        sliceCompositeNodes.append(defaultSliceCompositeNode)
-        for sliceCompositeNode in sliceCompositeNodes:
-            sliceCompositeNode.SetLinkedControl(True)
-
     def onResetViewsButton(self):
         """
-    Resets to the standard view when the reset button is clicked
-    """
+        Resets to the standard view when the reset button is clicked
+        """
         try:
+
+            # try to select nodes from selectors
+            for selector in self.input_selectors:
+                if selector.currentNode():
+                    self.volumes_ids.append(selector.currentNode().GetID())
+
             # decide on slices to be updated depending on the view chosen
-            current_views = self.get_current_views()
+            current_views = Resources.utils_views.get_current_views(self)
 
             for view in current_views:
                 layoutManager = slicer.app.layoutManager()
@@ -856,9 +479,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             # Compute output
             self.logic.process([selector.currentNode() for selector in self.input_selectors if selector.currentNode()],
-                               self.get_current_views())
+                               Resources.utils_views.get_current_views(self))
 
-            self.__initialise_views()
+            Resources.utils_views.initialise_views(self)
 
         except Exception as e:
             slicer.util.errorDisplay("Failed to create intersection. " + str(e))
@@ -940,7 +563,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             sliceNodes[4].SetOrientationToCoronal()
             sliceNodes[5].SetOrientationToSagittal()
 
-            self.__initialise_views()
+            Resources.utils_views.initialise_views(self)
 
             self.ui.topRowCheck.toolTip = "Activate top row"
             self.ui.topRowCheck.enabled = True
@@ -974,7 +597,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.volumes_ids.reverse()
 
             # switch views
-            current_views = self.get_current_views()
+            current_views = Resources.utils_views.get_current_views(self)
 
             for view in current_views:
                 layoutManager = slicer.app.layoutManager()
@@ -987,7 +610,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 self.compositeNode.SetBackgroundVolumeID(current_foreground_id)
                 self.compositeNode.SetForegroundVolumeID(current_background_id)
 
-            # self.__initialise_views()
+            # Resources.utils_views.initialise_views(self)
 
         except Exception as e:
             slicer.util.errorDisplay("Failed to change the display order. " + str(e))
@@ -1024,60 +647,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # link rest of funcitonality
             self.topRowActive = True
             self.bottomRowActive = True
-            self.activeRowsUpdate()
-
-    def divideLandmarksByVolume(self):
-
-        try:
-            self.checkIfLandmarksAreSelected()
-
-            fiducial_node = self.current_landmarks_list
-
-            num_control_points = fiducial_node.GetNumberOfControlPoints()
-
-            preop = []
-            us1 = []
-            us2 = []
-            us3 = []
-            intraop = []
-
-            for i in range(num_control_points):
-                label = fiducial_node.GetNthControlPointLabel(i)
-                vector = fiducial_node.GetNthControlPointPosition(i)
-
-                if "pre-op" in label.lower():
-                    preop.append([vector, label])
-                elif "us1" in label.lower():
-                    us1.append([vector, label])
-                elif "us2" in label.lower():
-                    us2.append([vector, label])
-                elif "us3" in label.lower():
-                    us3.append([vector, label])
-                elif "intra-op" in label.lower():
-                    intraop.append([vector, label])
-
-            preop.sort(key=lambda y: y[1])
-            us1.sort(key=lambda y: y[1])
-            us2.sort(key=lambda y: y[1])
-            us3.sort(key=lambda y: y[1])
-            intraop.sort(key=lambda y: y[1])
-
-            all_nodes = [preop, us1, us2, us3, intraop]
-
-            max_len = max([len(i) for i in all_nodes])
-
-            assert len(preop) == max_len or len(preop) == 0, "All volumes must have the same amount of landmarks (or none)"
-            assert len(us1) == max_len or len(us1) == 0, "All volumes must have the same amount of landmarks (or none)"
-            assert len(us2) == max_len or len(us2) == 0, "All volumes must have the same amount of landmarks (or none)"
-            assert len(us3) == max_len or len(us3) == 0, "All volumes must have the same amount of landmarks (or none)"
-            assert len(intraop) == max_len or len(
-                intraop) == 0, "All volumes must have the same amount of landmarks (or none)"
-
-            return all_nodes
-
-        except Exception as e:
-            slicer.util.errorDisplay("Failed to divide landmarks by volume.\n" + str(e))
-            return None
+            Resources.utils_views.active_rows_update(self)
 
     def onUpdateFlow(self):
 
@@ -1088,7 +658,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 slicer.mrmlScene.RemoveNode(curve_node)
             self.curve_nodes = {}
 
-            fiducial_nodes = self.divideLandmarksByVolume()
+            fiducial_nodes = Resources.utils_landmarks.divide_landmarks_by_volume(self)
             max_len = max([len(i) for i in fiducial_nodes])
 
             # create curve nodes
@@ -1115,7 +685,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
                 slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, all_points)
 
-                self.__markup_curve_adjustment(curve_node_id)
+                Resources.utils.markup_curve_adjustment(curve_node_id)
 
             # change tool to pointer
             interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
@@ -1124,59 +694,29 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             interactionNode.SetPlaceModePersistence(0)
 
         except Exception as e:
-            print(e)
-
-    def activeRowsUpdate(self):
-        """
-    Updates the previously inactive row of slices (views) to the previously active - so that they are synced
-    """
-        try:
-            if self.topRowActive and not self.bottomRowActive:
-                group_normal = 0
-                group_plus = 1
-            elif not self.topRowActive and self.bottomRowActive:
-                group_normal = 1
-                group_plus = 0
-            else:  # when both are checked or unchecked
-                group_normal = 0
-                group_plus = 0
-
-                # unchecked means that we can check them again, as both unchecked doesn't make sense
-                self.topRowActive = True
-                self.bottomRowActive = True
-
-                self.ui.topRowCheck.checked = True
-                self.ui.bottomRowCheck.checked = True
-
-            # set groups
-            for i in range(3):
-                slicer.app.layoutManager().sliceWidget(self.views_normal[i]).mrmlSliceNode().SetViewGroup(group_normal)
-                slicer.app.layoutManager().sliceWidget(self.views_plus[i]).mrmlSliceNode().SetViewGroup(group_plus)
-
-        except Exception as e:
-            slicer.util.errorDisplay("Could not change active row(s). " + str(e))
+            slicer.util.errorDisplay("Could not update flow.\n" + str(e))
 
     def onTopRowCheck(self, activate=True):
         """
-    Updates the top row
-    :param activate: Boolean value to define if row is activated
-    """
+        Updates the top row
+        :param activate: Boolean value to define if row is activated
+        """
         self.topRowActive = activate
-        self.activeRowsUpdate()
+        Resources.utils_views.active_rows_update(self)
 
     def onBottomRowCheck(self, activate=False):
         """
-    Updates the bottom row
-    :param activate: Boolean value to define if row is activated
-    """
+        Updates the bottom row
+        :param activate: Boolean value to define if row is activated
+        """
         self.bottomRowActive = activate
-        self.activeRowsUpdate()
+        Resources.utils_views.active_rows_update(self)
 
     def onLabelVisCheck(self, activate=True):
 
         try:
             previous_state = not self.ui.labelVisCheck.checked
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
 
             for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
                 self.current_landmarks_list.SetNthControlPointVisibility(i, activate)
@@ -1188,12 +728,12 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onAcceptedLandmarkCheck(self, activate=True):
         try:
             if activate is True:
-                self.setLandmarkStatus("Accepted")
+                Resources.utils_landmarks.set_landmark_status(self, "Accepted")
                 self.ui.modifyLandmarkCheck.checked = False
                 self.ui.rejectedLandmarkCheck.checked = False
 
             if activate is False:
-                self.setLandmarkStatus("")
+                Resources.utils_landmarks.set_landmark_status(self, "")
 
         except Exception as e:
             slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
@@ -1201,12 +741,12 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onModifyLandmarkCheck(self, activate=True):
         try:
             if activate is True:
-                self.setLandmarkStatus("Modify")
+                Resources.utils_landmarks.set_landmark_status(self, "Modify")
                 self.ui.acceptedLandmarkCheck.checked = False
                 self.ui.rejectedLandmarkCheck.checked = False
 
             if activate is False:
-                self.setLandmarkStatus("")
+                Resources.utils_landmarks.set_landmark_status(self, "")
 
         except Exception as e:
             slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
@@ -1214,180 +754,41 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onRejectedLandmarkCheck(self, activate=True):
         try:
             if activate is True:
-                self.setLandmarkStatus("Rejected")
+                Resources.utils_landmarks.set_landmark_status(self, "Rejected")
                 self.ui.modifyLandmarkCheck.checked = False
                 self.ui.acceptedLandmarkCheck.checked = False
 
             if activate is False:
-                self.setLandmarkStatus("")
-
-        except Exception as e:
-            slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
-
-    def setLandmarkStatus(self, new_status):
-        try:
-            self.checkIfLandmarksAreSelected()
-
-            # get old description
-            description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
-            description = description.split(";")
-
-            # get old comment
-            if len(description) == 2:
-                old_comment = description[1]  # it's the second part of the description
-                new_description = new_status + ";" + old_comment
-
-            else:  # if len is 1 this means that there is only a status
-                new_description = new_status
-
-            self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, new_description)
-
-        except Exception as e:
-            slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
-
-    def setLandmarkComment(self, new_comment):
-        try:
-            self.checkIfLandmarksAreSelected()
-
-            # get old description
-            description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
-            description = description.split(";")
-
-            if description == ['']:  # meaning there was no description
-                new_description = "; " + new_comment
-            elif description[0] != '':
-                new_description = description[0] + "; " + new_comment
-            else:
-                new_description = "; " + new_comment
-
-            self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, new_description)
-
-        except Exception as e:
-            slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
-
-    def removeLandmarkComment(self):
-        try:
-            self.checkIfLandmarksAreSelected()
-
-            # get old description
-            description = self.current_landmarks_list.GetNthControlPointDescription(self.current_control_point_idx)
-            description = description.split(";")
-
-            if description[0] != '':
-                new_description = description[0]
-            else:
-                new_description = ''
-
-            self.current_landmarks_list.SetNthControlPointDescription(self.current_control_point_idx, new_description)
+                Resources.utils_landmarks.set_landmark_status(self, "")
 
         except Exception as e:
             slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
 
     def onPrintResultsButton(self):
         try:
-
-            self.checkIfLandmarksAreSelected()
-
-            for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
-
-                status = self.current_landmarks_list.GetNthControlPointDescription(i)
-
-                if status == '':
-                    status = "Not checked"
-
-                if status[0] == ';':
-                    status = status[2:]
-
-                print(f"{self.current_landmarks_list.GetNthControlPointLabel(i).ljust(12)}: {status}")
+            Resources.utils_landmarks.print_landmark_inspection_results(self)
 
         except Exception as e:
             slicer.util.errorDisplay("Could not print results.\n" + str(e))
 
     def onSortLandmarksButton(self):
         try:
-            self.checkIfLandmarksAreSelected()
-
-            # create a list to sort
-            sort_list = []
-
-            for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
-                sort_list.append([self.current_landmarks_list.GetNthControlPointLabel(i),
-                                  self.current_landmarks_list.GetNthControlPointID(i), -1])
-
-            sort_list = sorted(sort_list, key=lambda x: x[0][0].split(' ')[0][1:])
-
-            # create sublists for each landmark
-            sublists = {}
-            for packet in sort_list:
-                prefix = packet[0].split(' ')[0]
-                if prefix in sublists:
-                    sublists[prefix].append(packet)
-                else:
-                    sublists[prefix] = [packet]
-
-            sublists = list(sublists.items())
-
-            # move intra to the last position of each sublist and sort each sublist
-            for i in range(len(sublists)):
-                sub = sublists[i][1]
-                new_list = sorted(sub, key=lambda x: x[0].split(' ')[1])
-
-                if "intra" in new_list[0][0].lower():
-                    temp = new_list.pop(0)
-                    new_list.append(temp)
-
-                sublists[i] = (sublists[i][0], new_list)
-
-            # create final sorted list
-            final_list = []
-            for _, packet in sublists:
-                for sub in packet:
-                    final_list.append(sub)
-
-            # create new markups list
-            sorted_markups = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", self.current_landmarks_list.GetName() + "_sorted")
-
-            for idx, landmark in enumerate(final_list):
-                index = self.current_landmarks_list.GetNthControlPointIndexByID(landmark[1])
-
-                sorted_markups.AddControlPoint(self.current_landmarks_list.GetNthControlPointPosition(index),
-                                               self.current_landmarks_list.GetNthControlPointLabel(index))
-
-                sorted_markups.SetNthControlPointDescription(idx, self.current_landmarks_list.GetNthControlPointDescription(index))
+            Resources.utils_landmarks.sort_landmarks(self)
 
         except Exception as e:
             slicer.util.errorDisplay("Could not sort landmarks.\n" + str(e))
 
-    def checkIfLandmarksAreSelected(self):
-
-        self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
-
-        if self.current_landmarks_list is None:
-            raise ValueError("Please select a landmark list.")
-
-    def onLandmarksModified(self, caller, event):
-        if event == "ModifiedEvent":
-            self.current_landmarks_list = self.ui.SimpleMarkupsWidget.currentNode()
-            print("assigned updated landmarks")
-
-    def turnOffPlacementMode(self):
-        interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
-        interactionNode.SwitchToViewTransformMode()
-        interactionNode.SetPlaceModePersistence(0)
-
     def onMisc1Button(self):
         try:
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.jump_to_next_landmark(self, "forward")
 
-            self.__jump_to_next_landmark(direction="forward")
         except Exception as e:
             slicer.util.errorDisplay("Could not misc1.\n" + str(e))
 
     def onMisc2Button(self):
         try:
-            self.checkIfLandmarksAreSelected()
+            Resources.utils_landmarks.jump_to_next_landmark(self, "backward")
 
-            self.__jump_to_next_landmark(direction="backward")
         except Exception as e:
             slicer.util.errorDisplay("Could not misc2.\n" + str(e))
 

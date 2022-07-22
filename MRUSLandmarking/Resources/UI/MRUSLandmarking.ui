@@ -409,6 +409,27 @@ L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op</string>
         </property>
        </widget>
       </item>
+
+
+
+      <item row="13" column="0" colspan="2">
+       <widget class="QPushButton" name="misc1Button">
+        <property name="text">
+         <string>misc1</string>
+        </property>
+       </widget>
+      </item>
+      <item row="13" column="2" colspan="2">
+       <widget class="QPushButton" name="misc2Button">
+        <property name="text">
+         <string>misc2</string>
+        </property>
+       </widget>
+      </item>
+
+
+
+
       <item row="11" column="0" colspan="4">
        <widget class="QLabel" name="commentLabel">
         <property name="font">
