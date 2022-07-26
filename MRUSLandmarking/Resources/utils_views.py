@@ -128,6 +128,9 @@ def initialise_views(widget):
 
 def update_circle_node(widget, direction):
 
+    if widget.nodes_circle is None:
+        raise Exception("Pick a volume first - or re-pick any existing one")
+
     if direction == "forward":
         while widget.nodes_circle.current_volume_node.volume_id != widget.compositeNode.GetBackgroundVolumeID():
             widget.nodes_circle.get_next_node()

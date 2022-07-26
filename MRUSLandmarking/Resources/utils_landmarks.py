@@ -209,7 +209,8 @@ def jump_to_next_landmark(widget, direction="forward"):
     """
     try:
 
-        # get markup node
+        if widget.nodes_circle is None:
+            raise Exception("Pick the corresponding volumes first (or re-pick any existing one)")
 
         # set new landmark comment (if it is not empty)
         # set landmark comments
@@ -404,5 +405,8 @@ def jump_to_next_landmark(widget, direction="forward"):
         turn_off_placement_mode()
 
     except Exception as e:
+
+        turn_off_placement_mode()
+
         slicer.util.errorDisplay("Could not jump to next landmark.\n" + str(e))
 
