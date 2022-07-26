@@ -102,8 +102,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def setup(self):
         """
-    Called when the user opens the module the first time and the widget is initialized.
-    """
+        Called when the user opens the module the first time and the widget is initialized.
+        """
         ScriptedLoadableModuleWidget.setup(self)
 
         # Load widget from .ui file (created by Qt Designer).
@@ -213,8 +213,8 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def enter(self):
         """
-    Called each time the user opens this module.
-    """
+        Called each time the user opens this module.
+        """
         # Make sure parameter node exists and observed
         self.initializeParameterNode()
 
@@ -251,7 +251,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         # Select default input nodes if nothing is selected yet to save a few clicks for the user
         input_volumes = ["InputVolume0", "InputVolume1", "InputVolume2", "InputVolume3", "InputVolume4"]
-        us_volumes = ["pre-op", "us1", "us2", "us3", "intra-op"]
+        us_volumes = [["pre-op", "preop"], ["us1", "us1"], ["us2", "us2"], ["us3", "us3"], ["intra-op", "intraop"]]
 
         # only select default nodes when nothing is selected (otherwise changing modules back and forth triggers this)
         chosen_nodes = [selector.currentNode() for selector in self.input_selectors]
@@ -264,7 +264,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
                     # try to get a volume node that contains one of the names
                     for node in slicer.util.getNodesByClass("vtkMRMLScalarVolumeNode"):
-                        if volume_name in node.GetName().lower():
+                        if volume_name[0] in node.GetName().lower() or volume_name[1] in node.GetName().lower():
                             volumeNode = node
                             break
 
