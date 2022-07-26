@@ -863,14 +863,14 @@ class MRUSLandmarkingLogic(ScriptedLoadableModuleLogic):
 
         usVolumes = []
         for volume in volumes:
-            matches = ["us1", "us2", "us3", "us4", "us5", "us6"]
+            matches = ["us1", "us2", "us3", "us4", "us5", "us6", "us7", "us8", "us9", "us10"]
             if any(x in volume.GetName().lower() for x in matches):
                 usVolumes.append(volume)
 
         if len(usVolumes) <= 1:
             slicer.util.errorDisplay(
                 "Select at least two US volumes (intersection is only calculated for US volumes). (They"
-                "need to contain us1, us2, us3, us4, us5 or us6 in their names")
+                "need to contain us1, us2, us3, us4, us5 or us6, us7, us8, us9, us10 in their names")
             return
 
         # initialise segment editor
