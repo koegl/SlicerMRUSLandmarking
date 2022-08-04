@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>520</width>
-    <height>725</height>
+    <height>824</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -240,26 +240,88 @@
       <bool>false</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
-      <item row="0" column="0" colspan="4">
-       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget">
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>200</height>
-         </size>
-        </property>
-        <property name="layoutDirection">
-         <enum>Qt::LeftToRight</enum>
-        </property>
-        <property name="autoFillBackground">
-         <bool>false</bool>
+      <item row="20" column="0">
+       <widget class="QLabel" name="landmarkNameLabel">
+        <property name="text">
+         <string>&lt;no landmark selected&gt;</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QPushButton" name="sortLandmarksButton">
+      <item row="21" column="0">
+       <widget class="QLabel" name="commentLabel">
         <property name="text">
-         <string>Sort landmarks</string>
+         <string>Comment:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="20" column="3">
+       <widget class="ctkCheckBox" name="rejectedLandmarkCheck">
+        <property name="text">
+         <string>Reject</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0" colspan="4">
+       <widget class="QLabel" name="label_3">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Landmark registration</string>
+        </property>
+       </widget>
+      </item>
+      <item row="20" column="2">
+       <widget class="ctkCheckBox" name="modifyLandmarkCheck">
+        <property name="text">
+         <string>Modify</string>
+        </property>
+       </widget>
+      </item>
+      <item row="17" column="0" colspan="2">
+       <spacer name="verticalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>50</width>
+          <height>10</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="22" column="0" colspan="4">
+       <widget class="QLabel" name="commentLabel">
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>(To remove a comment type 'x' and move to the next landmark.  Do not use semicolons!)</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="19" column="0" colspan="4">
+       <widget class="QLabel" name="label_4">
+        <property name="font">
+         <font>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>Use 'x' and 'z' to jump between landmarks</string>
         </property>
        </widget>
       </item>
@@ -279,6 +341,119 @@
         </property>
         <property name="text">
          <string>Update landmark curves</string>
+        </property>
+       </widget>
+      </item>
+      <item row="23" column="0" colspan="4">
+       <widget class="QPushButton" name="printResultsButton">
+        <property name="text">
+         <string>Print inspection results</string>
+        </property>
+       </widget>
+      </item>
+      <item row="18" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Landmark inspection</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0" colspan="4">
+       <widget class="qSlicerSimpleMarkupsWidget" name="SimpleMarkupsWidget">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>200</height>
+         </size>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="21" column="1" colspan="3">
+       <widget class="QPlainTextEdit" name="markupsCommentText">
+        <property name="maximumSize">
+         <size>
+          <width>100000</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="plainText">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QCheckBox" name="labelVisCheck">
+        <property name="text">
+         <string>Label visibility</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="volReg1">
+        <property name="text">
+         <string>Vol number fixed:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="1">
+       <widget class="QPlainTextEdit" name="fixedVolTextEdit">
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="plainText">
+         <string>1</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="2">
+       <widget class="QLabel" name="volReg1">
+        <property name="text">
+         <string>Vol number moving:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="3">
+       <widget class="QPlainTextEdit" name="movingVolTextEdit">
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="plainText">
+         <string>2</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0" colspan="2">
+       <widget class="QPushButton" name="transformationButton">
+        <property name="text">
+         <string>Create transformation</string>
+        </property>
+       </widget>
+      </item>
+      <item row="24" column="2" colspan="2">
+       <widget class="QPushButton" name="misc2Button">
+        <property name="text">
+         <string>misc2</string>
         </property>
        </widget>
       </item>
@@ -303,146 +478,24 @@ L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op</string>
         </property>
        </widget>
       </item>
-      <item row="5" column="0">
-       <widget class="QCheckBox" name="labelVisCheck">
-        <property name="text">
-         <string>Label visibility</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0" colspan="2">
-       <spacer name="verticalSpacer_2">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeType">
-         <enum>QSizePolicy::Fixed</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>50</width>
-          <height>10</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="7" column="0">
-       <widget class="QLabel" name="label_3">
-        <property name="font">
-         <font>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>Landmark inspection</string>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="0" colspan="4">
-       <widget class="QLabel" name="label_4">
-        <property name="font">
-         <font>
-          <italic>true</italic>
-         </font>
-        </property>
-        <property name="text">
-         <string>Use 'x' and 'z' to jump between landmarks</string>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="0">
-       <widget class="QLabel" name="landmarkNameLabel">
-        <property name="text">
-         <string>&lt;no landmark selected&gt;</string>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="1">
-       <widget class="ctkCheckBox" name="acceptedLandmarkCheck">
-        <property name="text">
-         <string>Accept</string>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="2">
-       <widget class="ctkCheckBox" name="modifyLandmarkCheck">
-        <property name="text">
-         <string>Modify</string>
-        </property>
-       </widget>
-      </item>
-      <item row="9" column="3">
-       <widget class="ctkCheckBox" name="rejectedLandmarkCheck">
-        <property name="text">
-         <string>Reject</string>
-        </property>
-       </widget>
-      </item>
-      <item row="10" column="0">
-       <widget class="QLabel" name="commentLabel">
-        <property name="text">
-         <string>Comment:</string>
-        </property>
-       </widget>
-      </item>
-      <item row="10" column="1" colspan="3">
-       <widget class="QPlainTextEdit" name="markupsCommentText">
-        <property name="maximumSize">
-         <size>
-          <width>100000</width>
-          <height>25</height>
-         </size>
-        </property>
-        <property name="plainText">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item row="12" column="0" colspan="4">
-       <widget class="QPushButton" name="printResultsButton">
-        <property name="text">
-         <string>Print inspection results</string>
-        </property>
-       </widget>
-      </item>
-
-
-
-      <item row="13" column="0" colspan="2">
+      <item row="24" column="0" colspan="2">
        <widget class="QPushButton" name="misc1Button">
         <property name="text">
          <string>misc1</string>
         </property>
        </widget>
       </item>
-      <item row="13" column="2" colspan="2">
-       <widget class="QPushButton" name="misc2Button">
+      <item row="20" column="1">
+       <widget class="ctkCheckBox" name="acceptedLandmarkCheck">
         <property name="text">
-         <string>misc2</string>
+         <string>Accept</string>
         </property>
        </widget>
       </item>
-
-
-
-
-      <item row="11" column="0" colspan="4">
-       <widget class="QLabel" name="commentLabel">
-        <property name="font">
-         <font>
-          <pointsize>11</pointsize>
-          <italic>true</italic>
-         </font>
-        </property>
+      <item row="1" column="0">
+       <widget class="QPushButton" name="sortLandmarksButton">
         <property name="text">
-         <string>(To remove a comment type 'x' and move to the next landmark.  Do not use semicolons!)</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
+         <string>Sort landmarks</string>
         </property>
        </widget>
       </item>

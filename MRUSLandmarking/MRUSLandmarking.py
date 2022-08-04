@@ -178,12 +178,15 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.updateFlow.connect('clicked(bool)', self.onUpdateFlow)
         # sort landmartks
         self.ui.sortLandmarksButton.connect('clicked(bool)', self.onSortLandmarksButton)
+        # create transformation
+        self.ui.transformationButton.connect('clicked(bool)', self.onTransformationButton)
 
         self.ui.misc1Button.connect('clicked(bool)', self.onMisc1Button)
         self.ui.misc2Button.connect('clicked(bool)', self.onMisc2Button)
 
         # inspection results button
         self.ui.printResultsButton.connect('clicked(bool)', self.onPrintResultsButton)
+
 
         # Check boxes
         # Activate rows
@@ -695,6 +698,55 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         except Exception as e:
             slicer.util.errorDisplay("Could not update flow.\n" + str(e))
+
+    def onTransformationButton(self):
+        try:
+            # todo which landmarks foes this divide? it should divide the chosen ones
+            fiducial_nodes = Resources.utils_landmarks.divide_landmarks_by_volume(self)
+
+            fixed_idx = int(self.ui.fixedVolTextEdit.toPlainText())
+            assert 0 < fixed_idx < 6, "Fixed volume must be between 0 and 5"
+            moving_idx = int(self.ui.movingVolTextEdit.toPlainText())
+            assert 0 < moving_idx < 6, "Moving volume must be between 0 and 5"
+            assert fixed_idx != moving_idx, "Fixed and moving volumes must be different"
+
+            fixed_coordinates = fiducial_nodes[fixed_idx - 1]
+            moving_coordinates = fiducial_nodes[moving_idx - 1]
+            assert len(fixed_coordinates) == len(moving_coordinates), "Number of landmarks must be the same for " \
+                                                                      "moving and fixed"
+
+            fixed_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", "fixed_coordinates")
+            moving_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLMarkupsFiducialNode", "moving_coordinates")
+
+            for i in range(len(fixed_coordinates)):
+                fixed_node.AddControlPoint(fixed_coordinates[i][0])
+                moving_node.AddControlPoint(moving_coordinates[i][0])
+
+            transform_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLTransformNode", f"registration_{moving_idx}to{fixed_idx}")
+
+            # Create your fiducial wizard node and set the input parameters
+            fiducial_reg_node = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLFiducialRegistrationWizardNode',
+                                                                   'Registration')
+
+            fiducial_reg_node.SetAndObserveFromFiducialListNodeId(moving_node.GetID())
+            fiducial_reg_node.SetAndObserveToFiducialListNodeId(fixed_node.GetID())
+            fiducial_reg_node.SetOutputTransformNodeId(transform_node.GetID())
+            fiducial_reg_node.SetRegistrationModeToRigid()
+
+            moving_node.SetAndObserveTransformNodeID(transform_node.GetID())
+
+            # remove nodes
+            slicer.mrmlScene.RemoveNode(fixed_node)
+            slicer.mrmlScene.RemoveNode(moving_node)
+            slicer.mrmlScene.RemoveNode(fiducial_reg_node)
+
+            Resources.utils_landmarks.turn_off_placement_mode()
+
+        except Exception as e:
+
+            Resources.utils_landmarks.turn_off_placement_mode()
+
+            slicer.util.errorDisplay("Could not create transformation.\n" + str(e))
 
     def onTopRowCheck(self, activate=True):
         """
