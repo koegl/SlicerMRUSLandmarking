@@ -342,6 +342,11 @@ def jump_to_next_landmark(widget, direction="forward"):
                 current_id = widget.compositeNode.GetBackgroundVolumeID()
                 current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
 
+                if "pre" in current_name.lower() and "op" in current_name.lower() and "pre-op" in label_bottom.lower():
+                    current_name = "pre-op"
+                elif "intra" in current_name.lower() and "op" in current_name.lower() and "intra-op" in label_bottom.lower():
+                    current_name = "intra-op"
+
                 if label_bottom.split(' ')[1].lower() in current_name.lower():
                     break
 
@@ -374,6 +379,11 @@ def jump_to_next_landmark(widget, direction="forward"):
 
                 current_id = widget.compositeNode.GetBackgroundVolumeID()
                 current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
+
+                if "pre" in current_name.lower() and "op" in current_name.lower() and "pre-op" in label_top.lower():
+                    current_name = "pre-op"
+                elif "intra" in current_name.lower() and "op" in current_name.lower() and "intra-op" in label_top.lower():
+                    current_name = "intra-op"
 
                 if label_top.split(' ')[1].lower() in current_name.lower():
                     break
