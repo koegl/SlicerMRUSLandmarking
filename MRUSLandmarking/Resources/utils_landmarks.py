@@ -355,7 +355,7 @@ def jump_to_next_landmark(widget, direction="forward"):
                 widget.current_control_point_idx)
 
             # center views on current control point
-            slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], False, 1)
+            slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], True, 1)
 
             # center crosshair on current control point
             crosshairNode = slicer.util.getNode("Crosshair")
@@ -392,7 +392,7 @@ def jump_to_next_landmark(widget, direction="forward"):
             pos = widget.current_landmarks_list.GetNthControlPointPositionVector(second_control_point_idx)
 
             # center views on current control point
-            slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], False, 0)
+            slicer.modules.markups.logic().JumpSlicesToLocation(pos[0], pos[1], pos[2], True, 0)
 
             # # center crosshair on current control point
             # crosshairNode = slicer.util.getNode("Crosshair")
