@@ -209,6 +209,9 @@ def jump_to_next_landmark(widget, direction="forward"):
     """
     try:
 
+        landmark_lists = divide_landmarks_by_volume(widget)
+        control_points_amount = max([x.GetNumberOfControlPoints() for x in landmark_lists])
+
         if widget.nodes_circle is None:
             raise Exception("Pick the corresponding volumes first (or re-pick any existing one)")
 
@@ -223,7 +226,7 @@ def jump_to_next_landmark(widget, direction="forward"):
         check_if_landmark_list_is_selected(widget)
 
         # get amount of control points
-        control_points_amount = widget.current_landmarks_list.GetNumberOfControlPoints()
+        # control_points_amount = widget.current_landmarks_list.GetNumberOfControlPoints()
 
         # if there are 0 control points
         if control_points_amount == 0:
