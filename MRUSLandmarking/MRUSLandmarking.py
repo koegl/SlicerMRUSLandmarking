@@ -8,6 +8,7 @@ import SegmentEditorEffects
 import functools
 import importlib
 
+import Resources
 import Resources.utils
 import Resources.utils_landmarks
 import Resources.utils_views
