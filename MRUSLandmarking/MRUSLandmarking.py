@@ -7,6 +7,7 @@ from slicer.util import VTKObservationMixin
 import SegmentEditorEffects
 import functools
 import importlib
+import os
 
 import Resources
 import Resources.utils
@@ -100,6 +101,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.nodes_circle_plus = None
         self.nodes_circle = None
         self.old_volume_ids = []
+
+        # AMIGO
+        self.main_directory_path = None
 
     def setup(self):
         """
@@ -198,6 +202,10 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self.ui.acceptedLandmarkCheck.connect('clicked(bool)', self.onAcceptedLandmarkCheck)
         self.ui.modifyLandmarkCheck.connect('clicked(bool)', self.onModifyLandmarkCheck)
         self.ui.rejectedLandmarkCheck.connect('clicked(bool)', self.onRejectedLandmarkCheck)
+
+        # amigo
+        self.ui.mainDirectoryButton.directoryChanged.connect(self.onMainDirectoryButton)
+        self.ui.loadCaseButton.connect('clicked(bool)', self.onLoadCaseButton)
 
         # Make sure parameter node is initialized (needed for module reload)
         self.initializeParameterNode()
@@ -817,6 +825,99 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
         except Exception as e:
             slicer.util.errorDisplay("Could not misc2.\n" + str(e))
+
+    def onMainDirectoryButton(self, changed=False):
+        try:
+            if changed:
+                self.main_directory_path = self.ui.mainDirectoryButton.directory
+
+                if not os.path.isdir(self.main_directory_path):
+                    raise FileNotFoundError("Main directory does not exist.")
+
+        except Exception as e:
+            slicer.util.errorDisplay("Could not select main dataset directory.\n" + str(e))
+
+    def onLoadCaseButton(self):
+        try:
+
+            if not os.path.isdir(self.main_directory_path):
+                raise FileNotFoundError("Choose correct directory first.")
+
+            case_number = self.ui.caseText.toPlainText()
+            case_number = int(case_number)
+
+            if case_number < 1 or case_number > 114:
+                raise FileNotFoundError("Case number must be between 1 and 114.")
+
+            case_number = str(case_number).zfill(3)
+
+            hierarchy_node = slicer.mrmlScene.GetSubjectHierarchyNode()
+
+            subject_folder_id = f"Case {case_number}"
+            patient_id = hierarchy_node.CreateSubjectItem(hierarchy_node.GetSceneItemID(), subject_folder_id)
+
+            # create folder structure and load nifti files into it
+            folders = ["Preop-MR", "Intraop-US", "Intraop-MR", "Annotations"]
+
+            for data_folder in folders:
+                data_folder_id = hierarchy_node.CreateFolderItem(hierarchy_node.GetSceneItemID(), data_folder)
+                hierarchy_node.SetItemParent(data_folder_id, patient_id)
+                data_folder_path = os.path.join(self.main_directory_path, f"Case{case_number}", data_folder)
+
+                files = os.listdir(data_folder_path)
+                files = [os.path.join(self.main_directory_path, f"Case{case_number}", data_folder, f) for f in files if f.endswith(".nrrd")]
+
+                if data_folder == "Intraop-US":
+                    files = []
+                    temp = os.path.join(self.main_directory_path, f"Case{case_number}", data_folder, f"Case{case_number}-intraop-US-pre_dura.nrrd")
+
+                    if os.path.exists(temp):
+                        files.append(temp)
+
+                    temp = os.path.join(self.main_directory_path, f"Case{case_number}", data_folder, f"Case{case_number}-intraop-US-post_dura.nrrd")
+                    if os.path.exists(temp):
+                        files.append(temp)
+
+                    temp = os.path.join(self.main_directory_path, f"Case{case_number}", data_folder, f"Case{case_number}-intraop-US-pre_imri.nrrd")
+                    if os.path.exists(temp):
+                        files.append(temp)
+
+                for file in files:
+                    if "annotation" in file.lower():
+
+                        filename = os.path.basename(file)
+                        segmentation_name = filename.replace(".nrrd", "")
+
+                        labelmap_node = slicer.util.loadLabelVolume(file)
+                        segmentation_node = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLSegmentationNode",
+                                                                               segmentation_name)
+                        slicer.modules.segmentations.logic().ImportLabelmapToSegmentationNode(labelmap_node,
+                                                                                              segmentation_node)
+                        segmentation_node.CreateClosedSurfaceRepresentation()
+
+                        slicer.mrmlScene.RemoveNode(labelmap_node)
+
+                        # turn of 2D slice-fill visibility
+                        segmentation_node.GetDisplayNode().SetAllSegmentsOpacity2DFill(False)
+
+                        # collapse segmentation folder structure
+                        subject_hierarchy_node = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(
+                            slicer.mrmlScene)
+                        segmentation_sh_id = subject_hierarchy_node.GetItemByName((segmentation_node.GetName()))
+
+                        subject_hierarchy_node.SetItemExpanded(segmentation_sh_id, False)
+
+                        volume_node = segmentation_node
+
+                    else:
+                        volume_node = slicer.util.loadVolume(file)
+
+                    volume_hierarchy_id = hierarchy_node.GetItemByDataNode(volume_node)
+                    hierarchy_node.SetItemParent(volume_hierarchy_id, data_folder_id)
+
+        except Exception as e:
+            slicer.util.errorDisplay("Could not load case.\n" + str(e))
+
 
 #
 # MRUSLandmarkingLogic
