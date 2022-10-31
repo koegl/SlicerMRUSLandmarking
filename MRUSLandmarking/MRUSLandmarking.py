@@ -781,7 +781,32 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onMisc1Button(self):
         try:
-            Resources.utils_landmarks.jump_to_next_landmark(self, "forward")
+            main_path = "/Users/fryderykkogl/Data/TCIA/3. TCIA cases - images and segmentations/nrrd"
+
+            all_files = []
+
+            for root, dirs, files in os.walk(main_path):
+                for file in files:
+                    if file.endswith(".nrrd") and 'seg' not in file.lower() and 'us' not in file.lower():
+                        all_files.append(os.path.join(root, file))
+
+            all_files.sort()
+
+            for file in all_files:
+                try:
+                    # load file
+                    loaded_node = slicer.util.loadVolume(file)
+
+                    save_path = "/Users/fryderykkogl/Desktop/temp/" + file.split("/")[-1].split(".")[0] + ".nii.gz"
+
+                    # export node to .nii
+                    slicer.util.saveNode(loaded_node, save_path)
+
+                    # remove node
+                    slicer.mrmlScene.RemoveNode(loaded_node)
+
+                except:
+                    pass
 
         except Exception as e:
             slicer.util.errorDisplay("Could not misc1.\n" + str(e))
