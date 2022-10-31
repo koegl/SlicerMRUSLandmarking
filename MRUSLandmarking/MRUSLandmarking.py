@@ -7,6 +7,7 @@ from slicer.util import VTKObservationMixin
 import SegmentEditorEffects
 import functools
 import importlib
+import os
 
 import Resources
 import Resources.utils
