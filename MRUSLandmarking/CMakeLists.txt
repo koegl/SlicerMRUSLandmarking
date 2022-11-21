@@ -4,6 +4,10 @@ set(MODULE_NAME MRUSLandmarking)
 #-----------------------------------------------------------------------------
 set(MODULE_PYTHON_SCRIPTS
   ${MODULE_NAME}.py
+  ${MODULE_NAME}Lib/__init__.py
+  ${MODULE_NAME}Lib/utils.py
+  ${MODULE_NAME}Lib/utils_landmarks.py
+  ${MODULE_NAME}Lib/utils_views.py
   )
 
 set(MODULE_PYTHON_RESOURCES

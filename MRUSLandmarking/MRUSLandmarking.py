@@ -1,7 +1,6 @@
-import unittest
 import numpy as np
 import logging
-import vtk, qt, ctk, slicer
+import vtk, qt, slicer
 from slicer.ScriptedLoadableModule import *
 from slicer.util import VTKObservationMixin
 import SegmentEditorEffects
@@ -9,13 +8,14 @@ import functools
 import importlib
 import os
 
-import Resources
-import Resources.utils
-import Resources.utils_landmarks
-import Resources.utils_views
-importlib.reload(Resources.utils)
-importlib.reload(Resources.utils_landmarks)
-importlib.reload(Resources.utils_views)
+import MRUSLandmarkingLib
+
+import MRUSLandmarkingLib.utils
+import MRUSLandmarkingLib.utils_landmarks
+import MRUSLandmarkingLib.utils_views
+importlib.reload(MRUSLandmarkingLib.utils)
+importlib.reload(MRUSLandmarkingLib.utils_landmarks)
+importlib.reload(MRUSLandmarkingLib.utils_views)
 
 
 #
@@ -67,7 +67,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         self._parameterNode = None
         self._updatingGUIFromParameterNode = False
 
-        Resources.utils_views.link_views()
+        MRUSLandmarkingLib.utils_views.link_views()
 
         self.compositeNode = None
         self.volumes_ids = None
@@ -389,12 +389,12 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         # changing views
         if self.old_volume_ids != self.volumes_ids:
 
-            self.nodes_circle_normal = Resources.utils.VolumeCircle(max_length=len(self.volumes_ids))
-            self.nodes_circle_plus = Resources.utils.VolumeCircle(max_length=len(self.volumes_ids))
-            self.nodes_circle = Resources.utils.VolumeCircle(max_length=len(self.volumes_ids))
+            self.nodes_circle_normal = MRUSLandmarkingLib.utils.VolumeCircle(max_length=len(self.volumes_ids))
+            self.nodes_circle_plus = MRUSLandmarkingLib.utils.VolumeCircle(max_length=len(self.volumes_ids))
+            self.nodes_circle = MRUSLandmarkingLib.utils.VolumeCircle(max_length=len(self.volumes_ids))
 
             for volume_id in self.volumes_ids:
-                new_node = Resources.utils.VolumeNode(volume_id)
+                new_node = MRUSLandmarkingLib.utils.VolumeNode(volume_id)
                 self.nodes_circle_normal.add_volume_node(new_node)
                 self.nodes_circle_plus.add_volume_node(new_node)
                 self.nodes_circle.add_volume_node(new_node)
@@ -407,21 +407,28 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         Function to create all shortcuts
         """
 
-        self.shortcuts = [('d', lambda: Resources.utils_landmarks.activate_fiducial_placement()),  # fiducial placement
-                          ('a', functools.partial(Resources.utils_views.change_view, self, "backward")),
-                          ('s', functools.partial(Resources.utils_views.change_view, self, "forward")),
-                          ('1', functools.partial(Resources.utils_views.change_foreground_opacity_discrete, self, 0.0)),
+        self.shortcuts = [('d', lambda: MRUSLandmarkingLib.utils_landmarks.activate_fiducial_placement()),  # fiducial placement
+                          ('a', functools.partial(MRUSLandmarkingLib.utils_views.change_view, self, "backward")),
+                          ('s', functools.partial(MRUSLandmarkingLib.utils_views.change_view, self, "forward")),
+                          ('1', functools.partial(
+                              MRUSLandmarkingLib.utils_views.change_foreground_opacity_discrete, self, 0.0)),
                           # change opacity to 0.0
-                          ('2', functools.partial(Resources.utils_views.change_foreground_opacity_discrete, self, 0.5)),
+                          ('2', functools.partial(
+                              MRUSLandmarkingLib.utils_views.change_foreground_opacity_discrete, self, 0.5)),
                           # change opacity to 0.5
-                          ('3', functools.partial(Resources.utils_views.change_foreground_opacity_discrete, self, 1.0)),
+                          ('3', functools.partial(
+                              MRUSLandmarkingLib.utils_views.change_foreground_opacity_discrete, self, 1.0)),
                           # change opacity to 1.0
-                          ('q', functools.partial(Resources.utils_views.change_foreground_opacity_continuous, self, 0.02)),
+                          ('q', functools.partial(
+                              MRUSLandmarkingLib.utils_views.change_foreground_opacity_continuous, self, 0.02)),
                           # incr. op. by .01
-                          ('w', functools.partial(Resources.utils_views.change_foreground_opacity_continuous, self, -0.02)),
+                          ('w', functools.partial(
+                              MRUSLandmarkingLib.utils_views.change_foreground_opacity_continuous, self, -0.02)),
                           # decr. op. by .01
-                          ('z', functools.partial(Resources.utils_landmarks.jump_to_next_landmark, self, "backward")),
-                          ('x', functools.partial(Resources.utils_landmarks.jump_to_next_landmark, self, "forward"))]
+                          ('z', functools.partial(
+                              MRUSLandmarkingLib.utils_landmarks.jump_to_next_landmark, self, "backward")),
+                          ('x', functools.partial(
+                              MRUSLandmarkingLib.utils_landmarks.jump_to_next_landmark, self, "forward"))]
 
     def __initialiseShortcuts(self):
         """
@@ -447,7 +454,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                     self.volumes_ids.append(selector.currentNode().GetID())
 
             # decide on slices to be updated depending on the view chosen
-            current_views = Resources.utils_views.get_current_views(self)
+            current_views = MRUSLandmarkingLib.utils_views.get_current_views(self)
 
             for view in current_views:
                 layoutManager = slicer.app.layoutManager()
@@ -488,9 +495,9 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         try:
             # Compute output
             self.logic.process([selector.currentNode() for selector in self.input_selectors if selector.currentNode()],
-                               Resources.utils_views.get_current_views(self))
+                               MRUSLandmarkingLib.utils_views.get_current_views(self))
 
-            Resources.utils_views.initialise_views(self)
+            MRUSLandmarkingLib.utils_views.initialise_views(self)
 
         except Exception as e:
             slicer.util.errorDisplay("Failed to create intersection. " + str(e))
@@ -572,7 +579,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             sliceNodes[4].SetOrientationToCoronal()
             sliceNodes[5].SetOrientationToSagittal()
 
-            Resources.utils_views.initialise_views(self)
+            MRUSLandmarkingLib.utils_views.initialise_views(self)
 
             self.ui.topRowCheck.toolTip = "Activate top row"
             self.ui.topRowCheck.enabled = True
@@ -606,7 +613,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             self.volumes_ids.reverse()
 
             # switch views
-            current_views = Resources.utils_views.get_current_views(self)
+            current_views = MRUSLandmarkingLib.utils_views.get_current_views(self)
 
             for view in current_views:
                 layoutManager = slicer.app.layoutManager()
@@ -656,7 +663,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
             # link rest of funcitonality
             self.topRowActive = True
             self.bottomRowActive = True
-            Resources.utils_views.active_rows_update(self)
+            MRUSLandmarkingLib.utils_views.active_rows_update(self)
 
     def onUpdateFlow(self):
 
@@ -667,7 +674,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
                 slicer.mrmlScene.RemoveNode(curve_node)
             self.curve_nodes = {}
 
-            fiducial_nodes = Resources.utils_landmarks.divide_landmarks_by_volume(self)
+            fiducial_nodes = MRUSLandmarkingLib.utils_landmarks.divide_landmarks_by_volume(self)
             max_len = max([len(i) for i in fiducial_nodes])
 
             # create curve nodes
@@ -694,7 +701,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
                 slicer.util.updateMarkupsControlPointsFromArray(curve_node_id, all_points)
 
-                Resources.utils.markup_curve_adjustment(curve_node_id)
+                MRUSLandmarkingLib.utils.markup_curve_adjustment(curve_node_id)
 
             # change tool to pointer
             interactionNode = slicer.mrmlScene.GetNodeByID("vtkMRMLInteractionNodeSingleton")
@@ -711,7 +718,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         :param activate: Boolean value to define if row is activated
         """
         self.topRowActive = activate
-        Resources.utils_views.active_rows_update(self)
+        MRUSLandmarkingLib.utils_views.active_rows_update(self)
 
     def onBottomRowCheck(self, activate=False):
         """
@@ -719,13 +726,13 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
         :param activate: Boolean value to define if row is activated
         """
         self.bottomRowActive = activate
-        Resources.utils_views.active_rows_update(self)
+        MRUSLandmarkingLib.utils_views.active_rows_update(self)
 
     def onLabelVisCheck(self, activate=True):
 
         try:
             previous_state = not self.ui.labelVisCheck.checked
-            Resources.utils_landmarks.check_if_landmark_list_is_selected(self)
+            MRUSLandmarkingLib.utils_landmarks.check_if_landmark_list_is_selected(self)
 
             for i in range(self.current_landmarks_list.GetNumberOfControlPoints()):
                 self.current_landmarks_list.SetNthControlPointVisibility(i, activate)
@@ -737,12 +744,12 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onAcceptedLandmarkCheck(self, activate=True):
         try:
             if activate is True:
-                Resources.utils_landmarks.set_landmark_status(self, "Accepted")
+                MRUSLandmarkingLib.utils_landmarks.set_landmark_status(self, "Accepted")
                 self.ui.modifyLandmarkCheck.checked = False
                 self.ui.rejectedLandmarkCheck.checked = False
 
             if activate is False:
-                Resources.utils_landmarks.set_landmark_status(self, "")
+                MRUSLandmarkingLib.utils_landmarks.set_landmark_status(self, "")
 
         except Exception as e:
             slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
@@ -750,12 +757,12 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onModifyLandmarkCheck(self, activate=True):
         try:
             if activate is True:
-                Resources.utils_landmarks.set_landmark_status(self, "Modify")
+                MRUSLandmarkingLib.utils_landmarks.set_landmark_status(self, "Modify")
                 self.ui.acceptedLandmarkCheck.checked = False
                 self.ui.rejectedLandmarkCheck.checked = False
 
             if activate is False:
-                Resources.utils_landmarks.set_landmark_status(self, "")
+                MRUSLandmarkingLib.utils_landmarks.set_landmark_status(self, "")
 
         except Exception as e:
             slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
@@ -763,26 +770,26 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
     def onRejectedLandmarkCheck(self, activate=True):
         try:
             if activate is True:
-                Resources.utils_landmarks.set_landmark_status(self, "Rejected")
+                MRUSLandmarkingLib.utils_landmarks.set_landmark_status(self, "Rejected")
                 self.ui.modifyLandmarkCheck.checked = False
                 self.ui.acceptedLandmarkCheck.checked = False
 
             if activate is False:
-                Resources.utils_landmarks.set_landmark_status(self, "")
+                MRUSLandmarkingLib.utils_landmarks.set_landmark_status(self, "")
 
         except Exception as e:
             slicer.util.errorDisplay("Could not change landmark status.\n" + str(e))
 
     def onPrintResultsButton(self):
         try:
-            Resources.utils_landmarks.print_landmark_inspection_results(self)
+            MRUSLandmarkingLib.utils_landmarks.print_landmark_inspection_results(self)
 
         except Exception as e:
             slicer.util.errorDisplay("Could not print results.\n" + str(e))
 
     def onSortLandmarksButton(self):
         try:
-            Resources.utils_landmarks.sort_landmarks(self)
+            MRUSLandmarkingLib.utils_landmarks.sort_landmarks(self)
 
         except Exception as e:
             slicer.util.errorDisplay("Could not sort landmarks.\n" + str(e))
@@ -821,7 +828,7 @@ class MRUSLandmarkingWidget(ScriptedLoadableModuleWidget, VTKObservationMixin):
 
     def onMisc2Button(self):
         try:
-            Resources.utils_landmarks.jump_to_next_landmark(self, "backward")
+            MRUSLandmarkingLib.utils_landmarks.jump_to_next_landmark(self, "backward")
 
         except Exception as e:
             slicer.util.errorDisplay("Could not misc2.\n" + str(e))
