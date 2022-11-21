@@ -237,7 +237,7 @@
       <string>Landmarks</string>
      </property>
      <property name="collapsed">
-      <bool>false</bool>
+      <bool>true</bool>
      </property>
      <layout class="QGridLayout" name="formLayout_3">
       <item row="0" column="0" colspan="4">
@@ -526,6 +526,93 @@ L{idx} US1,  L{idx} US2,  L{idx} US3,  L{idx} Pre-Op,  L{idx} Intra-Op</string>
       </item>
      </layout>
     </widget>
+   </item>
+   <item>
+    <widget class="ctkCollapsibleButton" name="collapsibleButtonAMIGO">
+     <property name="text">
+      <string>AMIGO dataset</string>
+     </property>
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+    <layout class="QGridLayout" name="formLayout_3">
+
+     <item row="0" column="0">
+      <widget class="QLabel" name="mainPathLabel">
+       <property name="text">
+        <string>Path to the dataset:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+         <widget class="ctkDirectoryButton" name="mainDirectoryButton">
+          <property name="maximumSize">
+           <size>
+            <width>390</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="font">
+           <font>
+            <pointsize>13</pointsize>
+            <weight>50</weight>
+            <bold>false</bold>
+           </font>
+          </property>
+         </widget>
+        </item>
+
+     <item row="1" column="0">
+      <widget class="QLabel" name="caseLabel">
+       <property name="text">
+        <string>Case number (1-114):</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1" colspan="1">
+      <widget class="QPlainTextEdit" name="caseText">
+       <property name="maximumSize">
+        <size>
+         <width>50</width>
+         <height>25</height>
+        </size>
+       </property>
+       <property name="plainText">
+        <string/>
+       </property>
+      </widget>
+     </item>
+
+     <item row="2" column="0" colspan="2">
+      <widget class="QPushButton" name="loadCaseButton">
+       <property name="text">
+        <string>Load case</string>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>13</pointsize>
+         <weight>50</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+      </widget>
+     </item>
+
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer222">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>1000</height>
+      </size>
+     </property>
+    </spacer>
    </item>
    <item>
     <spacer name="verticalSpacer">
