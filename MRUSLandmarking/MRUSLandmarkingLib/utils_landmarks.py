@@ -1,5 +1,5 @@
 import slicer
-import Resources
+import MRUSLandmarkingLib.utils_views
 
 
 def turn_off_placement_mode():
@@ -295,7 +295,7 @@ def jump_to_next_landmark(widget, direction="forward"):
                 else:
                     new_direction = "forward"
 
-                Resources.utils_views.change_view(widget, direction=new_direction)
+                utils_views.change_view(widget, direction=new_direction)
 
                 current_id = widget.compositeNode.GetBackgroundVolumeID()
                 current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
@@ -337,7 +337,7 @@ def jump_to_next_landmark(widget, direction="forward"):
                 else:
                     new_direction = "forward"
 
-                Resources.utils_views.change_view(widget, direction=new_direction)
+                utils_views.change_view(widget, direction=new_direction)
 
                 current_id = widget.compositeNode.GetBackgroundVolumeID()
                 current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
@@ -375,7 +375,7 @@ def jump_to_next_landmark(widget, direction="forward"):
                 else:
                     new_direction = "forward"
 
-                Resources.utils_views.change_view(widget, direction=new_direction)
+                utils_views.change_view(widget, direction=new_direction)
 
                 current_id = widget.compositeNode.GetBackgroundVolumeID()
                 current_name = slicer.mrmlScene.GetNodeByID(current_id).GetName()
@@ -402,7 +402,7 @@ def jump_to_next_landmark(widget, direction="forward"):
             widget.topRowActive = storage_top_row
             widget.bottomRowActive = storage_bottom_row
 
-            Resources.utils_views.active_rows_update(widget)
+            utils_views.active_rows_update(widget)
 
             # make all other fiducials not visible
 

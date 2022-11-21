@@ -1,5 +1,4 @@
 import slicer
-import Resources.utils
 
 
 def change_view(widget, direction='forward'):
